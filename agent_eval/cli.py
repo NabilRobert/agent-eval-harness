@@ -132,7 +132,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         # mode with a 400 (Phase 4 revision), so strict schemas are off.
         "model_args": {"strict_tools": False},
         "system_prompt": (
-            Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
+            args.system_prompt if args.system_prompt
+            else Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
             if args.system_prompt_file
             # A suite can carry its own prompt; Pagila uses MCP-backbone's.
             else suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
@@ -298,6 +299,45 @@ def cmd_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_confirm(args: argparse.Namespace) -> int:
+    """Reruns the dropped tasks of an inconclusive comparison for both
+    agents and decides on the fresh trials alone (agent_eval/confirm.py)."""
+    import json
+
+    from agent_eval.confirm import ConfirmError, plan
+
+    try:
+        p = plan(Path(args.baseline), Path(args.candidate), REPO_ROOT / "suites", args.epochs)
+    except ConfirmError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
+    ids = {"baseline": f"confirm-{stamp}-baseline", "candidate": f"confirm-{stamp}-candidate"}
+    print(f"confirming {p['candidate']} vs {p['baseline']}: {len(p['tasks'])} dropped tasks "
+          f"x {p['epochs']} attempts, both agents: {p['tasks']}")
+    for side in ("baseline", "candidate"):
+        cmd = [sys.executable, "-m", "agent_eval.cli", "run", *p[f"{side}_args"],
+               "--run-id", ids[side], "--out", args.out, "--budget", str(args.budget)]
+        code = subprocess.run(cmd, cwd=REPO_ROOT, check=False).returncode
+        if code != 0:
+            print(f"error: the {side} confirmation run failed (exit {code})", file=sys.stderr)
+            return EXIT_UNDECIDED
+    result = compare_runs(Path(args.out) / ids["baseline"], Path(args.out) / ids["candidate"])
+    record = {**{k: v for k, v in p.items() if not k.endswith("_args")}, "runs": ids,
+              "verdict": result.verdict, "exit_code": result.exit_code,
+              "point": result.point, "interval": result.interval, "reasons": result.reasons}
+    out = REPO_ROOT / "confirmations"
+    out.mkdir(exist_ok=True)
+    (out / f"{stamp}.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    print(f"confirmation verdict (fresh trials only): {result.verdict} (exit {result.exit_code})")
+    if result.interval is not None and result.point is not None:
+        print(f"  change {result.point:+.1%} (95% interval {result.interval[0]:+.1%} to "
+              f"{result.interval[1]:+.1%})")
+    for line in result.reasons:
+        print(f"  reason: {line}")
+    return result.exit_code
+
+
 def cmd_compare(args: argparse.Namespace) -> int:
     result = compare_runs(Path(args.baseline), Path(args.candidate))
     print(f"verdict: {result.verdict} (exit {result.exit_code})")
@@ -336,6 +376,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--plan-only", action="store_true", help="print the plan and stop")
     run.add_argument("--exclude-tools", help="comma-separated tools to withhold (a degraded agent)")
     run.add_argument("--system-prompt-file", help="replace the suite's system prompt (a degraded agent)")
+    run.add_argument("--system-prompt", help=argparse.SUPPRESS)  # exact text, used by `confirm`
     run.add_argument("--out", default="runs")
     run.add_argument("--run-id")
     run.add_argument("--env-file", default=str(REPO_ROOT / ".env"))
@@ -356,6 +397,14 @@ def main(argv: list[str] | None = None) -> int:
     rep.add_argument("run_dir")
     rep.add_argument("--check", action="store_true", help="fail if report.md is out of date")
     rep.set_defaults(func=cmd_report)
+
+    con = sub.add_parser("confirm", help="rerun the dropped tasks of an inconclusive comparison")
+    con.add_argument("baseline")
+    con.add_argument("candidate")
+    con.add_argument("--epochs", type=int, default=10)
+    con.add_argument("--budget", type=float, default=5.0, help="US dollars per confirmation run")
+    con.add_argument("--out", default="runs")
+    con.set_defaults(func=cmd_confirm)
 
     cmp = sub.add_parser("compare", help="compare a candidate run with a baseline")
     cmp.add_argument("baseline")
