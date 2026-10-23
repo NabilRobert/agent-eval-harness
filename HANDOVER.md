@@ -171,6 +171,15 @@ parallel a little at a time.
   (Docker) deferred to the VPS. Spend: one trial, ~2.25k tokens, <1 cent.
   Arthur wants AI spend kept conservative: cap every live run, measure
   before scaling, ask before a second model.
-- **Open:** Sumopod per-model prices for `prices.yaml`; choice of 2nd model.
+- **Models (Arthur, 2026-10-23):** `gpt-5-mini` + `gpt-5-nano`. One nano
+  trial: same answer, ~9× mini's output tokens (reasoning), 2× slower, so
+  roughly the same cost per task at list prices. Harness `.env` has
+  `SUMOPOD_AI_API_KEY` (base URL still read from MCP-backbone's `.env`;
+  to add to the harness env file later).
+- **Open:** Sumopod per-model prices for `prices.yaml`.
+- **Later idea (not v1):** an "is upgrading `gpt-5-mini` → `gpt-5.4-mini`
+  worth it?" before/after comparison as a README section, only after a
+  one-trial cost check. Also possible later: one non-OpenAI model (Gemini /
+  DeepSeek / Qwen flash) once tool calling through Sumopod is checked.
 - **Next:** Phase 7 (slices), then the walking skeleton.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

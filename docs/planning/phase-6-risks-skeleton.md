@@ -159,9 +159,17 @@ input and output tokens, plus details such as reasoning tokens. Totals:
 answer. At typical mini-model prices that's a fraction of a cent per easy
 trial, so a full Pagila run (150 trials, with harder tasks using several
 times more tokens) should land well under $1, comfortably inside the $5
-cap. **Still open:** Sumopod's actual per-model prices for `prices.yaml`
-(Arthur to supply or point to them), and the second model, held back to
-keep spend down until one is chosen.
+cap.
+
+**Models chosen (Arthur, 2026-10-23):** `gpt-5-mini` (baseline, the model
+in MCP-backbone's published benchmark) and `gpt-5-nano` (one size down).
+One capped `gpt-5-nano` trial on the same task: 4 requests, 2,054 input +
+1,572 output tokens (1,472 of them reasoning), 16.1 s, correct answer. So
+nano spent about 9× the output tokens of mini and took twice as long. At
+OpenAI's list prices that makes one nano trial cost about the same as a
+mini trial, not less: "the cheaper model" isn't automatically cheaper per
+task, which is exactly what the harness should surface. **Still open:**
+Sumopod's actual per-model prices for `prices.yaml`.
 
 ### Spike 2 result: PASS — the trace has what graders need
 
