@@ -207,5 +207,23 @@ parallel a little at a time.
   --dirty`); 138 tests pass. Needs merge + deploy before slice F.
 - **MCP-backbone follow-up (proposed):** drop the optional `api_key` tool
   parameter from the HTTP-facing schema (strict-mode clients reject it).
-- **Next:** Arthur reviews the revised plan, then build slice A.
+- **Slice A done (2026-10-23, 4 commits `a51b046`..`19a8cb6`, not pushed):**
+  package `agent_eval/` (grading, records, compare: pure; inspect_tasks,
+  preflight, export, cli), Python 3.12 venv via uv, exact pins + `uv.lock`,
+  CI workflow (ruff, pyright strict, pytest, compare with no key). Live
+  skeleton run `runs/skeleton/`: gpt-5-mini 1/1 strict, 3,262+381 tokens;
+  its records and Inspect log scanned clean of both keys, the base URL and
+  any auth header. 26 tests; each new check was mutation-tested, and one
+  vacuous assertion (api_key never sent in this run) was replaced by a
+  direct unit test. Known: the skeleton's `harness_git` is
+  `47157d7d4efc-dirty` (run before the code was committed), and
+  `server_version`/`healthz_version` are null until MCP-backbone's
+  `feat/server-version` is deployed. Published runs (slice D+) must come
+  from a clean tree.
+- **Run locally:** `uv sync --frozen --extra dev`; `uv run agent-eval run`
+  needs `SUMOPOD_BASE_URL` in the harness `.env` (Arthur to add; for now
+  passed in from MCP-backbone's `.env` at the command line, unprinted).
+- **Next:** slice B (YAML suites, ~10 harder Pagila tasks, expected answers
+  via the endpoint, fingerprint, error classification, budget estimate,
+  verify epoch order / cost_limit / caching), smoke suite only.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
