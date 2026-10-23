@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila`, 3 tasks × 2 attempts, suite sha256 `e3babff6ef47`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success); rebuilt from its Inspect log 5×
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 6×
 - **Run at:** 2026-10-23T09:45:59+00:00
 
 ## Result
@@ -61,7 +61,7 @@ LIMIT 1;
 - Data fingerprint: `fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `816114ce9d7e-dirty`, Inspect AI 0.3.283, export v3
+- Harness: `816114ce9d7e-dirty`, Inspect AI 0.3.283, export v4
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
 - Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
 - Budget: $5.00; model unpriced, so no dollar cap: limited to a smoke-sized run, each trial capped by its token limit

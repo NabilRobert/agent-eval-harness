@@ -177,8 +177,19 @@ def render(run: Run) -> str:
             f"; lenient: {'pass' if t['lenient'] else 'fail'}")
         add(f"- Tools called: {' → '.join(c['tool'] for c in t['tool_calls']) or 'none'}")
         for g in t["graders"]:
-            add(f"- Expected: {_rows(g['expected'])}")
-            add(f"- Got: {_rows(g['input']['graded_rows'])}")
+            mark = "pass" if g["strict"] else "fail"
+            if g["kind"] == "result_match":
+                add(f"- Expected: {_rows(g['expected'])}")
+                add(f"- Got: {_rows(g['input']['graded_rows'])}")
+            elif g["kind"] == "answer_match":
+                add(f"- Answer must contain: {g['spec']['contains']} ({mark})")
+                add("- Final answer:")
+                add("")
+                add(_fence(_clip(str(g["input"]["final_answer"] or "(none)"))))
+                add("")
+            else:
+                used = sorted(set(g["input"]["tools_called"]) & set(g["spec"]))
+                add(f"- Forbidden tools: {'none used' if not used else 'USED ' + ', '.join(used)} ({mark})")
         sql = [c["arguments"].get("sql") for c in t["tool_calls"] if c["tool"] == "run_query"]
         if sql and sql[-1]:
             add("- Last query:")

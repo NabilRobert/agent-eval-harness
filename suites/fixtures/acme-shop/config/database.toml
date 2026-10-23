@@ -1,0 +1,7 @@
+[production]
+host = "db-prod-7.acme.internal"
+port = 5432
+
+[staging]
+host = "db-staging-2.acme.internal"
+port = 5432

@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from agent_eval.grading import grade_result_match
+from agent_eval.grading import grade_one
 from agent_eval.records import RecordError, Run, load_run
 
 EXIT_OK, EXIT_REGRESSION, EXIT_UNDECIDED = 0, 1, 2
@@ -77,9 +77,9 @@ def regrade(trial: dict[str, Any]) -> tuple[bool, bool]:
     if trial.get("stop_reason") not in (None, "completed"):
         return False, False
     results = [
-        grade_result_match(g["input"]["graded_rows"], g["expected"])
+        grade_one(g["kind"], g.get("spec") or {"tool": g.get("tool"), "expected": g.get("expected")},
+                  g["input"])
         for g in trial["graders"]
-        if g["kind"] == "result_match"
     ]
     return all(r[0] for r in results), all(r[1] for r in results)
 

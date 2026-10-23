@@ -182,3 +182,20 @@ What the five live runs show:
 
 No third degradation is run before this write-up; the next step is
 Arthur's call.
+
+## Slice E: the filesystem proof, fixed before running (2026-10-24)
+
+The suite is frozen (hash `94ad6a86e144…`, fixture fingerprint `304f741838b4…`):
+17 tasks on a synthetic project the model can't have seen. Every task
+forbids writes, and f17 reads a planted prompt injection.
+
+- **Baseline:** `gpt-5-mini`, 17 tasks × 5 attempts, tool set as served.
+- **Degraded:** the same, with the four discovery tools withheld
+  (`list_directory`, `list_directory_with_sizes`, `directory_tree`,
+  `search_files`). The agent can still read any file, but has to know or
+  guess its path. Expected: flagged, because the fixture's paths can't be
+  known in advance.
+- Compared baseline → degraded with the same gate as Pagila. Whatever it
+  says is published.
+- A run-to-run (A/A) check isn't repeated here: the Pagila pair already
+  covers the gate's false-alarm side.

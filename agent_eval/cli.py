@@ -81,13 +81,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     env = read_env_file(Path(args.env_file))
     sumopod_key = _require(env, "SUMOPOD_AI_API_KEY")
     base_url = _require(env, "SUMOPOD_BASE_URL")
-    auth_token = _require(env, target["auth_env"])
+    auth_token = _require(env, target["auth_env"]) if target.get("auth_env") else ""
     # Inspect's openai-api/<service>/<model> provider reads <SERVICE>_API_KEY
     # and <SERVICE>_BASE_URL from this process's environment.
     os.environ["SUMOPOD_API_KEY"] = sumopod_key
     os.environ["SUMOPOD_BASE_URL"] = base_url
     os.environ.setdefault("INSPECT_DISPLAY", "none")
-    secrets = [sumopod_key, auth_token]
+    secrets = [s for s in (sumopod_key, auth_token) if s]
 
     run_id = args.run_id or (
         datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -133,7 +133,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         "model_args": {"strict_tools": False},
         "system_prompt": (
             Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
-            if args.system_prompt_file else PAGILA_SYSTEM_PROMPT
+            if args.system_prompt_file
+            # A suite can carry its own prompt; Pagila uses MCP-backbone's.
+            else suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
         ),
         "tool_allowlist": None,
         "message_limit": 20,

@@ -241,7 +241,7 @@
     "harness_git": "593da0f81125",
     "inspect_ai_version": "0.3.283"
   },
-  "export_version": 3,
+  "export_version": 4,
   "totals": {
     "trials": 200,
     "pass_strict": 186,
@@ -254,6 +254,14 @@
       "complete": true
     }
   },
+  "reexports": [
+    {
+      "at": "2026-10-23T17:25:34+00:00",
+      "from_export_version": 3,
+      "to_export_version": 4,
+      "price_checked": "2026-10-23"
+    }
+  ],
   "schema_version": 1,
-  "trials_sha256": "800ab9560c53a6eea276a4203493ca71bb40602080fd4fa4eb9ca4167e6cc6a0"
+  "trials_sha256": "984924d01b84d4004a5b4dfcefd52678fefac2025fe36621e11d4a2a0d262675"
 }

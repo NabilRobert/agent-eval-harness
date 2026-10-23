@@ -4,7 +4,13 @@ its tool list, its /healthz version and a fingerprint of its data."""
 
 from typing import Any
 
+import hashlib
+import sys
+from pathlib import Path
+
 import httpx
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
 from agent_eval.mcp_client import call_json, connect
 from agent_eval.records import sha256_hex, stable_json
@@ -28,9 +34,53 @@ async def fingerprint(session: Any, target: dict[str, Any]) -> dict[str, Any]:
     return {"sha256": sha256_hex(stable_json(parts)), "parts": parts}
 
 
+def fixture_fingerprint(fixture: Path) -> dict[str, Any]:
+    """A fixture's identity: every file's relative path and content hash.
+    Any edit to the fixture changes it, so runs on different fixtures are
+    never compared."""
+    files = {str(p.relative_to(fixture)): hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in sorted(fixture.rglob("*")) if p.is_file()}
+    return {"sha256": sha256_hex(stable_json(files)), "parts": [{"files": len(files)}]}
+
+
+def stdio_params(target: dict[str, Any]) -> StdioServerParameters:
+    return StdioServerParameters(
+        command=sys.executable, args=["-m", "agent_eval.fs_server", target["fixture"]]
+    )
+
+
+async def _preflight_stdio(target: dict[str, Any], required: set[str]) -> dict[str, Any]:
+    try:
+        async with stdio_client(stdio_params(target)) as (read, write):
+            async with ClientSession(read, write) as session:
+                init = await session.initialize()
+                listed = await session.list_tools()
+    except Exception as exc:  # the server failed to start: preflight failure
+        raise PreflightError(f"can't start the {target['name']} server: {type(exc).__name__}") from exc
+    tools: list[dict[str, Any]] = sorted(
+        ({"name": t.name, "input_schema": t.input_schema} for t in listed.tools),
+        key=lambda t: str(t["name"]),
+    )
+    names: set[str] = {str(t["name"]) for t in tools}
+    if required - names:
+        raise PreflightError(f"target has no tool(s) {sorted(required - names)}")
+    data = fixture_fingerprint(Path(target["fixture"]))
+    return {
+        "server_name": init.server_info.name,
+        "server_version": init.server_info.version or None,
+        "healthz_version": None,
+        "tool_names": sorted(names),
+        "tool_list_sha256": sha256_hex(stable_json(tools)),
+        "data_fingerprint": data["sha256"],
+        "data_fingerprint_parts": data["parts"],
+    }
+
+
 async def preflight(
     target: dict[str, Any], auth_token: str, required_tools: set[str]
 ) -> dict[str, Any]:
+    if target.get("transport") == "stdio":
+        return await _preflight_stdio(target, required_tools)
     try:
         async with connect(target["url"], auth_token) as session:
             init = await session.initialize()

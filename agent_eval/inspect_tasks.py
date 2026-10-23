@@ -12,9 +12,11 @@ from inspect_ai.dataset import Sample
 from inspect_ai.model import ChatMessageTool
 from inspect_ai.scorer import Score, Target, mean, scorer
 from inspect_ai.solver import TaskState
-from inspect_ai.tool import mcp_server_http, mcp_tools
+import sys
 
-from agent_eval.grading import GRADER_VERSION, grade_result_match
+from inspect_ai.tool import mcp_server_http, mcp_server_stdio, mcp_tools
+
+from agent_eval.grading import GRADER_VERSION, grade_one
 from agent_eval.records import task_hash
 
 
@@ -48,25 +50,24 @@ def suite_scorer(infra_error_patterns: list[str]):  # pyright: ignore[reportUnkn
         tool_messages = [m for m in state.messages if isinstance(m, ChatMessageTool)]
         grader_results: list[dict[str, Any]] = []
         for grader in task["graders"]:
-            spec = grader["result_match"]
-            calls = [m for m in tool_messages if m.function == spec["tool"]]
-            payload = _tool_payload(calls[-1]) if calls else None
-            # The last call to the graded tool is the agent's answer; if it
-            # didn't succeed, there are no rows to grade.
-            graded_rows = (
-                payload.get("rows") if payload and payload.get("status") == "succeeded" else None
-            )
-            strict, lenient = grade_result_match(graded_rows, spec["expected"])
-            grader_results.append(
-                {
-                    "kind": "result_match",
-                    "tool": spec["tool"],
-                    "expected": spec["expected"],
-                    "input": {"graded_rows": graded_rows, "graded_payload": payload},
-                    "strict": strict,
-                    "lenient": lenient,
-                }
-            )
+            [(kind, spec)] = grader.items()
+            record: dict[str, Any] = {"kind": kind, "spec": spec}
+            if kind == "result_match":
+                calls = [m for m in tool_messages if m.function == spec["tool"]]
+                payload = _tool_payload(calls[-1]) if calls else None
+                # The last call to the graded tool is the agent's answer; if
+                # it didn't succeed, there are no rows to grade.
+                rows = payload.get("rows") if payload and payload.get("status") == "succeeded" else None
+                # "tool"/"expected" kept at the top level: the record shape
+                # committed runs already use.
+                record.update({"tool": spec["tool"], "expected": spec["expected"],
+                               "input": {"graded_rows": rows, "graded_payload": payload}})
+            elif kind == "answer_match":
+                record["input"] = {"final_answer": state.output.completion if state.output else None}
+            else:
+                record["input"] = {"tools_called": [m.function for m in tool_messages if m.function]}
+            record["strict"], record["lenient"] = grade_one(kind, spec, record["input"])
+            grader_results.append(record)
         strict_all = all(r["strict"] for r in grader_results)
         lenient_all = all(r["lenient"] for r in grader_results)
         return Score(
@@ -96,11 +97,18 @@ def build_task(
     if tools_override is not None:
         tools = tools_override
     else:
-        server = mcp_server_http(
-            name=target["name"],
-            url=target["url"],
-            headers={"Authorization": f"Bearer {auth_token}"},
-        )
+        if target.get("transport") == "stdio":
+            # A fresh server, on a fresh copy of the fixture, per trial.
+            server = mcp_server_stdio(
+                name=target["name"], command=sys.executable,
+                args=["-m", "agent_eval.fs_server", target["fixture"]],
+            )
+        else:
+            server = mcp_server_http(
+                name=target["name"],
+                url=target["url"],
+                headers={"Authorization": f"Bearer {auth_token}"},
+            )
         tools = [mcp_tools(server, tools=agent.get("tool_allowlist") or "all")]
     dataset = [
         Sample(

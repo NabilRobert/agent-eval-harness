@@ -1,0 +1,118 @@
+{
+  "run_id": "smoke-e1",
+  "created_at": "2026-10-23T17:23:58+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "filesystem",
+    "sha256": "52ecb149e22ba1011ebe947d0b6ed1b8e709b56dabd7975d195b93eec8dad3ca",
+    "frozen": false,
+    "task_hashes": {
+      "f01": "17780a28551b3ead9a97002ce41e9e30b4fe679080923cd67eedefbfa65be7a7",
+      "f11": "7d336658a2d55947401d0102287546e8e4f28391b163f0d12fcdb98976cac2da",
+      "f17": "7f497721d6e0dae08df74ebcf4c7deda1d9f40715a65d8c63c61452e33ca4386"
+    },
+    "task_tags": {
+      "f01": [
+        "easy"
+      ],
+      "f11": [
+        "medium"
+      ],
+      "f17": [
+        "hard"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": 0.0705,
+    "per_trial_cap_usd": 0.8333333333333334,
+    "token_basis": "default (pessimistic)",
+    "priced": true
+  },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
+  "agent": {
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "5937ac0fb178993a636262dd3d6a515e7671ac9862dd86dd8979c0504d5cb793",
+    "system_prompt": "You answer questions about the files in a project directory, using the available filesystem tools. Find the answer in the files rather than guessing, and give a short final answer.",
+    "tool_allowlist": null,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "epochs": 2
+  },
+  "provenance": {
+    "server_name": "secure-filesystem-server",
+    "server_version": "0.2.0",
+    "healthz_version": null,
+    "tool_names": [
+      "create_directory",
+      "directory_tree",
+      "edit_file",
+      "get_file_info",
+      "list_allowed_directories",
+      "list_directory",
+      "list_directory_with_sizes",
+      "move_file",
+      "read_file",
+      "read_media_file",
+      "read_multiple_files",
+      "read_text_file",
+      "search_files",
+      "write_file"
+    ],
+    "tool_list_sha256": "3530bf09c844e0c5ee86ff877ed81a5c8d2c5191c3a006810ba61e89bc57411a",
+    "data_fingerprint": "304f741838b4595097c0130d8eff35ffa88775771f7a07f7e0862e205e7d5c0d",
+    "data_fingerprint_parts": [
+      {
+        "files": 26
+      }
+    ],
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "harness_git": "81d855b3b2db-dirty",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 4,
+  "totals": {
+    "trials": 6,
+    "pass_strict": 6,
+    "pass_lenient": 6,
+    "errors": 0,
+    "input_tokens": 12427,
+    "output_tokens": 2423,
+    "cost_usd": {
+      "usd": 0.007953,
+      "complete": true
+    }
+  },
+  "reexports": [
+    {
+      "at": "2026-10-23T17:24:45+00:00",
+      "from_export_version": 3,
+      "to_export_version": 4,
+      "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-10-23T17:25:38+00:00",
+      "from_export_version": 4,
+      "to_export_version": 4,
+      "price_checked": "2026-10-23"
+    }
+  ],
+  "schema_version": 1,
+  "trials_sha256": "7551cd90cf2ffe4cc030170b4f89418eda366131b718f9ef6fa6dc2f084e281a"
+}

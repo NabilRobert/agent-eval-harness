@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-nano` (provider reported: gpt-5-nano)
 - **Suite:** `pagila`, 40 tasks × 5 attempts, suite sha256 `a79b59cb8631`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-23T16:15:04+00:00
 
 ## Result
@@ -407,7 +407,7 @@ WHERE EXTRACT(year FROM first_rental_date) = 2023;
 - Data fingerprint: `fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `f3d0addbac06`, Inspect AI 0.3.283, export v3
+- Harness: `f3d0addbac06`, Inspect AI 0.3.283, export v4
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
 - Priced at $0.05/M input, $0.4/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
 - Budget: $5.00, estimate $0.4700 (default (pessimistic) tokens), per-trial cap $0.0250

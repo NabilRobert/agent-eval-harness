@@ -12,6 +12,7 @@ from typing import Any
 from inspect_ai.log import EvalLog, EvalSample, read_eval_log, resolve_sample_attachments
 
 from agent_eval.budget import cost_usd
+from agent_eval.grading import GRADER_VERSION, grade_one
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 from agent_eval.suites import FROZEN_SUITES
 
@@ -19,7 +20,7 @@ from agent_eval.suites import FROZEN_SUITES
 INCOMPLETE_ERROR_SHARE = 0.10
 # Bump when export output changes; `reexport` records which version
 # rebuilt a run's trials.
-EXPORT_VERSION = 3  # v2: column order kept, attachments resolved; v3: task tags in meta
+EXPORT_VERSION = 4  # v2: column order, attachments; v3: task tags; v4: grades recomputed at export
 
 
 class SecretLeakError(Exception):
@@ -81,9 +82,17 @@ def trial_from_sample(
     sample = resolve_sample_attachments(sample, "full")
     score = (sample.scores or {}).get("suite_scorer")
     score_meta: dict[str, Any] = (score.metadata or {}) if score else {}
-    value: dict[str, Any] = score.value if score and isinstance(score.value, dict) else {}  # pyright: ignore[reportUnknownMemberType]
-    strict = bool(value.get("strict"))
-    lenient = bool(value.get("lenient"))
+    # Grades are recomputed from the stored grader inputs with the current
+    # grader code, so a rebuilt run reflects the graders as they are now
+    # (`compare` would otherwise flag every trial a grader fix changed).
+    graders: list[dict[str, Any]] = []
+    for g in score_meta.get("graders", []):
+        spec = g.get("spec") or {"tool": g.get("tool"), "expected": g.get("expected")}
+        g = {**g}
+        g["strict"], g["lenient"] = grade_one(g["kind"], spec, g["input"])
+        graders.append(g)
+    strict = bool(graders) and all(g["strict"] for g in graders)
+    lenient = bool(graders) and all(g["lenient"] for g in graders)
 
     error_kind: str | None = None
     if sample.error is not None:
@@ -117,8 +126,8 @@ def trial_from_sample(
         "error_kind": error_kind,
         "error_message": sample.error.message if sample.error else None,
         "stop_reason": stop_reason,
-        "grader_version": score_meta.get("grader_version"),
-        "graders": score_meta.get("graders", []),
+        "grader_version": GRADER_VERSION,
+        "graders": graders,
         "final_answer": sample.output.completion if sample.output else None,
         "tool_calls": _tool_calls(sample),
         "model_calls": model_calls,

@@ -1,0 +1,3 @@
+service: payments
+timeout_seconds: 37
+retries: 5

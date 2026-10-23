@@ -2,7 +2,10 @@
 named, never stored: each is read from its environment variable at run
 time (Phase 3: no secrets in records)."""
 
+from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Run at the start of every run, through the same endpoint the agent uses.
 # Each hashes columns with no timestamps in them, so the result doesn't
@@ -35,5 +38,19 @@ TARGETS: dict[str, dict[str, Any]] = {
         "infra_error_patterns": ["rate limit of"],
         "query_tool": "run_query",
         "fingerprint_queries": _PAGILA_FINGERPRINT,
+    },
+    # The reference MCP filesystem server (pinned in tools/fs-server), on a
+    # fresh copy of a synthetic fixture per trial (agent_eval/fs_server.py).
+    # The fixture is made up, so the model can't know it from training: its
+    # tools are genuinely needed, unlike Pagila's (see the slice D proofs).
+    "filesystem": {
+        "name": "filesystem",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
     },
 }
