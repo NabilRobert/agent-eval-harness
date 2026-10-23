@@ -143,6 +143,7 @@ def build_meta(
     system_prompt_sha256: str,
     suite_sha256: str | None = None,
     budget_plan: dict[str, Any] | None = None,
+    price: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     status = run_status(log.status, trials)
     reported = sorted({c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]})
@@ -160,6 +161,8 @@ def build_meta(
             "task_tags": {t["id"]: t.get("tags", []) for t in suite["tasks"]},
         },
         "budget": budget_plan,
+        # The exact price the costs below were computed with, and its source.
+        "price": price,
         "agent": {
             "model": agent["model"],
             "model_args": agent["model_args"],
@@ -248,10 +251,12 @@ def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
         "sha256": sha256_hex(ordered_json([[tid, h] for tid, h in hashes.items()])),
     }
     new_meta["status"] = run_status(log.status, trials)
+    new_meta["price"] = price
     new_meta["totals"] = totals(trials)
     new_meta["reexports"] = [*meta.get("reexports", []), {
         "at": at, "from_export_version": meta.get("export_version", 1),
         "to_export_version": EXPORT_VERSION,
+        "price_checked": price.get("checked") if price else None,
     }]
     new_meta["export_version"] = EXPORT_VERSION
     return new_meta, trials

@@ -130,3 +130,21 @@ def test_every_committed_run_is_intact_and_regrades_to_its_stored_grades() -> No
         result = compare_runs(run_dir, run_dir)
         assert result.regrade_mismatches == [], run_dir.name
         assert result.exit_code == EXIT_OK, (run_dir.name, result.reasons)
+
+
+def test_a_meta_that_cant_be_written_leaves_the_run_untouched(tmp_path: Path) -> None:
+    """The bug a reexport hit: a value JSON can't hold made the meta write
+    fail after trials.jsonl was already replaced, leaving a run whose
+    files disagreed. Now nothing is written unless everything serialises."""
+    import datetime
+
+    from agent_eval.records import write_run
+
+    run = tmp_path / "run"
+    write_run(run, make_meta(), [make_trial(1, GOOD)])
+    before = {p.name: p.read_text() for p in run.iterdir()}
+    with pytest.raises(TypeError):
+        write_run(run, make_meta(price={"checked": datetime.date(2026, 10, 23)}),
+                  [make_trial(1, [{"count": 1}])])
+    assert {p.name: p.read_text() for p in run.iterdir()} == before
+    load_run(run)  # still consistent

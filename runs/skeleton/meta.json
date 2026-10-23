@@ -55,8 +55,8 @@
     "input_tokens": 3262,
     "output_tokens": 381,
     "cost_usd": {
-      "usd": null,
-      "complete": false
+      "usd": 0.001577,
+      "complete": true
     }
   },
   "reexports": [
@@ -74,9 +74,22 @@
       "at": "2026-10-23T09:59:44+00:00",
       "from_export_version": 2,
       "to_export_version": 3
+    },
+    {
+      "at": "2026-10-23T10:04:55+00:00",
+      "from_export_version": 3,
+      "to_export_version": 3,
+      "price_checked": "2026-10-23"
     }
   ],
   "export_version": 3,
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
   "schema_version": 1,
-  "trials_sha256": "5830f36fa1f75d1bfc2301a912ecab351094113537fdcbed51ea5f6e55733d5c"
+  "trials_sha256": "ad8dcfe08454a6f4ea494847b7c83385e200eadd307ee4bbcac0e499930ac40d"
 }

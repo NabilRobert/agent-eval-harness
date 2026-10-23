@@ -105,3 +105,21 @@ A slip on my side: when column order was fixed, I didn't bump the export
 version, so two of the smoke run's rebuilds are recorded as "v2 → v2". The
 history is left as it is; it's accurate about what happened. Now every
 change to export output bumps the version (v3 adds task tags to the meta).
+
+## 2026-10-23 — Real prices, and a save that wasn't atomic
+
+Sumopod's prices are in `prices.yaml`: `gpt-5-mini` $0.25/M input and
+$2.00/M output, `gpt-5-nano` $0.05/M and $0.40/M, with cached input at a
+tenth of the input price. They're cited to Sumopod's pricing table and
+dated. Repriced, the smoke run cost $0.0184 for 6 trials. A full Pagila run
+(200 trials) is estimated at $0.61 on `gpt-5-mini`, from measured tokens.
+Each run now records the exact price it was costed at.
+
+Adding the prices exposed a real bug. YAML reads `checked: 2026-10-23` as a
+date, JSON can't serialise a date, and `write_run` had already replaced
+`trials.jsonl` before failing on the meta. The run was left with new trials
+and an old meta, and its hash check would have refused it. Saving now
+serialises everything first and then swaps each file in with an atomic
+rename, so a failure leaves the run exactly as it was. A test checks this,
+and fails against the old order. The damaged run was restored from git
+and rebuilt from its Inspect log.

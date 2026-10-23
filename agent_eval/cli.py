@@ -149,9 +149,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             "model_cost_config": {
                 args.model: ModelCost(
                     input=float(price["input"]), output=float(price["output"]),
+                    # Cache writes cost the full input price; reads use the
+                    # cached price when the table has one.
                     input_cache_write=float(price["input"]),
-                    # No discount assumed for cached input: conservative.
-                    input_cache_read=float(price["input"]),
+                    input_cache_read=float(price.get("cache_read", price["input"])),
                 )
             },
         }
@@ -175,7 +176,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         log, trials, run_id=run_id, suite=suite, task_hashes=task_hashes, agent=agent,
         preflight_info=info, harness_git=_harness_git(),
         system_prompt_sha256=sha256_hex(agent["system_prompt"]),
-        suite_sha256=suite_hash(suite), budget_plan=budget,
+        suite_sha256=suite_hash(suite), budget_plan=budget, price=price,
     )
     try:
         assert_no_secrets([ordered_json(meta)] + [ordered_json(t) for t in trials], secrets)

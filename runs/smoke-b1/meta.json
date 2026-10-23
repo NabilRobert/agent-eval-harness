@@ -83,6 +83,12 @@
       "at": "2026-10-23T09:59:43+00:00",
       "from_export_version": 2,
       "to_export_version": 3
+    },
+    {
+      "at": "2026-10-23T10:04:55+00:00",
+      "from_export_version": 3,
+      "to_export_version": 3,
+      "price_checked": "2026-10-23"
     }
   ],
   "run_id": "smoke-b1",
@@ -115,10 +121,17 @@
     "input_tokens": 22108,
     "output_tokens": 6457,
     "cost_usd": {
-      "usd": null,
-      "complete": false
+      "usd": 0.018441,
+      "complete": true
     }
   },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
   "schema_version": 1,
-  "trials_sha256": "be73c300fc58ad3c9fbbdf8a7dc71b25f211606f265a22945af4500867f8c9a3"
+  "trials_sha256": "19561f432dd98c2750896c870705647033129a45ae8d7101d293d7eb7b28a8bd"
 }

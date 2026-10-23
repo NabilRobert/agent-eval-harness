@@ -199,6 +199,11 @@ def render(run: Run) -> str:
     add(f"- Harness: `{prov.get('harness_git')}`, Inspect AI {prov.get('inspect_ai_version')}, "
         f"export v{meta.get('export_version', 1)}")
     add(f"- Agent settings: {meta['agent'].get('model_args')}, limits {meta['agent'].get('limits')}")
+    price: dict[str, Any] | None = meta.get("price")
+    if price:
+        add(f"- Priced at ${price['input']}/M input, ${price['output']}/M output "
+            f"({price['source']}, checked {price['checked']}); every input token at the full "
+            "input price, so cost errs high if any input was cached")
     budget: dict[str, Any] = meta.get("budget") or {}
     if budget:
         if budget.get("priced"):
