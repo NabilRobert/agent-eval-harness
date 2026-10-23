@@ -22,7 +22,7 @@ jobs:
         run: uv run --frozen ruff check .
 
       - name: Type check (pyright)
-        run: uv run --frozen pyright agent_eval/ tests/
+        run: uv run --frozen pyright agent_eval/ tests/ scripts/
 
       - name: Test (pytest)
         run: uv run --frozen pytest -v

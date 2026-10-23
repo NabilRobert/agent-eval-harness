@@ -16,7 +16,7 @@ GOOD = [{"count": 1000}]
 def test_a_run_compared_with_itself_is_no_change(run_factory: RunFactory) -> None:
     run = run_factory([make_trial(1, GOOD)])
     result = compare_runs(run, run)
-    assert (result.exit_code, result.verdict) == (EXIT_OK, "no change")
+    assert (result.exit_code, result.verdict) == (EXIT_OK, "no regression")
 
 
 def test_hand_edited_trials_file_is_refused(run_factory: RunFactory) -> None:
@@ -82,13 +82,6 @@ def test_stored_grade_that_current_graders_disagree_with_is_reported(
     result = compare_runs(run, run)
     assert result.regrade_mismatches
     assert result.per_task == {"easy-01": (0.0, 0.0)}
-
-
-def test_changed_pass_rate_is_undecided_until_the_gate_exists(run_factory: RunFactory) -> None:
-    result = compare_runs(run_factory([make_trial(1, GOOD)]),
-                          run_factory([make_trial(1, [{"count": 1}])]))
-    assert result.exit_code == EXIT_UNDECIDED
-    assert result.per_task == {"easy-01": (1.0, 0.0)}
 
 
 def test_error_trials_are_left_out_of_pass_rates(run_factory: RunFactory) -> None:

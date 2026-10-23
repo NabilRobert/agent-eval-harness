@@ -123,3 +123,34 @@ serialises everything first and then swaps each file in with an atomic
 rename, so a failure leaves the run exactly as it was. A test checks this,
 and fails against the old order. The damaged run was restored from git
 and rebuilt from its Inspect log.
+
+## 2026-10-23 — Slice D, offline: the gate
+
+`compare` now decides. It uses a paired bootstrap of the mean per-task
+change in strict pass rate, plus the "every attempt to none" task rule,
+with exit 0, 1 or 2. Resampling n pass/fail trials with replacement is
+statistically the same as a Binomial(n, observed rate) draw, so the
+bootstrap draws binomials. That keeps 10,000 resamples fast in plain
+Python, with a fixed seed so the same runs always get the same verdict. A
+drop of 5 points or more whose interval still crosses 0 is "inconclusive"
+(exit 0), with the dropped tasks named. Cost and latency increases are
+warnings, not gates.
+
+Two checks on the gate:
+- **Synthetic tests.** These cover no change, a broad drop, one collapsed
+  task, 5/5 → 1/5 (deliberately not flagged), an inconclusive drop,
+  improvement and determinism. Each was mutation-checked against the old
+  ≤1/5 rule, gating on the point estimate, and an unseeded generator.
+- **The Spike 5 simulation, rerun through the shipped code.** False
+  alarms came out at 3.0% and 1.0%, matching the throwaway version. The
+  first rerun's "collapse" case was hollow: in the mixed suite it
+  collapsed a task that almost never starts at 5/5, so it tested nothing
+  (0/0). It now collapses the most reliable task, and catches 200/200.
+
+Before any paid proof run, a one-trial check showed that removing
+`describe_table` alone barely degrades the agent: it reads column names
+with `sample_rows` instead. So the degraded agent for the proof loses
+both. That choice, and the rule that whatever the gate says is published,
+was written into the slice plan before running anything. Full runs now
+refuse to start from a checkout with uncommitted changes, so every
+published run traces back to one commit.

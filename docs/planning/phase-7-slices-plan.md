@@ -58,3 +58,24 @@ equally valid evidence.
 **Scale-back-up plan (post-v1, tracked, not forgotten):** the
 `gpt-5-mini` → `gpt-5.4-mini` upgrade comparison; one non-OpenAI model
 after a tool-calling check; the optional LLM-judge grader; an HTML report.
+
+## Slice D: the live proofs, fixed before running (2026-10-23)
+
+Written down before any of these runs, so no choice below can be made
+after seeing results:
+
+- **A/A pair:** `gpt-5-mini`, the frozen Pagila suite (40 tasks × 5
+  attempts), twice, same settings. Expected: **not** flagged. These two
+  runs are also the published `gpt-5-mini` results.
+- **Degraded agent:** the same, with `--exclude-tools
+  describe_table,sample_rows`, so the agent sees table names but has to
+  guess every column. Expected: flagged. Chosen over removing only
+  `describe_table`, because a one-trial check showed the agent simply uses
+  `sample_rows` to see the columns instead. Chosen over removing
+  `run_query`, because then every task fails and the proof would be
+  trivial.
+- **Whatever the gate says is published.** If the degraded agent isn't
+  flagged, that's a finding about the gate's power, reported as such. No
+  second degradation is tried until the first result is written up.
+- **Estimated spend:** about $0.61 per run on measured tokens, about $1.85
+  for all three. Each run is capped at $5 by construction.

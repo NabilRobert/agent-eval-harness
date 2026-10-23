@@ -249,8 +249,15 @@ parallel a little at a time.
   fences, provenance). `agent-eval report [--check]`; run and reexport
   write it; CI checks every committed report. Export v3 (task tags in
   meta). 65 tests, mutation-checked.
-- **Next:** slice D (the gate: bootstrap + broken-task, exit codes, live
-  A/A + degraded proofs = 3 full Pagila runs ≈ 200 trials each). Blocked
-  on Sumopod prices for gpt-5-mini (budget guard refuses unpriced runs >10
-  trials). The statistics and synthetic tests can be built first.
+- **Prices in (Arthur, 2026-10-23):** gpt-5-mini $0.25/$2.00, gpt-5-nano
+  $0.05/$0.40 per M (cache read 1/10). Full Pagila run ≈ $0.61 on mini.
+  Fixed a non-atomic `write_run` the YAML date exposed.
+- **Slice D offline done:** gate in `compare` (paired bootstrap via
+  binomial draws, 10k resamples, seed 20261023; broken = all→0 with ≥5
+  trials each side; inconclusive at ≤ −5 pts; cost/latency warnings),
+  `scripts/simulate_gate.py` (A/A false alarms 3.0% / 1.0%),
+  `--exclude-tools`, clean-tree guard for full runs. 74 tests.
+- **Next: the live proofs, pre-registered in Phase 7:** A/A pair (mini,
+  frozen suite, ×2) + degraded (`--exclude-tools
+  describe_table,sample_rows`). ≈ $1.85 total. **Needs Arthur's OK.**
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

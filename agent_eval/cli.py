@@ -117,6 +117,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.plan_only:
         return 0
 
+    from agent_eval.budget import SMOKE_MAX_TRIALS
+
+    harness_git = _harness_git()
+    if n_trials > SMOKE_MAX_TRIALS and (harness_git.endswith("-dirty") or harness_git == "unknown"):
+        # A full run is evidence: it must trace back to one exact commit.
+        print(f"error: harness checkout is {harness_git}; commit first (full runs need a clean "
+              "tree, smoke runs don't)", file=sys.stderr)
+        return EXIT_UNDECIDED
+
     agent: dict[str, Any] = {
         "model": args.model,
         # MCP-backbone's optional api_key parameter fails OpenAI strict
@@ -136,6 +145,17 @@ def cmd_run(args: argparse.Namespace) -> int:
     except PreflightError as exc:
         print(f"error: preflight failed: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
+    if args.exclude_tools:
+        # A deliberately degraded agent (the regression proof): the same
+        # model and prompt with tools taken away. Recorded in the meta, so
+        # `compare` names it as the difference between the runs.
+        excluded = set(args.exclude_tools.split(","))
+        unknown = excluded - set(info["tool_names"])
+        if unknown or excluded & required_tools(suite):
+            print(f"error: can't exclude {sorted(excluded)}: unknown {sorted(unknown)}, or "
+                  f"needed by the graders {sorted(excluded & required_tools(suite))}", file=sys.stderr)
+            return EXIT_UNDECIDED
+        agent["tool_allowlist"] = [t for t in info["tool_names"] if t not in excluded]
 
     from inspect_ai import eval as inspect_eval  # pyright: ignore[reportUnknownVariableType]
     from inspect_ai.model import ModelCost
@@ -174,7 +194,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     trials = [trial_from_sample(s, task_hashes, price) for s in (log.samples or [])]
     meta = build_meta(
         log, trials, run_id=run_id, suite=suite, task_hashes=task_hashes, agent=agent,
-        preflight_info=info, harness_git=_harness_git(),
+        preflight_info=info, harness_git=harness_git,
         system_prompt_sha256=sha256_hex(agent["system_prompt"]),
         suite_sha256=suite_hash(suite), budget_plan=budget, price=price,
     )
@@ -275,7 +295,15 @@ def cmd_report(args: argparse.Namespace) -> int:
 
 def cmd_compare(args: argparse.Namespace) -> int:
     result = compare_runs(Path(args.baseline), Path(args.candidate))
-    print(f"verdict: {result.verdict}")
+    print(f"verdict: {result.verdict} (exit {result.exit_code})")
+    if result.interval is not None and result.point is not None:
+        low, high = result.interval
+        print(f"  suite strict pass rate change: {result.point:+.1%} "
+              f"(95% interval {low:+.1%} to {high:+.1%})")
+    for line in result.warnings:
+        print(f"  warning: {line}")
+    if result.missing:
+        print(f"  only in one run (not compared): {result.missing}")
     for line in result.reasons:
         print(f"  reason: {line}")
     for line in result.differences:
@@ -283,7 +311,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
     for line in result.regrade_mismatches:
         print(f"  regraded differently: {line}")
     for task, (b, c) in result.per_task.items():
-        print(f"  {task}: {b:.0%} -> {c:.0%}")
+        if b != c:
+            print(f"  {task}: {b:.0%} -> {c:.0%}")
     return result.exit_code
 
 
@@ -300,6 +329,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--budget", type=float, default=5.0, help="US dollars for the whole run")
     run.add_argument("--prices", default=str(REPO_ROOT / "prices.yaml"))
     run.add_argument("--plan-only", action="store_true", help="print the plan and stop")
+    run.add_argument("--exclude-tools", help="comma-separated tools to withhold (a degraded agent)")
     run.add_argument("--out", default="runs")
     run.add_argument("--run-id")
     run.add_argument("--env-file", default=str(REPO_ROOT / ".env"))

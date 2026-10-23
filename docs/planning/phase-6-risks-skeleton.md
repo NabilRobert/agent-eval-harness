@@ -274,3 +274,20 @@ merge and deploy. **Limit that remains:** Sumopod reports the model as
 `gpt-5-mini`, an alias, so a silent provider-side model update can't be
 seen in the name. Only an A/A pair run over time would show it, and the
 methodology says so.
+
+### Spike 5, rerun on the shipped gate (slice D)
+
+The same simulation, now run through `agent_eval.compare` itself
+(`scripts/simulate_gate.py`; 200 pairs per case, 2,000 resamples):
+
+| | Mostly-easy | Mixed |
+|---|---|---|
+| A/A false alarms | 3.0% | 1.0% |
+| Uniform 10-point drop flagged | 54.5% | 25.0% |
+| Uniform 15-point drop flagged | 86.5% | 58.0% |
+| Uniform 20-point drop flagged | 98.0% | 93.0% |
+| The most reliable task collapsing to 0 | 174/174 | 200/200 |
+
+This matches the throwaway version: the shipped code behaves as the
+design said. The pass rates are still assumed; the rerun on measured rates
+follows the A/A pair.
