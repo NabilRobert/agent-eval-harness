@@ -141,3 +141,15 @@ def test_a_meta_that_cant_be_written_leaves_the_run_untouched(tmp_path: Path) ->
                   [make_trial(1, [{"count": 1}])])
     assert {p.name: p.read_text() for p in run.iterdir()} == before
     load_run(run)  # still consistent
+
+
+def test_a_trial_that_hit_a_limit_regrades_as_a_fail_even_with_correct_rows(
+    run_factory: RunFactory,
+) -> None:
+    from agent_eval.compare import regrade
+
+    trial = make_trial(1, GOOD)
+    trial.update({"stop_reason": "message", "outcome": "fail", "strict": False, "lenient": False})
+    assert regrade(trial) == (False, False)
+    run = run_factory([trial])
+    assert compare_runs(run, run).regrade_mismatches == []

@@ -79,3 +79,57 @@ after seeing results:
   second degradation is tried until the first result is written up.
 - **Estimated spend:** about $0.61 per run on measured tokens, about $1.85
   for all three. Each run is capped at $5 by construction.
+
+### Results (2026-10-23)
+
+All three runs: frozen suite, data fingerprint `fa70dca8…`, harness
+`02309a218cce` (clean), 0 errors, $1.71 in total. The server build
+wasn't reported yet, because MCP-backbone's `feat/server-version` wasn't
+deployed.
+
+| Run | Strict | Lenient | pass^5 | Cost |
+|---|---|---|---|---|
+| `proof-mini-a` | 191/200 (95.5%) | 194/200 | 35/40 | $0.534 |
+| `proof-mini-b` | 192/200 (96.0%) | 196/200 | 34/40 | $0.539 |
+| `proof-mini-degraded` | 185/200 (92.5%) | 187/200 | 33/40 | $0.637 |
+
+- **A/A (a vs b): not flagged, as expected.** The change was +0.5 points
+  (95% interval −3.0 to +4.5). Five tasks moved by one or two attempts in
+  each direction, which is ordinary run-to-run noise.
+- **Degraded vs a: not flagged.** −3.0 points (interval −9.5 to +2.5); vs
+  b, −3.5 (interval −9.0 to +1.5). **The degradation proof failed as
+  pre-registered**, and that's reported, not re-run.
+
+**Why.** Without `describe_table` and `sample_rows`, `gpt-5-mini` still
+wrote correct SQL for 92.5% of trials. Pagila is a widely published
+sample database, so the model very likely knows its schema from training,
+and the schema tools turned out to be close to optional on this suite.
+The degraded agent compensated with reasoning instead: input tokens fell
+by a third and output tokens rose by 46%, so it cost **19% more** per run.
+That's below the 25% cost-warning threshold, so it wasn't flagged either.
+
+**The gate behaved as its measured power says.** Rerunning the
+simulation on the per-task rates measured in the A/A pair (33 of 40 tasks
+at 100%) gives:
+
+| Case | Flagged |
+|---|---|
+| A/A false alarms | 0.5% |
+| Uniform drop of 3 points | 14% |
+| Uniform drop of 5 points | 40.5% |
+| Uniform drop of 10 points | 88.5% |
+| Uniform drop of 15 points | 99% |
+| A reliable task collapsing to 0 | 200/200 |
+
+A 3-point drop is below what 40 tasks × 5 attempts can resolve, so the
+gate was right not to call it a regression. The proof needs a degradation
+that actually degrades.
+
+**Also found:** `compare`'s regrade ignored limits. A degraded trial (x04
+attempt 2) ran the right query and then hit the 20-message cap. The export
+failed it (a cap hit is the agent's fault), but the regrade passed it.
+Fixed: the regrade applies the same rule. With the fix, the verdicts above
+are unchanged.
+
+**Next (needs Arthur):** one more pre-registered degradation, chosen
+before running.

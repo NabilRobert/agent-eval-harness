@@ -154,3 +154,30 @@ both. That choice, and the rule that whatever the gate says is published,
 was written into the slice plan before running anything. Full runs now
 refuse to start from a checkout with uncommitted changes, so every
 published run traces back to one commit.
+
+## 2026-10-23 — The live proofs: one passed, one failed, both published
+
+Three full runs of `gpt-5-mini` on the frozen 40-task suite, $1.71 in
+total.
+
+- **The A/A pair isn't flagged:** 191/200 vs 192/200, +0.5 points
+  (interval −3.0 to +4.5). That's the false-alarm proof, on real runs.
+- **The degraded agent isn't flagged either.** Without `describe_table`
+  and `sample_rows` it scored 185/200, only 3 points lower. The proof was
+  pre-registered with "whatever the gate says is published", so this is
+  the published result. The most likely reason: Pagila is a famous sample
+  database, so the model knows its schema without looking. The schema
+  tools were close to optional, and the agent compensated by reasoning
+  more (output tokens +46%, cost +19%). Rerunning the gate simulation on
+  the measured per-task rates shows a 3-point drop is caught only 14% of
+  the time with 40 tasks × 5 attempts, while 10 points is caught 88.5% and
+  15 points 99%. So the gate did what its power says. What failed was the
+  choice of degradation, which was mine, and it's recorded as such.
+
+Two lessons. First, "remove the schema tools" assumed the agent needs
+them, and on a public dataset it doesn't. That's also a contamination
+finding about the suite itself: it measures SQL writing more than schema
+discovery. Second, the regrade check caught a real inconsistency: a trial
+that ran the right query and then hit the message cap was failed by the
+export but passed by the regrade. Both now apply the same rule (a cap hit
+is a fail).

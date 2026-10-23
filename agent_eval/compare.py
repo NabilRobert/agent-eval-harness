@@ -68,7 +68,14 @@ class Comparison:
 def regrade(trial: dict[str, Any]) -> tuple[bool, bool]:
     """Recomputes (strict, lenient) from the stored grader inputs with the
     current grader code, so a grader fix can't make an old baseline mean
-    something different. Error trials stay errors."""
+    something different. Error trials stay errors.
+
+    A trial that stopped on a limit (turns, time, tokens, cost) fails
+    whatever its rows say, the same rule the export applies (Phase 3). The
+    first live proof run caught regrading without it: a trial that ran the
+    right query and then hit the message cap was regraded as a pass."""
+    if trial.get("stop_reason") not in (None, "completed"):
+        return False, False
     results = [
         grade_result_match(g["input"]["graded_rows"], g["expected"])
         for g in trial["graders"]

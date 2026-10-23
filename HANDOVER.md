@@ -257,7 +257,14 @@ parallel a little at a time.
   trials each side; inconclusive at ≤ −5 pts; cost/latency warnings),
   `scripts/simulate_gate.py` (A/A false alarms 3.0% / 1.0%),
   `--exclude-tools`, clean-tree guard for full runs. 74 tests.
-- **Next: the live proofs, pre-registered in Phase 7:** A/A pair (mini,
-  frozen suite, ×2) + degraded (`--exclude-tools
-  describe_table,sample_rows`). ≈ $1.85 total. **Needs Arthur's OK.**
+- **Live proofs run (branch `feat/slice-d-proofs`, $1.71):** a 191/200, b
+  192/200, degraded 185/200. A/A not flagged ✓. Degraded NOT flagged
+  (−3.0 pts, CI −9.5..+2.5): the proof failed as pre-registered and is
+  published as such. Likely cause: the model knows Pagila's schema from
+  training. Measured-rate simulation: A/A 0.5%, 3-pt drop caught 14%,
+  10-pt 88.5%, 15-pt 99%. Fixed: the regrade now fails limit-hit trials
+  like the export does. Results in Phase 7 + JOURNEY.
+- **Next (needs Arthur):** a second pre-registered degradation.
+  Recommended: `gpt-5-nano` as the candidate (a realistic "cheaper model"
+  regression; it's the planned nano Pagila run anyway, ≈ $0.15–0.47).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

@@ -1,0 +1,261 @@
+{
+  "run_id": "proof-mini-degraded",
+  "created_at": "2026-10-23T15:53:11+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "pagila",
+    "sha256": "a79b59cb863176e06d1d94197ccb4c43c3d987d57e428d0d84a2e636db2ea017",
+    "frozen": true,
+    "task_hashes": {
+      "e01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b",
+      "e02": "50a805a6e5a22557c78de6d31df316fc665d1b0fba85fd3868eb1b5ff59b073c",
+      "e03": "5d03301a8f2dc074c910c8474c26e4819ed92895a274fbe8fb0c80212d8f5c4d",
+      "e04": "c2b7cefa9189f83632260912e2974cbc1208c1ec9e3ef9b041b57f83cb78fcc2",
+      "e05": "3288c17db2a4986d666a3bea4b149f7c90f4debc38397f92932fed5e806c3905",
+      "e06": "30c977a263cb24b40711de3ef2b4638d01047bc0c1171f224cfff412cd2a897b",
+      "e07": "f98db55a88c8bbeb5ad6ffe3a22079a3e18d203f65c3a1c9a6fa5a4e50df9cad",
+      "e08": "0dfc9bd3ffa7210d704370b614bf530dd554d16dcbf3ed71d269a27bb846d1b8",
+      "e09": "0de2e2792786182fa079f852c1b9c8fc1ef6f8a75265e9fb9e6598fc5aa9678e",
+      "e10": "926f56956da25e31fe8ec72de44fbf181986d7114061ccb2fe6acbdb9f7143cc",
+      "m01": "150105503c97f11e3f7d43f82c7b8411450ec1fc95a76496b7a97c7a9b96cff4",
+      "m02": "a38a91c7e047da0abaa836a01387c7eb07ba85135f4f5cd12bafc04ce19094fd",
+      "m03": "4660f9fc92a255a97ad235f880b28972acad27884df1e0176987dce7d143bef7",
+      "m04": "3dac82deb7b0cc02f14620c5d8bdb5e098b9ba47f008f036ca4a5c0fc0667243",
+      "m05": "d6ec5158aa1cd2e9299c70b6ed0c16ace0caafb4e660862ea558bf4492ac8818",
+      "m06": "4b04022c5472120d7ed096cd7b67e8390d6e4d930750272ad016be68b24c39b6",
+      "m07": "1d08e1591213356c6d1d3472e72a74345e1eace61b8b41f323c370a89a528486",
+      "m08": "496c716c198435398e271780821af53cf4a7d50a2d5d7f391e2ea8cd58056cb3",
+      "m09": "b3bd27f3fe1952b728429922fd9e6daa1806d63701e699f93607ccc596b9d20c",
+      "m10": "0048f79920c827829a0c05a3d0c2b6d3d4c77aa84e842db020bd254ce7d28524",
+      "h01": "cc20b1d897c1947c28d685fbf4b20dbd9cd2be4359861f6e7291c285356bbef8",
+      "h02": "b24cd6646557a013d0773ab67ad69aebf2c94029aa6b1e8860d051a7c1163d8c",
+      "h03": "b22e6e00ba9f73d8c0bb6c2c30261979a7f29027c6b63b504ac825b378cedb38",
+      "h04": "b2dd10e81d7acd45898026f1b9551f8d37347887d9b75c63821fd841db52f060",
+      "h05": "e3a15f4bcda0a4f0bdb8a3c334c497296bd363ed2c4b29b6db24a2d147257caa",
+      "h06": "fc5013a3e13b8333af80f18b1f779b0bb829c65c51083746cdb7381c058e200e",
+      "h07": "bbd4c5cb56409a86d66de9e169632d8c68ca8e8a0fd4b1f481b80646f40245c1",
+      "h08": "48c708801a764ca24a63afaa670effe55af9087da327cf030b345a5ee97ff12c",
+      "h09": "b2b7cf5ffa01a4788bc48f6d878996c43c47c54819c2284daf4d30a2c65d6953",
+      "h10": "d7a292cbde70143a47a38fe43907efb6f551eeba8dfd7fb813e18e93718d814f",
+      "x01": "50eb1b4ef152584024d59202a1191eabe5719fad542124486a08b2e162c92c34",
+      "x02": "43e6704a7fd6bfef86d60e4968ff80066f885fd2aedf5969864769baca5a7371",
+      "x03": "43d3897c3720d8d1c7b602b205c6077bd4d57456293aefd2e81de8ecec471e25",
+      "x04": "8113c5071d770012a175e2dcbfecb21bd38667b952a3996c6be458fb02fe0824",
+      "x05": "cb3f0ca5c81b701cb799a8becae787367ac17fd209b1341a1338e6c82bf81ef6",
+      "x06": "bba70d09eea2dc65d024a12b8b05f1b74f7e391126f7e9c9272b85b51332524a",
+      "x07": "048cc6ef32d901f4e51af72b1cb28a155a1a2d7830a1b1999482afd1f15c4a59",
+      "x08": "089a5ee80e75822c80f9657cbc9b0ff3899899dcf4f4e0227ff1022784e4c6b1",
+      "x09": "a9d6d1e3e8ae27beb8d0f8a481a8507a15b00cc79d3cc369f40f057731bbe3b6",
+      "x10": "48b4a17a5d981e90743ed19933ec0272371412a8e7d202ccaa415fea24091eeb"
+    },
+    "task_tags": {
+      "e01": [
+        "easy"
+      ],
+      "e02": [
+        "easy"
+      ],
+      "e03": [
+        "easy"
+      ],
+      "e04": [
+        "easy"
+      ],
+      "e05": [
+        "easy"
+      ],
+      "e06": [
+        "easy"
+      ],
+      "e07": [
+        "easy"
+      ],
+      "e08": [
+        "easy"
+      ],
+      "e09": [
+        "easy"
+      ],
+      "e10": [
+        "easy"
+      ],
+      "m01": [
+        "medium"
+      ],
+      "m02": [
+        "medium"
+      ],
+      "m03": [
+        "medium"
+      ],
+      "m04": [
+        "medium"
+      ],
+      "m05": [
+        "medium"
+      ],
+      "m06": [
+        "medium"
+      ],
+      "m07": [
+        "medium"
+      ],
+      "m08": [
+        "medium"
+      ],
+      "m09": [
+        "medium"
+      ],
+      "m10": [
+        "medium"
+      ],
+      "h01": [
+        "hard"
+      ],
+      "h02": [
+        "hard"
+      ],
+      "h03": [
+        "hard"
+      ],
+      "h04": [
+        "hard"
+      ],
+      "h05": [
+        "hard"
+      ],
+      "h06": [
+        "hard"
+      ],
+      "h07": [
+        "hard"
+      ],
+      "h08": [
+        "hard"
+      ],
+      "h09": [
+        "hard"
+      ],
+      "h10": [
+        "hard"
+      ],
+      "x01": [
+        "expert"
+      ],
+      "x02": [
+        "expert"
+      ],
+      "x03": [
+        "expert"
+      ],
+      "x04": [
+        "expert"
+      ],
+      "x05": [
+        "expert"
+      ],
+      "x06": [
+        "expert"
+      ],
+      "x07": [
+        "expert"
+      ],
+      "x08": [
+        "expert"
+      ],
+      "x09": [
+        "expert"
+      ],
+      "x10": [
+        "expert"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": 0.5377,
+    "per_trial_cap_usd": 0.025,
+    "token_basis": "measured",
+    "priced": true
+  },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
+  "agent": {
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "tool_allowlist": [
+      "list_tables",
+      "run_query"
+    ],
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "epochs": 5
+  },
+  "provenance": {
+    "server_name": "database-mcp",
+    "server_version": null,
+    "healthz_version": null,
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ],
+    "tool_list_sha256": "ba48f1adcf4cee9b0fb766337c164f959d34e33dcf03d856ffd514e3954dcaa3",
+    "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
+    "data_fingerprint_parts": [
+      {
+        "customers": 999,
+        "films": 1000,
+        "rentals": 51805,
+        "payments": 51061,
+        "max_rental_id": 87559,
+        "max_payment_id": 102094
+      },
+      {
+        "customers_md5": "aa111d185f802a08f8c5b460cc529acc"
+      },
+      {
+        "films_md5": "94a45252a98d4da71961c1eb4e274ccc"
+      },
+      {
+        "rentals_md5": "c7365fb8ef794a5cf52b4f55ba2ad88d"
+      },
+      {
+        "payments_md5": "a4ac45be39ec18114f9ab7befd508b74"
+      }
+    ],
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "harness_git": "02309a218cce",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 3,
+  "totals": {
+    "trials": 200,
+    "pass_strict": 185,
+    "pass_lenient": 187,
+    "errors": 0,
+    "input_tokens": 469072,
+    "output_tokens": 259690,
+    "cost_usd": {
+      "usd": 0.636648,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "5b52c192b54d88b40277bbf509eec5db7458867d2fe17bacab7bdcfbe1f1881d"
+}
