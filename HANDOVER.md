@@ -133,4 +133,5 @@ parallel a little at a time.
   proven by degraded-agent and A/A tests.
 - **Phase 3 drafted** (domain model: Suite/Task/Target/AgentConfig/Run/Trial/
   Grader/Comparison; no Baseline entity; pure grading/compare/report modules).
-- **Next:** Arthur reviews Phases 2–3, then Phase 4 (flows and failures).
+- **Phase 4 drafted** (run/compare flows, failure table, trust boundaries).
+- **Next:** Arthur reviews Phases 2–4, then Phase 5 (ADRs).
