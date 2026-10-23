@@ -165,6 +165,12 @@ parallel a little at a time.
   keys), calling https://mcp.my.id/mcp/ like any client. Runs go to a
   volume; Arthur copies the ones to publish to the laptop and commits.
   No scheduler, no GitHub credential on the VPS.
-- **Next:** Arthur reviews Phase 6, then run spikes 1–5 (results logged in
-  the doc), then Phase 7 (slices).
+- **Spikes run (2026-10-23, laptop):** 1, 2, 4 pass; 5 failed as drafted,
+  so the broken-task rule was tightened to 5/5 → 0/5 (A/A false alarms
+  1–4%; 80% detection at ~13–14 pts easy suite, ~18 pts mixed). Spike 3
+  (Docker) deferred to the VPS. Spend: one trial, ~2.25k tokens, <1 cent.
+  Arthur wants AI spend kept conservative: cap every live run, measure
+  before scaling, ask before a second model.
+- **Open:** Sumopod per-model prices for `prices.yaml`; choice of 2nd model.
+- **Next:** Phase 7 (slices), then the walking skeleton.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
