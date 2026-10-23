@@ -1,0 +1,11 @@
+# Secrets: API keys live here, never in the repo.
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
