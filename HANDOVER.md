@@ -131,4 +131,6 @@ parallel a little at a time.
 - **Phase 2 drafted** (requirements; awaiting Arthur's review). Regression rule
   recommended: paired bootstrap CI over tasks + "task broke" (5/5 → ≤1/5),
   proven by degraded-agent and A/A tests.
-- **Next:** Arthur reviews Phase 2, then Phase 3 (domain model).
+- **Phase 3 drafted** (domain model: Suite/Task/Target/AgentConfig/Run/Trial/
+  Grader/Comparison; no Baseline entity; pure grading/compare/report modules).
+- **Next:** Arthur reviews Phases 2–3, then Phase 4 (flows and failures).
