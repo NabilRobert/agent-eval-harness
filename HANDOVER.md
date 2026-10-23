@@ -223,7 +223,22 @@ parallel a little at a time.
 - **Run locally:** `uv sync --frozen --extra dev`; `uv run agent-eval run`
   needs `SUMOPOD_BASE_URL` in the harness `.env` (Arthur to add; for now
   passed in from MCP-backbone's `.env` at the command line, unprinted).
-- **Next:** slice B (YAML suites, ~10 harder Pagila tasks, expected answers
-  via the endpoint, fingerprint, error classification, budget estimate,
-  verify epoch order / cost_limit / caching), smoke suite only.
+- **Slice B done (2026-10-23, not pushed):** `suites/pagila.yaml` = 40 tasks
+  (30 MCP-backbone verbatim + 10 expert x01–x10), expected answers generated
+  via the endpoint (`agent-eval generate-expected`), **frozen** (hash
+  `a79b59cb…` in `agent_eval/suites.py` FROZEN_SUITES; a test fails if the
+  file changes). Data fingerprint `fa70dca8…` taken at every run start.
+  Budget guard: per-trial cap = budget ÷ trials (Inspect `cost_limit` is
+  per sample); unpriced models limited to ≤10 trials (`prices.yaml` empty
+  until Sumopod prices arrive). Verified: epochs attempt-by-attempt, no
+  Sumopod caching, outcome classification (offline mock-model tests,
+  mutation-checked). Smoke run `runs/smoke-b1` (3 tasks × 2, 5/6 strict,
+  6/6 lenient) found two export bugs: unresolved `attachment://` args, and
+  sorted JSON keys reordering row columns (caught by compare's regrade).
+  Fixed; `agent-eval reexport` rebuilt both committed runs from their
+  Inspect logs. 57 tests. JOURNEY.md started.
+- **Spend today:** ~12 small trials + a 3-call caching probe, well under $0.10.
+- **Next:** slice C (report.md), then D (the gate + live proofs, which need
+  3 full Pagila runs: announce estimate, get Arthur's OK; needs Sumopod
+  prices first or they can't run).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

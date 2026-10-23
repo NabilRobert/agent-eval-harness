@@ -139,3 +139,14 @@ in MCP-backbone (see the handover), which affects any strict-mode client.
 **`compare` adds two steps** before the statistics: regrade both runs with
 the current grader code, and list every recorded difference between them
 (model, server build, tool list, data fingerprint, prompt, settings).
+
+**Verified in slice B (2026-10-23):**
+- **Epoch order:** attempt by attempt, as step 5 wanted.
+- **Caching:** none at Sumopod (different response ids and answers,
+  0 cached tokens).
+- **`cost_limit`:** caps each trial, not the run. The budget guard uses
+  that: each trial is capped at budget ÷ trials, so the run's worst case
+  is the budget itself, and the "trials in flight can overshoot" limit in
+  the failure table no longer applies when the model has a price.
+- **Limit vs error:** a cap hit is recorded as a limit (→ `fail`), and a
+  model crash as a sample error (→ `error`). Both are tested offline.

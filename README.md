@@ -5,12 +5,14 @@ it worse. Here an agent setup means a model, a system prompt and an MCP
 server's tools, run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent
 loop.
 
-**Status: walking skeleton (slice A of 8).** One task runs end to end
-against [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s live
-endpoint, and its run records are committed in `runs/skeleton/`. The
-regression gate, the real suites and the published results are still to
-come. See [the slice plan](docs/planning/phase-7-slices-plan.md). None of
-the Phase 1 success metrics are claimed yet.
+**Status: slices A–B of 8 done.** A frozen 40-task Pagila suite runs
+end to end against [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s
+live endpoint, with a data fingerprint, a budget guard and correct
+error-vs-fail classification. Only smoke runs exist so far (`runs/`); the
+report, the regression gate and the published results are still to come.
+See [the slice plan](docs/planning/phase-7-slices-plan.md) and
+[JOURNEY.md](JOURNEY.md). None of the Phase 1 success metrics are claimed
+yet.
 
 ## What's Inspect's and what's ours
 
@@ -31,9 +33,17 @@ Why build on Inspect rather than replace it:
 
 ```bash
 uv sync --frozen --extra dev
-uv run agent-eval run --run-id my-run            # needs .env, see below
-uv run agent-eval compare runs/skeleton runs/my-run
+uv run agent-eval run --tasks e01,h03,x02 --epochs 2 --plan-only   # cost plan only
+uv run agent-eval run --tasks e01,h03,x02 --epochs 2               # a smoke run
+uv run agent-eval compare runs/smoke-b1 runs/<your-run>
+uv run agent-eval reexport runs/<run>           # rebuild records from the saved Inspect log
+uv run agent-eval generate-expected suites/pagila.source.yaml suites/pagila.yaml
 ```
+
+**Budget:** each run is capped at `--budget` dollars (default $5). Each
+trial is capped at budget ÷ trials, so the run can't exceed the budget. A
+model with no price in `prices.yaml` can only run smoke-sized runs (up to
+10 trials).
 
 `compare` exits with **0** for no regression, **1** for a regression, and
 **2** when it can't decide. "Can't decide" covers runs that can't be
