@@ -1,0 +1,36 @@
+{
+  "baseline": "proof-mini-b",
+  "candidate": "proof-nano",
+  "original": {
+    "point": -0.05,
+    "interval": [
+      -0.11000000000000001,
+      0.004999999999999999
+    ]
+  },
+  "tasks": [
+    "h03",
+    "h06",
+    "h08",
+    "m04",
+    "m07",
+    "m09",
+    "x03",
+    "x08"
+  ],
+  "epochs": 10,
+  "runs": {
+    "baseline": "confirm-20261023T173807Z-baseline",
+    "candidate": "confirm-20261023T173807Z-candidate"
+  },
+  "verdict": "regression",
+  "exit_code": 1,
+  "point": -0.1875,
+  "interval": [
+    -0.3375,
+    -0.03749999999999999
+  ],
+  "reasons": [
+    "suite pass rate dropped 18.8% (95% interval -33.8% to -3.7%, entirely below 0)"
+  ]
+}

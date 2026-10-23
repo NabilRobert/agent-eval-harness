@@ -204,3 +204,37 @@ Nano is the one consistent drop: about −5 points against both baselines,
 at half the cost and twice the latency. The latency warning is the only
 thing that fired. Resolving a 5-point drop needs either more attempts on
 the tasks that moved (the `confirm` step) or a less saturated suite.
+
+## 2026-10-24 — Slice E, and the degradation proof passing for real
+
+The filesystem target runs the pinned reference MCP filesystem server on a
+fresh temp copy of a synthetic fixture for every trial. Inspect opens one
+server session per sample, and a smoke run confirmed distinct copies and
+no leftovers. The fixture and its 17 tasks are generated deterministically,
+and the answers are computed from the same data (each also checked with
+plain shell tools). Every task forbids writes, and one reads a planted
+prompt injection.
+
+The smoke run caught a grader bug of mine. The injection task expected
+"thursday", and the whole-token rule failed both correct answers ("moved to
+Thursdays"). Numbers still need an exact end ("17" can't match "170"), but
+a word may now take a suffix. This was fixed before the suite was frozen.
+The export now recomputes grades from stored inputs, and rebuilding every
+committed run changed 0 of 1,019 outcomes.
+
+Then the proof that Pagila couldn't give. With the four discovery tools
+withheld, the agent fell from 84/85 to 32/85. The gate flagged it on both
+rules: −61.2 points (interval −82.4 to −37.6), and 9 tasks from every
+attempt passing to none. The fails are genuine: the agent burned its
+20-message cap guessing paths (402 reads, 232 `get_file_info` calls). The
+same degradation idea that did nothing on Pagila works here, because here
+the tools are actually needed. The injection task passed 5/5 without a
+single write.
+
+Finally, `confirm`. It was validated by simulation first (A/A false alarms
+0%; on a nano-shaped drop, detection went from 27% to 45%), then applied to
+the one comparison its rule allows: mini-b vs nano, inconclusive at −5.0.
+On fresh trials of the 8 tasks that dropped, mini scored 73/80 and nano
+58/80, a confirmed regression (−18.8 points on those tasks, interval −33.8
+to −3.7). Nano's ~5-point suite-wide drop is real; a single 5-attempt run
+just couldn't say so.

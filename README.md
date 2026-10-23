@@ -5,7 +5,7 @@ it worse. Here an agent setup means a model, a system prompt and an MCP
 server's tools, run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent
 loop.
 
-**Status: slices A–C of 8 done.** A frozen 40-task Pagila suite runs
+**Status: slices A–E of 8 done.** A frozen 40-task Pagila suite runs
 end to end against [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s
 live endpoint, with a data fingerprint, a budget guard and correct
 error-vs-fail classification. Each run gets a `report.md` (strict pass

@@ -270,6 +270,18 @@ parallel a little at a time.
   not flagged. **Live "degraded agent is flagged" metric NOT met**; the gate
   never false-alarmed; the suite is saturated and Pagila is likely in the
   training data. Total proof spend ≈ $2.41.
-- **Next (needs Arthur):** see options in the final message of the session
-  (`confirm` step on nano; a harder or unseen suite; more attempts).
+- **Slice E done + proof met live (2026-10-24, branch feat/slice-d-proofs):**
+  filesystem target (pinned server-filesystem 2026.8.31 in tools/fs-server,
+  fresh fixture copy per trial via agent_eval/fs_server.py), synthetic
+  acme-shop fixture + 17-task suite (frozen, built by
+  scripts/build_filesystem_suite.py), graders answer_match/forbidden_tools.
+  `fs-mini-base` 84/85 vs `fs-mini-degraded` (no discovery tools) 32/85 →
+  **regression, exit 1** (−61.2 pts, 9 broken tasks). Injection task 5/5.
+- **confirm step built + validated + used:** `agent-eval confirm` on
+  mini-b vs nano (the inconclusive pair) → fresh 8 tasks × 10: mini 73/80,
+  nano 58/80 → **regression confirmed** (−18.8 pts on those tasks). a vs
+  nano not eligible (−4.5). Record in `confirmations/`.
+- **Spend:** proofs ≈ $2.41 + filesystem $0.54 + confirm $0.37 ≈ $3.3 total.
+- **Next:** slice G (publish: README results + methodology), H (repro
+  mode), F (container on VPS). Push `feat/slice-d-proofs` + merge.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

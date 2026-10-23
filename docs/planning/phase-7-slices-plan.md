@@ -229,3 +229,21 @@ runs on **`proof-mini-b` vs `proof-nano`** (−5.0 points, inconclusive).
 eligible, and that's reported alongside. The tasks that dropped are rerun
 with 10 fresh attempts for both models, and the verdict comes from the
 fresh trials alone. Estimated at about $0.40.
+
+### `confirm` on nano: result (2026-10-24)
+
+Fresh trials only, 8 dropped tasks × 10 attempts per model:
+`gpt-5-mini` 73/80 (91.2%), `gpt-5-nano` 58/80 (72.5%). **Regression,
+exit 1:** −18.8 points on those tasks (95% interval −33.8 to −3.7).
+Cost $0.37. Record: `confirmations/20261023T173807Z.json`.
+
+What this does and doesn't say:
+- The −18.8 points are **on the 8 tasks that dropped**, not suite-wide.
+  Suite-wide, nano is still about 5 points worse than mini (−4.5 and −5.0
+  against the two baselines).
+- It establishes that nano's drop on those tasks is **real, not noise**.
+  That's the question an "inconclusive" verdict leaves open.
+- `proof-mini-a` vs `proof-nano` wasn't eligible ("no regression" at −4.5,
+  just short of the −5-point trigger), and wasn't confirmed. Taken
+  together: nano is a real regression of about 5 points overall, which a
+  single 5-attempt run can't resolve and the confirmation step can.
