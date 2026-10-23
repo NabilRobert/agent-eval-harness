@@ -63,6 +63,10 @@ across two report files, with no cost or latency numbers at all.
   task suites used.
 - No training or fine-tuning.
 - No hosted service or web app; output is files (a report and run data).
+- No public way to run it on Arthur's keys. The code and published results
+  are public; anyone else runs it with their own model key. Runs that
+  spend Arthur's Sumopod credit, or the eval workspace's raised rate
+  limit, are started only by Arthur.
 - LLM-as-judge is not the primary grading method. If added, it's optional,
   and reported separately from deterministic grading.
 - Not a general agent framework: it evaluates agents, it doesn't build them.

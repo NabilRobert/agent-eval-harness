@@ -184,8 +184,9 @@ and the Sumopod key. It calls MCP-backbone through
 Arthur copies the ones worth publishing to the laptop and commits them
 there.
 **Why not the others:** (b) costs up to ~$150/month nightly at the $5
-cap, and needs alerting; (c) breaks the Phase 1 non-goal "no hosted
-service"; (d) works, but leaves the harness undeployed next to a deployed
+cap, and needs alerting; (c) breaks the Phase 1 non-goals "no hosted
+service" and "no public way to run it on Arthur's keys": anyone who
+could trigger a run would be spending his model credit; (d) works, but leaves the harness undeployed next to a deployed
 Project 1.
 **Consequences:** the keys live on the VPS again, so they're kept out of
 MCP-backbone's `.env` and out of any VS Code-tracked folder. Tool-call
