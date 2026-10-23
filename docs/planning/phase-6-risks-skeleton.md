@@ -35,6 +35,14 @@
 
 **Integration**
 
+- **A run starves MCP-backbone** on the shared 2 vCPU box. **Likelihood:
+  low. Impact: high** (the public demo slows or fails). → Container CPU and
+  memory limits (ADR-008), concurrency 4; Spike 3 measures a run's peak
+  CPU and memory.
+- **Keys leak on the VPS again** (the eval key already ended up in a VS
+  Code history file once). **Likelihood: medium. Impact: medium.** → Keys
+  only in the harness's own env file (mode 600), outside any folder VS Code
+  opens; the runbook says how to rotate.
 - **The live endpoint has a bad moment** (VPS restart, Caddy) mid-run.
   **Likelihood: low. Impact: medium.** Covered by design: transport
   failures are `error`, not `fail`, and >10% errors marks the run
@@ -96,9 +104,12 @@ below as each one runs.
    `process_tool_call` hook if the trace has none). Pin the exact working
    versions of pydantic-ai, `mcp` and `fastmcp`. **Fallback:** wrap the MCP
    toolset to record calls ourselves.
-3. **Filesystem server per trial.** (~1–2 hours.) Start
+3. **Container + filesystem server per trial.** (~2 hours.) Build the
+   image (Python + Node, pinned). Inside it, start
    `@modelcontextprotocol/server-filesystem` at a pinned version with
-   `npx`, pointed at a temp copy of a small fixture. **Pass:** warm start
+   `npx` (pre-installed in the image), pointed at a temp copy of a small
+   fixture. Also measure the container's peak CPU and memory during a few
+   trials, to set its limits. **Pass:** warm start
    ≤ 2 s; a read outside the temp dir is refused by the server; killing
    the process group leaves no `node` process behind; works with the Node
    on GitHub's `ubuntu-latest`. **Fallback:** one server per run instead
@@ -123,8 +134,9 @@ below as each one runs.
 
 ## Walking skeleton
 
-The thinnest end-to-end slice, against the **real** endpoint:
-`agent-eval run` with one hard-coded Pagila task and one trial, through
+The thinnest end-to-end slice, against the **real** endpoint, run in the
+harness container **on the VPS** (`docker compose run harness run …`):
+one hard-coded Pagila task and one trial, through
 pydantic-ai and Sumopod to https://mcp.my.id/mcp/ with the eval key. It
 writes `meta.json` + `trials.jsonl` (outcome, tool calls, tokens, cost,
 latency) and grades with the ported `rows_equal`. Then `agent-eval compare`

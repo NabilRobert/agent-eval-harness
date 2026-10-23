@@ -159,6 +159,12 @@ parallel a little at a time.
   history copies; `~/.bash_history` holds another workspace's key (chmod 600,
   remove the line, rotate that key).
 - **Phase 6 drafted** (risks, pre-mortem, 5 spikes, walking skeleton).
+- **Deployment (ADR-008, Arthur 2026-10-23):** the harness runs on demand
+  in its own Docker container on the MCP-backbone VPS (own dir, Compose
+  project, network, CPU/mem limits, env file 0600 with eval + Sumopod
+  keys), calling https://mcp.my.id/mcp/ like any client. Runs go to a
+  volume; Arthur copies the ones to publish to the laptop and commits.
+  No scheduler, no GitHub credential on the VPS.
 - **Next:** Arthur reviews Phase 6, then run spikes 1–5 (results logged in
   the doc), then Phase 7 (slices).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

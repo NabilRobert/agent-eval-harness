@@ -53,9 +53,10 @@ non-zero if the run is a regression.
 | Reproducibility | Each run records the suite version, the hash of each task, model and settings, a hash of the system prompt, a hash of the tool list, the target's address and the harness's git SHA. With these, a later reader can see what changed between two runs. |
 | Grading | Deterministic only in v1. Grading and comparing always give the same answer for the same input files. |
 | Cost | At most $5 per full run (all suites × 5 repeats × 1 model). The command estimates cost before starting and stops once the cap is reached. |
-| Latency | No target for the agent. The harness runs trials concurrently (limit set in config) so a full run takes minutes, not an hour. |
+| Latency | No target for the agent. Harness and server share a machine, so tool-call latency excludes real network time; the methodology says so. The harness runs trials concurrently (limit set in config) so a full run takes minutes, not an hour. |
 | Portability | Output is plain files (JSONL run records plus a Markdown report), readable without the tool. |
-| Security | No secrets in output. The filesystem target only ever gets a temporary copy of the fixtures. |
+| Security | No secrets in output. The filesystem target only ever gets a temporary copy of the fixtures. On the VPS, keys live only in the container's own env file (mode 600), never in MCP-backbone's `.env` or an editor-tracked folder. |
+| Isolation | The container has CPU and memory limits, so a run can't starve MCP-backbone on the shared 2 vCPU box. |
 | Maintainability | Solo, maintained by Arthur. A reviewer should understand it from the README and ADRs in about 15 minutes. |
 
 ## Constraints
@@ -68,6 +69,11 @@ non-zero if the run is a regression.
   locally and in CI. The model client and MCP client libraries are chosen in
   Phase 5. The MCP-backbone benchmark used pydantic-ai + fastmcp, which is
   the starting candidate.
+- **Where it runs:** on demand, in its own Docker container on the
+  MCP-backbone VPS (`docker compose run harness …`), which exits when the
+  run ends. No scheduler and no long-running service. Runs are written to
+  a volume, and the ones worth publishing are copied to the laptop and
+  committed from there; the VPS holds no GitHub credentials (ADR-008).
 - **Model access:** the Sumopod key (OpenAI-compatible). Prices per model
   live in a config file that cites its source.
 - **CI never calls a paid model.** CI runs the tests plus `compare` on

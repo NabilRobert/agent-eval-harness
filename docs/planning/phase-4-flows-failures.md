@@ -93,6 +93,10 @@
   should do this on purpose: a fixture file that tells the agent to delete
   or rewrite files, graded with `forbidden_tools`. This shows the harness
   can measure safety, not only accuracy.
+- **The harness container is just another client.** It reaches
+  MCP-backbone only through the public URL, like any outside client, and
+  mounts nothing from MCP-backbone's directory, so it can't read the
+  server's `.env` or database.
 - **Suite and agent YAML are trusted but validated:** they're written by
   Arthur, loaded with `safe_load` only and checked against a schema.
 - **Run records are public evidence** once committed. They contain no

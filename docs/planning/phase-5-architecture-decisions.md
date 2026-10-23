@@ -17,6 +17,9 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
   about 20 lines, so pulling in numpy/scipy isn't worth it.
 - **Tooling:** ruff, pyright (strict), pytest, GitHub Actions, the same as
   MCP-backbone.
+- **Runtime:** one Docker image (Python 3.12 + Node, both pinned) run on
+  demand on the VPS with Docker Compose (ADR-008). Also runs on the laptop
+  for development.
 - **Filesystem target:** `@modelcontextprotocol/server-filesystem` run with
   `npx` at a **pinned exact version**, so a server update can't silently
   shift scores.
@@ -166,3 +169,27 @@ Arthur.
 MCP-backbone's rate-limit message). A tool result matching one is turned
 into an `InfraError`, so a limit hit is never scored as the agent's fault.
 **Revisit:** decided before Phase 7 slice 1 (it gates the first live run).
+
+### ADR-008: Run on demand in a separate container on the VPS
+**Context:** Arthur wants the harness on the same VPS as MCP-backbone, but
+isolated from it.
+**Options:** (a) on-demand container: started for a run, exits after;
+(b) scheduled container (cron, nightly or weekly); (c) an always-on
+service with an API or UI; (d) the laptop only.
+**Decision:** (a). `docker compose run harness <command>` in its own
+directory (not inside `~/MCP-backbone`), its own Compose project and
+network, CPU/memory limits, and an env file (mode 600) for the eval key
+and the Sumopod key. It calls MCP-backbone through
+`https://mcp.my.id/mcp/` like any outside client. Runs go to a volume;
+Arthur copies the ones worth publishing to the laptop and commits them
+there.
+**Why not the others:** (b) costs up to ~$150/month nightly at the $5
+cap, and needs alerting; (c) breaks the Phase 1 non-goal "no hosted
+service"; (d) works, but leaves the harness undeployed next to a deployed
+Project 1.
+**Consequences:** the keys live on the VPS again, so they're kept out of
+MCP-backbone's `.env` and out of any VS Code-tracked folder. Tool-call
+latency excludes real network time, and the methodology says so. CI is
+unaffected: it only compares committed runs.
+**Revisit if:** scheduled regression runs become worth the cost (then
+(b), with a smaller suite).
