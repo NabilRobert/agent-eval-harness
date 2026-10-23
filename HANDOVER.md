@@ -138,7 +138,7 @@ parallel a little at a time.
   rate-limit override in MCP-backbone (live limit confirmed 5/hr by the VPS
   session). Done on MCP-backbone branch `feat/limit-tests`: `4b9e5ea` feat,
   `81c52d1` role-level statement_timeout for pagila_ro, `cd125ef` docs.
-  135 tests pass; migration `d2b7f4a9e6c1` checked up/down/up. Not pushed.
+  135 tests pass; migration `d2b7f4a9e6c1` checked up/down/up. Merged (see below).
 - **MCP-backbone change shipped (2026-10-23):** merged to main via PR #1
   (`4e418e9`), deployed and verified on the VPS (migration `d2b7f4a9e6c1`,
   `eval` workspace 2000/2000, `pagila_ro` statement_timeout=30s). Eval key
