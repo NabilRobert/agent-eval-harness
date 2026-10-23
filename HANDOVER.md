@@ -99,7 +99,7 @@ parallel a little at a time.
   Workspace `sumopod-external` queries Sumopod (kept as an external DB).
   Deploy: `cd ~/MCP-backbone && git pull && .venv/bin/alembic upgrade head && sudo systemctl restart mcp-backbone`
   (back up first with `~/bin/backup_bookkeeping.sh` when migrating). Migration
-  head: `c8f1e3a5d7b9`.
+  head: `d2b7f4a9e6c1`.
 - **Loose ends (Arthur's choice to leave):** a commented-out `WORKSPACE_API_KEY`
   line in the VPS `.env`; optional uptime + healthchecks.io monitoring
   (RUNBOOK). Raw demo footage is in `docs/demo/raw/` (gitignored).
@@ -139,11 +139,17 @@ parallel a little at a time.
   session). Done on MCP-backbone branch `feat/limit-tests`: `4b9e5ea` feat,
   `81c52d1` role-level statement_timeout for pagila_ro, `cd125ef` docs.
   135 tests pass; migration `d2b7f4a9e6c1` checked up/down/up. Not pushed.
-- **Pending (Arthur):** push + merge to main, then VPS: backup, deploy
-  (migrate to `d2b7f4a9e6c1`), `ALTER ROLE pagila_ro SET statement_timeout
-  = '30s'`, create `eval` workspace with `--query-rate-limit 2000
-  --sample-rate-limit 2000` (500 was too low: A/A + degraded + 2nd model
-  runs back to back need 900+/hr); the eval API key goes in the harness
-  `.env`.
+- **MCP-backbone change shipped (2026-10-23):** merged to main via PR #1
+  (`4e418e9`), deployed and verified on the VPS (migration `d2b7f4a9e6c1`,
+  `eval` workspace 2000/2000, `pagila_ro` statement_timeout=30s). Eval key
+  was rotated in the console; it lives only in the harness `.env`
+  (`MCP_BACKBONE_EVAL_KEY`, gitignored, 0600). Live check: 7/7 `run_query`
+  calls succeeded over https://mcp.my.id/mcp/.
+- **Found by the live check:** live `pagila_demo` has 999 customers, standard
+  Pagila 599. Expected answers must be generated against the DB the eval
+  target actually hits (first Phase 6 item).
+- **VPS hygiene (Arthur):** delete the key from the VPS `.env` and VS Code
+  history copies; `~/.bash_history` holds another workspace's key (chmod 600,
+  remove the line, rotate that key).
 - **Next:** Phase 6 (risks and spikes).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
