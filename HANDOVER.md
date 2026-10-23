@@ -123,13 +123,9 @@ parallel a little at a time.
   MCP-backbone over its real endpoint; ≥2 models published with repeated runs.
   Non-goals: no leaderboard, no web app, LLM-as-judge optional only, not an
   agent framework.
-- **Waiting on Arthur (5 open questions in the brief):**
-  1. What it evaluates. Recommended: any "model + MCP server" via an adapter.
-  2. Grading. Recommended: deterministic first (result match, required /
-     forbidden tool calls), optional LLM judge.
-  3. Second target, ideally non-SQL (filesystem/GitHub MCP server, or Beobot).
-  4. Budget per full run on the Sumopod key, and repeats per task.
-  5. Time budget in days.
-  Unanswered ones default to the recommendations.
-- **Next:** settle the questions, finalise Phase 1, `git init`, then Phase 2
-  (requirements and constraints).
+- **Phase 1 final (2026-10-23), repo initialised.** Decisions: adapter-based
+  targets ("model + MCP server" first); deterministic grading first, LLM
+  judge optional; second target = reference filesystem MCP server on a
+  fixture dir; at most $5 per full run, 5 repeats per task; full scope in 3–4
+  days (keep phase docs short, Arthur reviews each before the next).
+- **Next:** Phase 2 (requirements and constraints).
