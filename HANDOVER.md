@@ -141,7 +141,9 @@ parallel a little at a time.
   135 tests pass; migration `d2b7f4a9e6c1` checked up/down/up. Not pushed.
 - **Pending (Arthur):** push + merge to main, then VPS: backup, deploy
   (migrate to `d2b7f4a9e6c1`), `ALTER ROLE pagila_ro SET statement_timeout
-  = '30s'`, create `eval` workspace with `--query-rate-limit 500
-  --sample-rate-limit 500`; the eval API key goes in the harness `.env`.
+  = '30s'`, create `eval` workspace with `--query-rate-limit 2000
+  --sample-rate-limit 2000` (500 was too low: A/A + degraded + 2nd model
+  runs back to back need 900+/hr); the eval API key goes in the harness
+  `.env`.
 - **Next:** Phase 6 (risks and spikes).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

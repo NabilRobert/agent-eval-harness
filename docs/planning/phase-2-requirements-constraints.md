@@ -89,13 +89,19 @@ non-zero if the run is a regression.
   - JSONL run records.
   - A regression gate with the exit codes above.
   - Budget cap, error handling separate from fails, and turn/time caps.
+  - Infra-error patterns per target: a tool result matching one (e.g.
+    MCP-backbone's "rate limit … exceeded") becomes an `error`, never an
+    agent `fail` (ADR-007).
   - Two suites: MCP-backbone (30 existing Pagila questions, with expected
     results stored in the suite, so no DB access is needed) and filesystem
     (about 15–20 new tasks).
   - Proof tests: a degraded agent **is** flagged, and an A/A run (same agent
     twice) is **not**.
   - Published results for 2 models.
-  - README, ADRs, JOURNEY.md, and CI.
+  - README, ADRs, JOURNEY.md, and CI. The README's methodology states
+    that MCP-backbone runs use an `eval` workspace with a raised hourly
+    limit, so agents are measured without the 5/hour cap real demo users
+    have.
 - **Should:** tool-call traces in the report for failed trials, so a reader
   can see *why* a task failed.
 - **Could / deferred past v1:** an optional LLM judge, an HTML report,
