@@ -30,5 +30,9 @@ jobs:
       # The gate CI exists for: comparing committed runs needs no API key
       # and no network. (Slice D replaces this self-comparison with
       # baseline-vs-candidate.)
+      - name: Committed reports match their records
+        run: |
+          for run in runs/*/; do uv run --frozen agent-eval report "$run" --check; done
+
       - name: Compare committed runs
         run: uv run --frozen agent-eval compare runs/smoke-b1 runs/smoke-b1

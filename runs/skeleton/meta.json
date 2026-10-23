@@ -40,7 +40,12 @@
     "task_hashes": {
       "easy-01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b"
     },
-    "sha256": "bd3a3ba8e45d9b05aee7823c2a14b18172742e4b275e0754cfb0e7ef2a80dd0c"
+    "sha256": "bd3a3ba8e45d9b05aee7823c2a14b18172742e4b275e0754cfb0e7ef2a80dd0c",
+    "task_tags": {
+      "easy-01": [
+        "easy"
+      ]
+    }
   },
   "totals": {
     "trials": 1,
@@ -59,9 +64,19 @@
       "at": "2026-10-23T09:49:05+00:00",
       "from_export_version": 1,
       "to_export_version": 2
+    },
+    {
+      "at": "2026-10-23T09:59:28+00:00",
+      "from_export_version": 2,
+      "to_export_version": 2
+    },
+    {
+      "at": "2026-10-23T09:59:44+00:00",
+      "from_export_version": 2,
+      "to_export_version": 3
     }
   ],
-  "export_version": 2,
+  "export_version": 3,
   "schema_version": 1,
   "trials_sha256": "5830f36fa1f75d1bfc2301a912ecab351094113537fdcbed51ea5f6e55733d5c"
 }

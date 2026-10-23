@@ -183,6 +183,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
     write_run(run_dir, meta, trials)
+    _write_report(run_dir)
 
     raw_log = Path(log.location)
     if inspect_log_contains_secret(raw_log, secrets):
@@ -235,7 +236,39 @@ def cmd_reexport(args: argparse.Namespace) -> int:
     at = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
     meta, trials = reexport(run.meta, log_path, price, at)
     write_run(run_dir, meta, trials)
+    _write_report(run_dir)
     print(f"{run_dir.name}: rebuilt {len(trials)} trials with export v{meta['export_version']}")
+    return 0
+
+
+def _write_report(run_dir: Path) -> None:
+    from agent_eval.records import load_run
+    from agent_eval.report import render
+
+    (run_dir / "report.md").write_text(render(load_run(run_dir)), encoding="utf-8")
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    """Renders report.md from the records; with --check, fails (exit 1) if
+    the committed report doesn't match what the records render to."""
+    from agent_eval.records import RecordError, load_run
+    from agent_eval.report import render
+
+    run_dir = Path(args.run_dir)
+    try:
+        text = render(load_run(run_dir))
+    except RecordError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    path = run_dir / "report.md"
+    if args.check:
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            print(f"{path}: out of date with its records (run `agent-eval report {run_dir}`)")
+            return 1
+        print(f"{path}: up to date")
+        return 0
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path}")
     return 0
 
 
@@ -281,6 +314,11 @@ def main(argv: list[str] | None = None) -> int:
     rex.add_argument("run_dir")
     rex.add_argument("--prices", default=str(REPO_ROOT / "prices.yaml"))
     rex.set_defaults(func=cmd_reexport)
+
+    rep = sub.add_parser("report", help="render report.md from a run's records")
+    rep.add_argument("run_dir")
+    rep.add_argument("--check", action="store_true", help="fail if report.md is out of date")
+    rep.set_defaults(func=cmd_report)
 
     cmp = sub.add_parser("compare", help="compare a candidate run with a baseline")
     cmp.add_argument("baseline")

@@ -238,7 +238,19 @@ parallel a little at a time.
   Fixed; `agent-eval reexport` rebuilt both committed runs from their
   Inspect logs. 57 tests. JOURNEY.md started.
 - **Spend today:** ~12 small trials + a 3-call caching probe, well under $0.10.
-- **Next:** slice C (report.md), then D (the gate + live proofs, which need
-  3 full Pagila runs: announce estimate, get Arthur's OK; needs Sumopod
-  prices first or they can't run).
+- **Harness on GitHub** (github.com/NabilRobert/agent-eval-harness), CI green
+  on `e9e2589`. Arthur says the code is on the VPS too. MCP-backbone's
+  `feat/server-version` is NOT pushed/deployed yet (live /healthz has no
+  version).
+- **Slice C done (2026-10-23, not pushed):** `agent_eval/report.py` renders
+  report.md deterministically from records (strict headline, lenient,
+  pass^k/pass@k, errors beside rates, cost unknown/lower-bound, latency,
+  per-difficulty and per-task tables, failed-trial details with safe
+  fences, provenance). `agent-eval report [--check]`; run and reexport
+  write it; CI checks every committed report. Export v3 (task tags in
+  meta). 65 tests, mutation-checked.
+- **Next:** slice D (the gate: bootstrap + broken-task, exit codes, live
+  A/A + degraded proofs = 3 full Pagila runs ≈ 200 trials each). Blocked
+  on Sumopod prices for gpt-5-mini (budget guard refuses unpriced runs >10
+  trials). The statistics and synthetic tests can be built first.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

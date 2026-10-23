@@ -5,11 +5,13 @@ it worse. Here an agent setup means a model, a system prompt and an MCP
 server's tools, run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent
 loop.
 
-**Status: slices A–B of 8 done.** A frozen 40-task Pagila suite runs
+**Status: slices A–C of 8 done.** A frozen 40-task Pagila suite runs
 end to end against [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s
 live endpoint, with a data fingerprint, a budget guard and correct
-error-vs-fail classification. Only smoke runs exist so far (`runs/`); the
-report, the regression gate and the published results are still to come.
+error-vs-fail classification. Each run gets a `report.md` (strict pass
+rate as headline, lenient, pass^k, errors, cost, latency, and why each
+failed trial failed). Only smoke runs exist so far (`runs/`); the
+regression gate and the published results are still to come.
 See [the slice plan](docs/planning/phase-7-slices-plan.md) and
 [JOURNEY.md](JOURNEY.md). None of the Phase 1 success metrics are claimed
 yet.
@@ -37,6 +39,7 @@ uv run agent-eval run --tasks e01,h03,x02 --epochs 2 --plan-only   # cost plan o
 uv run agent-eval run --tasks e01,h03,x02 --epochs 2               # a smoke run
 uv run agent-eval compare runs/smoke-b1 runs/<your-run>
 uv run agent-eval reexport runs/<run>           # rebuild records from the saved Inspect log
+uv run agent-eval report runs/<run> [--check]   # render report.md (or check it's current)
 uv run agent-eval generate-expected suites/pagila.source.yaml suites/pagila.yaml
 ```
 

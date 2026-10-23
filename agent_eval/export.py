@@ -19,7 +19,7 @@ from agent_eval.suites import FROZEN_SUITES
 INCOMPLETE_ERROR_SHARE = 0.10
 # Bump when export output changes; `reexport` records which version
 # rebuilt a run's trials.
-EXPORT_VERSION = 2
+EXPORT_VERSION = 3  # v2: column order kept, attachments resolved; v3: task tags in meta
 
 
 class SecretLeakError(Exception):
@@ -157,6 +157,7 @@ def build_meta(
             # True only for the whole frozen suite, never a subset of it.
             "frozen": suite_sha256 is not None and FROZEN_SUITES.get(suite["suite"]) == suite_sha256,
             "task_hashes": task_hashes,
+            "task_tags": {t["id"]: t.get("tags", []) for t in suite["tasks"]},
         },
         "budget": budget_plan,
         "agent": {
@@ -239,9 +240,11 @@ def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
     hashes: dict[str, str] = {tid: from_samples.get(tid, h) for tid, h in old.items()}
     trials = [trial_from_sample(s, hashes, price) for s in (log.samples or [])]
     new_meta = {k: v for k, v in meta.items() if k not in ("schema_version", "trials_sha256")}
+    tags = {str(s.id): s.metadata["task"].get("tags", []) for s in (log.samples or [])}
     new_meta["suite"] = {
         **meta["suite"],
         "task_hashes": hashes,
+        "task_tags": {tid: tags.get(tid, []) for tid in hashes},
         "sha256": sha256_hex(ordered_json([[tid, h] for tid, h in hashes.items()])),
     }
     new_meta["status"] = run_status(log.status, trials)

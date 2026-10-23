@@ -81,3 +81,27 @@ records from its saved Inspect log, the raw evidence, with the current
 export code, and records the rebuild in the run's meta. Both committed
 runs were rebuilt this way. CI now checks that every committed run is
 intact and regrades to its stored grades.
+
+## 2026-10-23 — Slice C: the report
+
+`report.md` is rendered from a run's records alone, deterministically, so
+CI checks every committed report against a fresh render. A report can't
+drift from its data or be edited to say something nicer.
+
+What it reports, and how:
+- **Strict pass rate is the headline.** Lenient is next to it, and errors
+  are shown beside both but counted in neither.
+- **pass^k:** the share of tasks that passed on every attempt. It only
+  counts tasks with no errored attempts, since an error says nothing about
+  the agent.
+- **Cost:** shown as "unknown" without a price and as a lower bound when
+  only partly priced, never as $0.
+- **Every trial that didn't pass strictly** gets its tool sequence,
+  expected vs got, and its last query.
+- **Agent-written text is fenced safely.** It goes in a fence longer than
+  any backtick run inside it, so it can't break the Markdown.
+
+A slip on my side: when column order was fixed, I didn't bump the export
+version, so two of the smoke run's rebuilds are recorded as "v2 → v2". The
+history is left as it is; it's accurate about what happened. Now every
+change to export output bumps the version (v3 adds task tags to the meta).
