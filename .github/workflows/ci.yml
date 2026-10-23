@@ -31,4 +31,4 @@ jobs:
       # and no network. (Slice D replaces this self-comparison with
       # baseline-vs-candidate.)
       - name: Compare committed runs
-        run: uv run --frozen agent-eval compare runs/skeleton runs/skeleton
+        run: uv run --frozen agent-eval compare runs/smoke-b1 runs/smoke-b1

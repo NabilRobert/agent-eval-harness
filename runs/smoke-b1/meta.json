@@ -1,0 +1,103 @@
+{
+  "agent": {
+    "epochs": 2,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "tool_allowlist": null
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": null,
+    "per_trial_cap_usd": null,
+    "priced": false,
+    "token_basis": "default (pessimistic)"
+  },
+  "created_at": "2026-10-23T09:45:59+00:00",
+  "export_version": 2,
+  "inspect_status": "success",
+  "provenance": {
+    "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
+    "data_fingerprint_parts": [
+      {
+        "customers": 999,
+        "films": 1000,
+        "max_payment_id": 102094,
+        "max_rental_id": 87559,
+        "payments": 51061,
+        "rentals": 51805
+      },
+      {
+        "customers_md5": "aa111d185f802a08f8c5b460cc529acc"
+      },
+      {
+        "films_md5": "94a45252a98d4da71961c1eb4e274ccc"
+      },
+      {
+        "rentals_md5": "c7365fb8ef794a5cf52b4f55ba2ad88d"
+      },
+      {
+        "payments_md5": "a4ac45be39ec18114f9ab7befd508b74"
+      }
+    ],
+    "harness_git": "816114ce9d7e-dirty",
+    "healthz_version": null,
+    "inspect_ai_version": "0.3.283",
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "server_name": "database-mcp",
+    "server_version": null,
+    "tool_list_sha256": "ba48f1adcf4cee9b0fb766337c164f959d34e33dcf03d856ffd514e3954dcaa3",
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ]
+  },
+  "reexports": [
+    {
+      "at": "2026-10-23T09:47:23+00:00",
+      "from_export_version": 1,
+      "to_export_version": 2
+    },
+    {
+      "at": "2026-10-23T09:49:05+00:00",
+      "from_export_version": 2,
+      "to_export_version": 2
+    }
+  ],
+  "run_id": "smoke-b1",
+  "status": "complete",
+  "suite": {
+    "name": "pagila",
+    "sha256": "e3babff6ef47c50f26ae786e9b0ea9b5965fd442084af4f717f2775979acf1b8",
+    "task_hashes": {
+      "e01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b",
+      "h03": "b22e6e00ba9f73d8c0bb6c2c30261979a7f29027c6b63b504ac825b378cedb38",
+      "x02": "43e6704a7fd6bfef86d60e4968ff80066f885fd2aedf5969864769baca5a7371"
+    }
+  },
+  "totals": {
+    "trials": 6,
+    "pass_strict": 5,
+    "pass_lenient": 6,
+    "errors": 0,
+    "input_tokens": 22108,
+    "output_tokens": 6457,
+    "cost_usd": {
+      "usd": null,
+      "complete": false
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "be73c300fc58ad3c9fbbdf8a7dc71b25f211606f265a22945af4500867f8c9a3"
+}

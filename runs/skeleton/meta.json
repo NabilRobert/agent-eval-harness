@@ -34,22 +34,34 @@
     ]
   },
   "run_id": "skeleton",
-  "schema_version": 1,
   "status": "complete",
   "suite": {
     "name": "pagila-skeleton",
     "task_hashes": {
-      "easy-01": "ff14f371902890de34de5973cbd499cd4715014e05310a39c11818fa4e107ae7"
-    }
+      "easy-01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b"
+    },
+    "sha256": "bd3a3ba8e45d9b05aee7823c2a14b18172742e4b275e0754cfb0e7ef2a80dd0c"
   },
   "totals": {
-    "cost_usd": null,
+    "trials": 1,
+    "pass_strict": 1,
+    "pass_lenient": 1,
     "errors": 0,
     "input_tokens": 3262,
     "output_tokens": 381,
-    "pass_lenient": 1,
-    "pass_strict": 1,
-    "trials": 1
+    "cost_usd": {
+      "usd": null,
+      "complete": false
+    }
   },
-  "trials_sha256": "03f49586a9c93d4bbe7453b9e8b3bd55f06e70bc8f85420f708956c25033be69"
+  "reexports": [
+    {
+      "at": "2026-10-23T09:49:05+00:00",
+      "from_export_version": 1,
+      "to_export_version": 2
+    }
+  ],
+  "export_version": 2,
+  "schema_version": 1,
+  "trials_sha256": "5830f36fa1f75d1bfc2301a912ecab351094113537fdcbed51ea5f6e55733d5c"
 }
