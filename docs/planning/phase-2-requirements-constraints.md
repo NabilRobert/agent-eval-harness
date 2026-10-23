@@ -66,9 +66,8 @@ non-zero if the run is a regression.
 - **Team:** solo (Arthur + Claude).
 - **Stack:** Python 3.12, with the same tooling as MCP-backbone (ruff,
   pyright, pytest, GitHub Actions). The filesystem server needs Node (`npx`)
-  locally and in CI. The model client and MCP client libraries are chosen in
-  Phase 5. The MCP-backbone benchmark used pydantic-ai + fastmcp, which is
-  the starting candidate.
+  locally and in CI. Trials run on Inspect AI (ADR-009, which superseded the
+  first choice, pydantic-ai).
 - **Where it runs:** on demand, in its own Docker container on the
   MCP-backbone VPS (`docker compose run harness …`), which exits when the
   run ends. No scheduler and no long-running service. Runs are written to
@@ -84,23 +83,43 @@ non-zero if the run is a regression.
 
 - **Must:**
   - `run`, `compare` and `report` commands, with suites in YAML.
-  - An MCP adapter for both streamable HTTP (MCP-backbone) and stdio
-    (filesystem).
+  - Trials run on Inspect AI (ADR-009), using its MCP support for both
+    streamable HTTP (MCP-backbone) and stdio (filesystem). The harness
+    builds Inspect tasks from the suite YAML and exports Inspect's logs
+    into its own run records.
   - Deterministic graders: result match (strict and lenient, ported from
     MCP-backbone's `rows_equal`/`rows_equal_strict`), final-answer match,
     and required/forbidden tool calls.
   - 5 repeats per task.
-  - Pass rate (strict and lenient) and pass^k, plus cost and latency per
-    task and in total.
+  - Pass rate (strict and lenient, **strict is the headline**) and pass^k,
+    plus cost and latency per task and in total.
   - JSONL run records.
   - A regression gate with the exit codes above.
   - Budget cap, error handling separate from fails, and turn/time caps.
   - Infra-error patterns per target: a tool result matching one (e.g.
     MCP-backbone's "rate limit … exceeded") becomes an `error`, never an
     agent `fail` (ADR-007).
-  - Two suites: MCP-backbone (30 existing Pagila questions, with expected
-    results stored in the suite, so no DB access is needed) and filesystem
-    (about 15–20 new tasks).
+  - Two suites: MCP-backbone (the 30 existing Pagila questions plus about
+    10 new, harder ones, with expected results generated through the
+    endpoint and stored in the suite) and filesystem (about 15–20 new
+    tasks).
+  - **Suites are frozen before any published run.** The suite's hash is
+    written in the methodology. A task changed after seeing published
+    results makes a new suite version, and the change and the reason go in
+    JOURNEY.md. (MCP-backbone's 29/30 came after two fixes made on seeing
+    run 1, which is fine for a benchmark under construction, but not for
+    the published evidence here.)
+  - **Grading is reproducible across harness versions:** `compare`
+    regrades both runs from their stored grader inputs with the current
+    grader code, and records the grader version, so a grader bug fix can't
+    make an old baseline mean something different.
+  - **Every run records what it ran against:** the model name the provider
+    reports on each response, MCP-backbone's build (from its MCP handshake
+    and `/healthz`), the tool-list hash and the data fingerprint. `compare`
+    lists every difference between two runs before its verdict.
+  - **Local reproduction mode:** one command brings up MCP-backbone and a
+    pinned copy of the demo data locally, so anyone can rerun the Pagila
+    suite with their own model key (ADR-010).
   - Proof tests: a degraded agent **is** flagged, and an A/A run (same agent
     twice) is **not**.
   - Published results for 2 models.
@@ -108,8 +127,12 @@ non-zero if the run is a regression.
     that MCP-backbone runs use an `eval` workspace with a raised hourly
     limit, so agents are measured without the 5/hour cap real demo users
     have.
-- **Should:** tool-call traces in the report for failed trials, so a reader
-  can see *why* a task failed.
+- **Should:**
+  - Tool-call traces in the report for failed trials, so a reader can see
+    *why* a task failed.
+  - A confirmation re-run for inconclusive comparisons (ADR-001): rerun
+    only the tasks that dropped, for both agents, and decide on the fresh
+    trials alone. It's validated by simulation before it's used.
 - **Could / deferred past v1:** an optional LLM judge, an HTML report,
   adapters that aren't MCP (a plain HTTP agent), several models in one
   command.
@@ -118,15 +141,15 @@ non-zero if the run is a regression.
 
 | Item | Est. effort |
 |---|---|
-| Suite format + loader, port the 30 Pagila questions with expected results | 0.5 day |
-| MCP adapter (HTTP + stdio) + agent loop with turn/time caps | 0.5–1 day |
-| Graders (ported + new) | 0.5 day |
-| Repeats, concurrency, retries, budget cap, run records | 0.5–1 day |
+| Suite format + loader, port the 30 Pagila questions, write ~10 harder ones, expected results via the endpoint | 0.75 day |
+| Inspect task builder + scorers (ported graders + new) + export to run records | 0.75 day |
+| Budget estimate, error classification, fingerprint, recorded versions | 0.5 day |
 | Report + pass^k + cost/latency | 0.5 day |
 | Compare + regression rule + exit codes + A/A and degraded proofs | 1 day |
 | Filesystem suite (fixtures + 15–20 tasks) | 0.5 day |
 | Live runs for 2 models + write-up (README, ADRs, JOURNEY) | 1 day |
-| **Total** | **~5–6 focused days** |
+| Local reproduction mode (ADR-010) | 0.5–1 day |
+| **Total** | **~5.5–6.5 focused days** (Inspect saves about a day of runner work; the harder tasks and reproduction mode add it back) |
 
 **Open risk, carried to Phase 6:** the time budget (3–4 days) is below this
 estimate, and it only works if Claude writes most of the code. Decision on
@@ -134,4 +157,10 @@ record: if time runs short, cut in this order: (1) the Should item (failure
 traces in the report), (2) shrink the filesystem suite to 10 tasks, (3)
 publish the second model with fewer repeats, saying so in the report. The
 regression gate, both of its proof tests and both targets are never
-silently cut.
+silently cut. **Day-3 checkpoint:** slices A–D on the Pagila suite meet four of
+the Phase 1 success metrics on their own (one command → report; regression
+detection proven both ways; runs comparable later; `gpt-5-mini` published
+with repeats). If day 3 ends there, that's a shippable checkpoint. The
+remaining metrics (a second target, a second model, reproducible by others)
+follow, and until they land the README lists them as not yet met rather
+than implying they are.

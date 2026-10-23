@@ -103,3 +103,39 @@
   secrets (env var names only, headers redacted), only public Pagila data,
   and synthetic filesystem fixtures. Model text in reports is placed in
   fenced blocks so it can't break the Markdown.
+
+## Revision (2026-10-23): the run flow on Inspect AI (ADR-009)
+
+Steps 1–4 (validate, preflight, estimate, start the record) and step 9
+(finish) stay the harness's own. Preflight now also reads the server's
+build version, and takes the data fingerprint through the endpoint. Steps
+5–8 (scheduling, the agent loop, retries, limits) are Inspect's:
+`epochs=5`, `max_samples` for concurrency, `message_limit`/`time_limit` for
+the caps, `retry_on_error` for infra retries, and `cost_limit` as a second
+budget guard. After Inspect finishes, `export` turns its log into
+`trials.jsonl`.
+
+**To verify in slice B, not assumed:**
+- whether Inspect runs epochs attempt by attempt (Phase 4 step 5). If it
+  runs one sample's epochs back to back, the report says so; the effect
+  is that a provider outage clusters on fewer tasks;
+- what `cost_limit` caps (per sample or per eval) and what it does when
+  hit;
+- that a sample hitting `message_limit` or `time_limit` is recorded as a
+  limit (→ `fail`), and a provider failure after retries as an error
+  (→ `error`);
+- **that repeats aren't served from a cache** (Sumopod is a LiteLLM proxy):
+  two identical capped requests must get different response ids and no
+  cached tokens. If caching is on, it's turned off or each epoch's request
+  is made unique before any full run.
+
+**Known incompatibility:** Inspect sends tools in OpenAI strict mode by
+default, and MCP-backbone's optional `api_key` parameter violates strict
+mode's rules, so the provider rejects the request with a 400 before any
+tokens are spent. The harness sets `strict_tools=False` for the Sumopod
+model provider, and records it in the run's settings. The root cause is
+in MCP-backbone (see the handover), which affects any strict-mode client.
+
+**`compare` adds two steps** before the statistics: regrade both runs with
+the current grader code, and list every recorded difference between them
+(model, server build, tool list, data fingerprint, prompt, settings).

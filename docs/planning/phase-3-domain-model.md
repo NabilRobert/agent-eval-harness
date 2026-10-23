@@ -142,3 +142,37 @@ tasks:
 **Dependency rule:** `grading`, `compare` and `report` never import `targets`
 or `agent`. This is what lets CI run `compare` with no API key and no
 network, and lets these modules be tested exhaustively with plain fixtures.
+
+## Revision (2026-10-23, after a senior-engineer review of the plan)
+
+**Inspect AI runs the trials (ADR-009).** The model is unchanged; what
+changes is who owns which part:
+
+| Module | Before | Now |
+|---|---|---|
+| `targets`, `agent`, `runner` | Own MCP clients, agent loop, repeats, retries | **`inspect_tasks`**: builds an Inspect `Task` from a suite (dataset, the `react` agent, MCP tools, limits) and calls `inspect_ai.eval` with `epochs=5`. Inspect owns the loop, repeats, concurrency, retries and limits |
+| `grading` | Pure grader functions | Unchanged and still pure. **`scorers`** wraps each grader as an Inspect scorer, and stores the grader's full input on the sample |
+| — | — | **`export`**: Inspect log → `meta.json` + `trials.jsonl` (our schema). Classifies `error` vs `fail` (including MCP-backbone's rate-limit pattern), strips `api_key: null`, and records versions and the fingerprint |
+| `compare`, `report` | Pure, read run records | Unchanged: pure, read our run records only, never Inspect logs |
+
+The dependency rule still holds: `grading`, `compare` and `report` never
+import Inspect, so CI can compare runs without Inspect, an API key or a
+network.
+
+**New invariants:**
+
+- **Grading is reproducible across harness versions.** Each trial stores
+  its grader inputs in full plus the grader version. `compare` regrades
+  both runs with the current grader code before comparing, and shows any
+  trial whose stored grade differs from its regrade.
+- **Every run records what it ran against:** the model name reported on
+  each model response, the MCP server's build (`serverInfo.version`, and
+  `/healthz` for MCP-backbone), the tool-list hash, the data fingerprint,
+  the suite hash and the harness git SHA. `compare` lists every field
+  that differs between the two runs before giving a verdict, so a
+  "regression" caused by a server deploy or a data change is visible as
+  such.
+- **Runs with different data fingerprints are never compared** (exit 2),
+  just like different task hashes.
+- **A published suite is frozen:** its hash is in the methodology, and
+  any edit creates a new suite version.

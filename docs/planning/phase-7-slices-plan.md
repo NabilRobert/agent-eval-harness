@@ -4,18 +4,19 @@
 
 | Slice | What it proves, end to end | Live model spend | Est. |
 |---|---|---|---|
-| **A. Walking skeleton** | One hard-coded Pagila task, one trial, live endpoint → `meta.json` + `trials.jsonl` → `compare` against itself exits 0. Repo, packaging, CI (ruff, pyright, pytest, compare on the committed run) in place. | 1 trial | 0.5 day |
-| **B. Real suites, repeats and failure handling** | The Pagila suite as YAML, with expected answers generated through the endpoint (script committed); the data fingerprint; 5 repeats run attempt by attempt with concurrency; turn/time caps; retries; errors kept apart from fails, including MCP-backbone's rate-limit message; budget estimate and cap; `api_key: null` stripped from records. | Smoke suite only (3 tasks × 1 repeat) | 1 day |
-| **C. Report** | `report.md`: strict and lenient pass rate, pass^k, cost and latency per task and in total (from `prices.yaml`), errors shown next to pass rates, and (Should) the tool-call trace of each failed trial. | None (built on slice B's runs) | 0.5 day |
-| **D. Compare and the regression gate** | Paired bootstrap + "task broke" (5/5 → 0/5), exit codes 0/1/2, trials-file hash check, refusal to compare different task hashes or data fingerprints. Tested exhaustively on synthetic run files. Then the two live proofs: an A/A pair is **not** flagged, a degraded agent (one tool removed) **is**. | 3 full Pagila runs on `gpt-5-mini` (see spend plan) | 1 day |
-| **E. Filesystem target** | stdio adapter, a fresh fixture copy per trial, 15–20 tasks including the planted prompt-injection task graded with `forbidden_tools`. | Smoke suite, then 1 full run | 0.5–1 day |
-| **F. Container on the VPS** | Spike 3, then the image (Python + Node, pinned), Compose file with CPU/memory limits and the env file, runbook. The skeleton run repeated from the container. | 1 trial | 0.5 day |
-| **G. Published results and write-up** | `gpt-5-nano` full runs on both suites; README (leading with the two proofs and real numbers), methodology (data fingerprint, same-host latency caveat, detectable-drop numbers from Spike 5), ADRs and JOURNEY tidied. | 1–2 full runs | 1 day |
+| **A. Walking skeleton** | One hard-coded Pagila task, one epoch, through Inspect to the live endpoint → `export` → `meta.json` + `trials.jsonl` (with model name, server build, tool-list hash) → `compare` against itself exits 0. Repo, exact pins, CI (ruff, pyright, pytest, compare on the committed run). | 1 trial | 0.5 day |
+| **B. Real suites and failure handling** | Suite YAML → Inspect task; scorers wrapping the pure graders, storing grader inputs; the 30 Pagila tasks + ~10 harder ones, expected answers generated through the endpoint (script committed); data fingerprint; error vs fail in `export` (rate-limit pattern, limits, provider errors); budget estimate before the run; `api_key: null` stripped. Verify what Phase 4's revision lists as unverified (epoch order, `cost_limit` scope, limit vs error, **no response caching**). **Then freeze the Pagila suite** and record its hash. | Smoke suite only (3 tasks × 1 epoch) | 1 day |
+| **C. Report** | `report.md`: strict pass rate as headline, then lenient, pass^k, cost and latency per task and in total (from `prices.yaml`), errors next to pass rates, provenance, and (Should) failed-trial tool traces. | None | 0.5 day |
+| **D. Compare and the gate** | Regrade both runs with current graders; list every provenance difference; paired bootstrap + "task broke" (5/5 → 0/5); exit codes 0/1/2; refusal on different task hashes or fingerprints; trials-file hash check. Exhaustive tests on synthetic run files. Then the live proofs: the A/A pair **not** flagged, a degraded agent (one tool removed) **is**. Rerun Spike 5 with the measured per-task rates. (Should) the `confirm` step for inconclusive results, after its own simulation. | 3 full Pagila runs on `gpt-5-mini` | 1 day |
+| **— Day-3 checkpoint —** | A–D shipped = four of the Phase 1 metrics met (Phase 2). README written for that state, listing the rest as not yet met. | | |
+| **E. Filesystem target** | Inspect's stdio MCP server, a fresh fixture copy per trial, 15–20 tasks including the planted prompt-injection task (`forbidden_tools`); frozen like Pagila. | Smoke suite, then 1 full run | 0.5–1 day |
+| **F. Container on the VPS** | Spike 3, the image (Python + Node, pinned), Compose with CPU/memory limits and the env file, runbook; the skeleton run repeated from the container. Deploy MCP-backbone's `feat/server-version` first. | 1 trial | 0.5 day |
+| **G. Published results and write-up** | `gpt-5-nano` full runs on both suites; README leading with the two proofs and real numbers; methodology (suite hashes, data fingerprint, run dates and the public-suite contamination caveat, model-alias and same-host latency caveats, measured detectable drop, false alarms over repeated use); what's Inspect's vs ours. | 1–2 full runs | 1 day |
+| **H. Reproducible by others** | `repro/`: Compose with MCP-backbone built from a pinned commit, Postgres, Pagila from the upstream commit whose fingerprint matches the VPS (ADR-010); a seeded eval workspace; README "reproduce with your own key"; the harness refuses on a fingerprint mismatch. | None (checked with a smoke suite on the user's own key) | 0.5–1 day |
 
-**Order:** A → B → C → D → E → G, with F slotted in whenever the VPS is
-free (it depends only on A). **Total: ~5–6 days,** the same as the Phase 2
-estimate, against the 3–4 day budget; the fallback below is already
-decided.
+**Order:** A → B → C → D → checkpoint → E → G → H, with F whenever the VPS
+is free (it depends only on A). **Total: ~5.5–6.5 days** against the 3–4
+day budget. The checkpoint makes the gap explicit rather than a surprise.
 
 ## Spend plan (conservative, per Arthur)
 
@@ -27,7 +28,8 @@ decided.
 - **The A/A pair doubles as the published `gpt-5-mini` results:** two full
   runs of the same agent are both the false-alarm proof and the "repeated
   runs" Phase 1 asked for. So v1 needs about 6 full runs in total
-  (mini ×2, degraded mini ×1, nano on Pagila ×1, filesystem ×2).
+  (mini ×2, degraded mini ×1, nano on Pagila ×1, filesystem ×2), all on
+  the frozen suites, and none before the freeze.
 - **Measured basis:** an easy trial is about 2–4k tokens, under a tenth of a
   cent at list prices. Harder tasks use several times more. A full Pagila
   run (150 trials) is expected to cost well under $1, so all of v1 should
@@ -46,7 +48,9 @@ From Phase 2, in this order, if time runs short:
    (slice G).
 
 **Never cut:** the regression gate, its two live proofs (A/A clean,
-degraded caught), both targets, and the honest write-up of limits. The
+degraded caught), regrading and provenance in `compare`, the frozen suite,
+both targets, and the honest write-up of limits. Slice H can land after
+the others, but v1 isn't called done without it (it's a Phase 1 metric). The
 container (slice F) can slip past "done" without breaking any Phase 1
 success metric, so if time runs out, it waits; the laptop runs are
 equally valid evidence.

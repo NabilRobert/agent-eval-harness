@@ -1,8 +1,11 @@
 # Phase 1 — Problem Brief
 
 **Project:** `agent-eval-harness`, a small, standalone tool that measures
-whether an AI agent actually works, and catches it when a change makes it
-worse. The second of three portfolio pieces (after the
+whether an agent setup actually works, and catches it when a change makes
+it worse. "Agent setup" means precisely: a model + a system prompt + an MCP
+server's tools, run in a standard agent loop (Inspect AI's, ADR-009). It
+does not evaluate someone else's already-built agent; that would need an
+adapter, which is out of scope for v1. The second of three portfolio pieces (after the
 [MCP-backbone](https://github.com/NabilRobert/MCP-backbone) database MCP
 server; before the Beobot case study). Like the first, it should be small
 enough for a reviewer to read, and prove its claims rather than state them.
@@ -54,8 +57,12 @@ across two report files, with no cost or latency numbers at all.
 - Results for at least two models are published with their methodology,
   including repeated runs, since a single run of a non-deterministic agent
   proves little.
+- **Anyone can reproduce the published results** with their own model key:
+  a local mode brings up MCP-backbone and a pinned copy of the demo data
+  with one command, and its data fingerprint matches the published runs.
 - A reviewer understands the design and its tradeoffs from the README and
-  ADRs in about 15 minutes.
+  ADRs in about 15 minutes, including why it builds on Inspect AI rather
+  than replacing it.
 
 ## Non-goals (current pass — revise as planning continues)
 

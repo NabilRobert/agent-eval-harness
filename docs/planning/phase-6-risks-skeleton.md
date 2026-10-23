@@ -66,6 +66,28 @@
   genuinely hard and adversarial tasks (the planted prompt injection), and
   a second, cheaper model should score lower.
 
+- **Inspect is a new dependency we don't control.** Its log format could
+  change between versions. **Likelihood: medium. Impact: medium.** →
+  Pinned exactly; `export` is the only module that reads Inspect logs,
+  and its tests run on a committed sample log.
+- **MCP-backbone's optional `api_key` parameter breaks strict-mode
+  clients** (found by Spike 6). **Likelihood: certain. Impact: low for the
+  harness** (`strict_tools=False`), **but real for MCP-backbone users** on
+  strict-mode clients. → Recorded as a follow-up in MCP-backbone.
+- **Repeats served from a cache.** Sumopod is a LiteLLM proxy, and LiteLLM
+  can cache identical requests. Five cached repeats would be identical, so
+  pass^k and the A/A proof would be meaningless. **Likelihood:
+  low–medium. Impact: high.** → Slice B verifies it: two identical capped
+  requests must have different response ids and no cached-token counts. If
+  caching is on, each epoch gets a cache-busting request field, or Sumopod
+  caching is turned off, before any full run. Inspect's own cache stays off.
+- **Suite contamination.** The tasks are public, so future models may have
+  seen them. **Likelihood: low now, rising. Impact: medium.** → Results are
+  dated and tied to the frozen suite hash, and the README says so.
+- **A model alias changes silently** (`gpt-5-mini` is an alias).
+  **Likelihood: low–medium. Impact: medium.** → Can't be detected from the
+  name; an A/A pair over time is the only signal, and that's stated.
+
 **People**
 
 - **Time: 3–4 days against a ~5–6 day estimate.** **Likelihood: high.
@@ -124,8 +146,12 @@ below as each one runs.
    failing reference query, or drop the task with the reason recorded; a
    count-and-max-id fingerprint if hashing is rejected.
 5. **Does the regression rule behave as ADR-001 claims?** (~1–2 hours, no
-   API calls.) Monte Carlo in plain Python: 30 tasks with pass rates drawn
-   from MCP-backbone's real results, 5 trials each. **Pass:** A/A false
+   API calls.) Monte Carlo in plain Python: 30 tasks with pass rates
+   *assumed* to look like MCP-backbone's (mostly near-certain, a few
+   flaky), plus a mixed suite, 5 trials each. *(Corrected on review: an
+   earlier draft said "drawn from real results", but there were no
+   per-task repeat data to draw from. It's rerun on measured rates after
+   the A/A pair.)* **Pass:** A/A false
    alarms ≤ 5% of simulated pairs; a uniform 15-point drop flagged ≥ 80%
    of the time; a single task collapsing 5/5 → 0/5 always flagged.
    Report the actual smallest drop detected 80% of the time; it replaces
@@ -135,9 +161,9 @@ below as each one runs.
 ## Walking skeleton
 
 The thinnest end-to-end slice, against the **real** endpoint, run in the
-harness container **on the VPS** (`docker compose run harness run …`):
-one hard-coded Pagila task and one trial, through
-pydantic-ai and Sumopod to https://mcp.my.id/mcp/ with the eval key. It
+laptop first, then repeated in the harness container on the VPS (slice F):
+one hard-coded Pagila task and one epoch, through Inspect AI (ADR-009) and
+Sumopod to https://mcp.my.id/mcp/ with the eval key. It
 writes `meta.json` + `trials.jsonl` (outcome, tool calls, tokens, cost,
 latency) and grades with the ported `rows_equal`. Then `agent-eval compare`
 of that run against itself exits 0. CI runs ruff, pyright and pytest, plus
@@ -181,8 +207,9 @@ quirk: MCP-backbone's tool schemas list an optional `api_key` parameter,
 so the model sends `"api_key": null` on every call. That's harmless (over
 HTTP the server uses the header), but the harness strips it from records.
 Working versions on the laptop: pydantic-ai-slim 2.55.0, mcp 2.3.0,
-fastmcp-slim 4.1.0, openai 3.31.0. These are pinned exactly, and checked
-again on Python 3.12, since the laptop venv is 3.14.
+fastmcp-slim 4.1.0, openai 3.31.0. (Superseded as the runner by Inspect AI,
+ADR-009; the finding about the trace still holds, since Inspect records
+the same things.)
 
 ### Spike 3: deferred
 
@@ -221,3 +248,29 @@ The suite-level CI alone stays at 0.7–1.3% false alarms, as designed. The
 updated). The "about 10 points" claim was wrong: the honest number is
 about 13–14 points on an easy suite and about 18 on a mixed one, at 80%
 detection. That's what the README will say.
+
+### Spike 6 result: PASS — Inspect AI runs the trial (→ ADR-009)
+
+Asked by the senior review: is an existing framework good enough to run
+on? Inspect AI 0.3.283, one capped trial (`gpt-5-mini`, 1 epoch), live
+endpoint. The first attempt failed with a 400 before any tokens were
+spent: Inspect sends tools in OpenAI strict mode, and MCP-backbone's
+optional `api_key` parameter isn't allowed there. With
+`strict_tools=False` it passed: 4 model calls with tokens on each
+(3,143 input + 678 output in total, 512 of them reasoning), 3 tool calls
+with timings (0.23–0.46 s), the provider's model name on each response,
+11.3 s, the right answer, scored by a scorer. Repeats, limits, retries,
+concurrency and a cost limit are all built in. Our own runner would
+re-implement all of that.
+
+### Spike 7 result: FIXED — the server couldn't say which build it was
+
+The MCP handshake reported `version=''`, and `/healthz` had no version, so
+a run couldn't record which MCP-backbone build it was graded against. Fixed
+in MCP-backbone (branch `feat/server-version`, commit `4a67282`): both now
+report `git describe --dirty` (e.g. `4a672821cb60`), with 3 tests, each
+checked to fail when its part is broken. Takes effect on the VPS after
+merge and deploy. **Limit that remains:** Sumopod reports the model as
+`gpt-5-mini`, an alias, so a silent provider-side model update can't be
+seen in the name. Only an A/A pair run over time would show it, and the
+methodology says so.

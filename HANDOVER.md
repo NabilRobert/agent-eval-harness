@@ -186,5 +186,26 @@ parallel a little at a time.
   (container on VPS) whenever the VPS is free. Spend plan: dev only on a
   3-task smoke suite at 1 repeat; every full run announced with its
   estimate and needs Arthur's OK; ~6 full runs for all of v1.
-- **Next:** Arthur reviews Phase 7, then build slice A.
+- **Senior-review pass applied (2026-10-23):**
+  - **ADR-009:** trials run on **Inspect AI** (0.3.283); we build the gate,
+    regrading, provenance and fingerprinting on its logs. pydantic-ai
+    (ADR-003) is superseded. Spike 6: one capped Inspect trial worked once
+    `strict_tools=False` (MCP-backbone's optional `api_key` param breaks
+    OpenAI strict mode).
+  - **ADR-010:** a local reproduction mode (`repro/`, pinned MCP-backbone +
+    pinned Pagila commit matched by fingerprint) = new slice H.
+  - Suites frozen (hash recorded) before published runs; ~10 harder Pagila
+    tasks; strict is the headline; `compare` regrades both runs and lists
+    provenance differences; scope worded as "model + prompt + MCP server
+    in Inspect's agent loop"; the "task broke" rule false alarms add up
+    over repeated use (stated); inconclusive → `confirm` reruns (Should);
+    Spike 5 reruns on measured rates; day-3 checkpoint after slice D.
+  - New risks: Sumopod/LiteLLM response caching (verify in slice B),
+    suite contamination (date results), silent model-alias updates.
+- **MCP-backbone branch `feat/server-version` (`4a67282`, not pushed):**
+  MCP handshake + `/healthz` report the running build (`git describe
+  --dirty`); 138 tests pass. Needs merge + deploy before slice F.
+- **MCP-backbone follow-up (proposed):** drop the optional `api_key` tool
+  parameter from the HTTP-facing schema (strict-mode clients reject it).
+- **Next:** Arthur reviews the revised plan, then build slice A.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

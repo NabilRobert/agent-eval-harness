@@ -12,7 +12,8 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
 - **Python 3.12**, packaged as one installable package with an
   `agent-eval` console command. CLI built on `argparse` (one fewer
   dependency; three subcommands don't need more).
-- **Agent loop and MCP client:** pydantic-ai (ADR-003).
+- **Agent loop, repeats, limits and MCP client:** Inspect AI, pinned exactly
+  (ADR-009; it superseded pydantic-ai, ADR-003).
 - **Statistics:** standard library + `random.Random(seed)`. The bootstrap is
   about 20 lines, so pulling in numpy/scipy isn't worth it.
 - **Tooling:** ruff, pyright (strict), pytest, GitHub Actions, the same as
@@ -70,6 +71,23 @@ README says so. The percentile bootstrap with ~30 clusters is approximate;
 that's acceptable for a gate, and stated.
 **Revisit if:** suites grow past ~100 tasks (consider a clustered standard
 error instead), or repeats change.
+**Amendments (2026-10-23, senior review):**
+- **False alarms add up over repeated use.** At 1–4% per comparison, a
+  team gating every change would expect a false alarm about once every
+  25–100 comparisons. The README states that, and the report always shows
+  the change with its interval, so a flag can be judged rather than
+  obeyed blindly.
+- **Inconclusive results get a confirmation step (Should):** when the
+  point estimate is a drop of 5 points or more but the interval still
+  crosses 0, `compare` exits 0, marks the result *inconclusive* and names
+  the tasks that dropped. A local `confirm` command reruns just those
+  tasks for **both** agents and decides on the fresh trials only, so the
+  tasks picked for dropping don't bias the retest. CI never runs it (no
+  key). It's used only after the same simulation as Spike 5 shows its
+  false-alarm rate stays ≤ 5%.
+- **The simulated pass rates were assumptions, not measurements.** Spike 5
+  gets rerun with the per-task pass rates observed in the A/A pair, and
+  the README quotes those results, not the assumed ones.
 **Sources:** E. Miller, [Adding Error Bars to Evals](https://arxiv.org/abs/2411.00640)
 (2024): paired differences and clustering by question; S. Yao et al.,
 [τ-bench](https://arxiv.org/abs/2406.12045) (2024): pass^k; Efron &
@@ -89,7 +107,7 @@ suites deliberately avoid them. In exchange, regrading is free and exact.
 **Sources:** L. Zheng et al., [Judging LLM-as-a-Judge](https://arxiv.org/abs/2306.05685)
 (2023): position, verbosity and self-preference biases in judges.
 
-### ADR-003: pydantic-ai as the agent loop, behind the `agent` module
+### ADR-003: pydantic-ai as the agent loop, behind the `agent` module — **superseded by ADR-009**
 **Context:** We need a model ↔ MCP tool loop with a turn cap, a full
 message trace and token usage, over an OpenAI-compatible API (Sumopod).
 **Options:** pydantic-ai; a hand-written loop on the OpenAI SDK + `mcp` SDK;
@@ -105,6 +123,9 @@ confirmed in a Phase 6 spike.
 **Rejected:** a hand-written loop (more code, nothing gained to show);
 LangGraph (a framework to build agents with, which is a non-goal).
 **Revisit if:** pydantic-ai can't expose per-call usage or tool timings.
+**Superseded (2026-10-23):** a senior-review pass asked "why not an
+existing eval framework?", and Spike 6 showed Inspect AI already does
+the running well. See ADR-009.
 
 ### ADR-004: Run records as files (`meta.json` + `trials.jsonl`), not a DB
 **Context:** Runs must be committable as public evidence, comparable
@@ -119,6 +140,10 @@ is manual, which is fine at this scale.
 **Rejected:** SQLite (binary in git, can't be diffed); hosted trackers
 (an extra service, and a reviewer can't open the evidence without it).
 **Revisit if:** we start comparing dozens of runs regularly.
+**Amended by ADR-009:** Inspect's own `.eval` log is kept next to these
+files as the raw evidence (committed for published runs), and `meta.json`
++ `trials.jsonl` are exported from it. `compare` and `report` read only
+the exported files.
 
 ### ADR-005: Cost = provider-reported tokens × a committed price table
 **Context:** Cost per task is a headline metric, so it can't be guessed.
@@ -198,3 +223,59 @@ latency excludes real network time, and the methodology says so. CI is
 unaffected: it only compares committed runs.
 **Revisit if:** scheduled regression runs become worth the cost (then
 (b), with a smaller suite).
+
+### ADR-009: Run trials on Inspect AI; build the regression gate on its logs
+**Context:** the first question a senior reviewer would ask is "why not
+an existing eval framework?" Inspect AI (UK AI Security Institute),
+promptfoo, DeepEval and Braintrust all run agent evals. Inspect has MCP
+tools (HTTP and stdio), repeats (`epochs`), turn/time/token/cost limits,
+retry on error, concurrency, a mock model for offline tests, and
+structured logs readable from Python. Spike 6 ran one capped trial through
+Inspect against the live endpoint. It recorded token usage on every model
+call, a timing on every tool call, and the model name the provider
+actually served, and it got the right answer.
+**Options:** (a) keep our own runner on pydantic-ai (ADR-003); (b) run on
+Inspect and build what it lacks on top of its logs; (c) use Inspect alone
+and write no harness.
+**Decision:** (b). What Inspect doesn't do, and this project exists for:
+a statistical regression gate across repeated runs (ADR-001) with CI exit
+codes; comparison from committed files with no key and no network;
+reproducible regrading; run provenance (what changed between two runs);
+and data fingerprinting. Inspect runs; we gate.
+**Consequences:**
+- Less code to write and defend: the agent loop, repeats, retries and
+  limits are a well-tested library's, not ours.
+- The README can say plainly what's new versus what's reused, which is
+  the stronger story for a reviewer.
+- We depend on Inspect's log format. It's pinned exactly, and `export` is
+  the one module that reads it, so a format change breaks one module,
+  visibly.
+- Strict tool schemas are turned off for the Sumopod provider: MCP-backbone's
+  optional `api_key` parameter fails OpenAI's strict mode (Phase 4
+  revision).
+**Rejected:** (a) re-implements a standard tool, worse; (c) has no
+regression gate, the whole point of the project.
+**Revisit if:** Inspect's log format churns between minor versions, or a
+target needs a loop Inspect can't run.
+**Sources:** [Inspect AI](https://inspect.aisi.org.uk/) docs (MCP tools,
+epochs, limits); Spike 6 (Phase 6).
+
+### ADR-010: Results reproducible by others (local mode, pinned data)
+**Context:** published Pagila results come from Arthur's VPS with his eval
+key; nobody else can rerun them, so a reviewer has to trust the numbers.
+The demo data is also loaded from upstream `master`, unpinned.
+**Options:** (a) local mode: a Compose setup with MCP-backbone (built
+from a pinned commit), Postgres, and Pagila loaded from a pinned upstream
+commit with a checksum; (b) share a read-only key publicly; (c) publish
+only, no reproduction.
+**Decision:** (a). `docker compose up` in `repro/`, seed an eval
+workspace, then run the suite against `localhost` with your own model
+key. The harness checks the local data fingerprint against the one in
+the published runs before it runs, and refuses on a mismatch.
+**Consequences:** the upstream Pagila commit that matches the VPS's data
+has to be found, by loading candidate commits locally until the
+fingerprint matches. If none matches, the VPS data is reloaded from a
+pinned commit and the published runs are made after that. Local latency
+isn't comparable with the VPS's, and the README says so.
+**Rejected:** (b) spends Arthur's rate limit and breaks the "no public
+use on his keys" non-goal; (c) fails the reproducibility metric.
