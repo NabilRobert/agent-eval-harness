@@ -134,9 +134,14 @@ parallel a little at a time.
 - **Phase 3 drafted** (domain model: Suite/Task/Target/AgentConfig/Run/Trial/
   Grader/Comparison; no Baseline entity; pure grading/compare/report modules).
 - **Phase 4 drafted** (run/compare flows, failure table, trust boundaries).
-- **Phase 5 drafted** (ADR-001..007). **Blocker, ADR-007:** MCP-backbone
-  rate-limits every workspace to 5 run_query/hr (`app/config.py`); a
-  rate-limited query looks like an agent fail. Recommended: per-workspace
-  limit override in MCP-backbone + an `eval` workspace on the VPS. Needs
-  Arthur's decision; live VPS value unchecked.
-- **Next:** Arthur reviews Phases 2–5 and decides ADR-007, then Phase 6.
+- **Phase 5 drafted** (ADR-001..007). ADR-007 decided: per-workspace
+  rate-limit override in MCP-backbone (live limit confirmed 5/hr by the VPS
+  session). Done on MCP-backbone branch `feat/limit-tests`: `4b9e5ea` feat,
+  `81c52d1` role-level statement_timeout for pagila_ro, `cd125ef` docs.
+  135 tests pass; migration `d2b7f4a9e6c1` checked up/down/up. Not pushed.
+- **Pending (Arthur):** push + merge to main, then VPS: backup, deploy
+  (migrate to `d2b7f4a9e6c1`), `ALTER ROLE pagila_ro SET statement_timeout
+  = '30s'`, create `eval` workspace with `--query-rate-limit 500
+  --sample-rate-limit 500`; the eval API key goes in the harness `.env`.
+- **Next:** Phase 6 (risks and spikes).
+- **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

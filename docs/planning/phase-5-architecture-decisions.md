@@ -137,7 +137,7 @@ repeats and ADR-001, not by pretending it isn't there.
 **Consequences:** single runs are noisier, which is exactly what the
 repeats and the A/A test exist to measure.
 
-### ADR-007: Running against MCP-backbone's live endpoint despite its rate limit — **needs Arthur**
+### ADR-007: Running against MCP-backbone's live endpoint despite its rate limit
 **Context:** MCP-backbone limits *every* workspace to 5 `run_query` and 30
 `sample_rows` calls per hour (`app/config.py`). A full Pagila run needs
 about 150 trials × 1–3 queries. Worse, a rate-limited query comes back as a
@@ -153,7 +153,11 @@ protection);
 (c) run MCP-backbone locally for the big runs, and do one small run on the
 live endpoint;
 (d) spread runs over hours to stay under the limit.
-**Recommendation:** (a). It's small, defensible ("a trusted eval workspace
+**Decision (2026-10-23): (a).** The VPS check confirmed the live limit is 5/hour,
+with no override. Implemented in MCP-backbone on branch `feat/limit-tests`
+(`4b9e5ea`), alongside a role-level `statement_timeout` for `pagila_ro`
+that the same check found missing (`81c52d1`).
+**Why (a):** It's small, defensible ("a trusted eval workspace
 gets its own budget") and keeps the success metric honest (the real
 endpoint). It also links the two projects in a way a reviewer will notice.
 It means a small MCP-backbone change and a VPS deploy, which go through
