@@ -128,4 +128,7 @@ parallel a little at a time.
   judge optional; second target = reference filesystem MCP server on a
   fixture dir; at most $5 per full run, 5 repeats per task; full scope in 3–4
   days (keep phase docs short, Arthur reviews each before the next).
-- **Next:** Phase 2 (requirements and constraints).
+- **Phase 2 drafted** (requirements; awaiting Arthur's review). Regression rule
+  recommended: paired bootstrap CI over tasks + "task broke" (5/5 → ≤1/5),
+  proven by degraded-agent and A/A tests.
+- **Next:** Arthur reviews Phase 2, then Phase 3 (domain model).
