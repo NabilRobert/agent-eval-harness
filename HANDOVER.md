@@ -158,5 +158,7 @@ parallel a little at a time.
 - **VPS hygiene (Arthur):** delete the key from the VPS `.env` and VS Code
   history copies; `~/.bash_history` holds another workspace's key (chmod 600,
   remove the line, rotate that key).
-- **Next:** Phase 6 (risks and spikes).
+- **Phase 6 drafted** (risks, pre-mortem, 5 spikes, walking skeleton).
+- **Next:** Arthur reviews Phase 6, then run spikes 1–5 (results logged in
+  the doc), then Phase 7 (slices).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
