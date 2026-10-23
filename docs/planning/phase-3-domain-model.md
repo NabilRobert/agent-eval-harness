@@ -110,7 +110,7 @@ tasks:
     tags: [easy]
     prompt: How many customers are there?
     graders:
-      - result_match: {tool: run_query, expected: [[599]]}
+      - result_match: {tool: run_query, expected: [[999]]}
 ```
 
 ```yaml

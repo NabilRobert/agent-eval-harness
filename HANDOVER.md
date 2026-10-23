@@ -145,9 +145,16 @@ parallel a little at a time.
   was rotated in the console; it lives only in the harness `.env`
   (`MCP_BACKBONE_EVAL_KEY`, gitignored, 0600). Live check: 7/7 `run_query`
   calls succeeded over https://mcp.my.id/mcp/.
-- **Found by the live check:** live `pagila_demo` has 999 customers, standard
-  Pagila 599. Expected answers must be generated against the DB the eval
-  target actually hits (first Phase 6 item).
+- **pagila_demo fingerprint (VPS, 2026-10-23):** current upstream Pagila
+  (expanded: customer 999, film 1000, rental 51805, payment 51061 in 55
+  monthly partitions 2022-01..2026-07, staff 1500, store 500). "599" was the
+  old Pagila; 999 matches MCP-backbone JOURNEY.md:446. md5 (t::text, ordered
+  by PK, session TZ +08): customer 689f0fad…8442, film 3d4c659a…0f1343,
+  rental 29b35037…dd1c, payment 26c76779…53b. Loader pulls upstream
+  `master` unpinned, so Sumopod's copy may differ; harness generates
+  expected answers from the live endpoint and should fingerprint the data
+  at run start (use UTC for hashes). No benchmark question is
+  time-relative.
 - **VPS hygiene (Arthur):** delete the key from the VPS `.env` and VS Code
   history copies; `~/.bash_history` holds another workspace's key (chmod 600,
   remove the line, rotate that key).
