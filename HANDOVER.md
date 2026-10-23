@@ -134,4 +134,9 @@ parallel a little at a time.
 - **Phase 3 drafted** (domain model: Suite/Task/Target/AgentConfig/Run/Trial/
   Grader/Comparison; no Baseline entity; pure grading/compare/report modules).
 - **Phase 4 drafted** (run/compare flows, failure table, trust boundaries).
-- **Next:** Arthur reviews Phases 2–4, then Phase 5 (ADRs).
+- **Phase 5 drafted** (ADR-001..007). **Blocker, ADR-007:** MCP-backbone
+  rate-limits every workspace to 5 run_query/hr (`app/config.py`); a
+  rate-limited query looks like an agent fail. Recommended: per-workspace
+  limit override in MCP-backbone + an `eval` workspace on the VPS. Needs
+  Arthur's decision; live VPS value unchecked.
+- **Next:** Arthur reviews Phases 2–5 and decides ADR-007, then Phase 6.
