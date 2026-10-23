@@ -167,6 +167,9 @@ def build_meta(
             "model": agent["model"],
             "model_args": agent["model_args"],
             "system_prompt_sha256": system_prompt_sha256,
+            # The text too, not only its hash: it isn't secret, and a reader
+            # comparing two runs should be able to see what changed.
+            "system_prompt": agent["system_prompt"],
             "tool_allowlist": agent.get("tool_allowlist"),
             "limits": {
                 "message_limit": agent["message_limit"],

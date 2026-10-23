@@ -133,3 +133,20 @@ are unchanged.
 
 **Next (needs Arthur):** one more pre-registered degradation, chosen
 before running.
+
+### Second degradation, fixed before running (2026-10-23, Arthur)
+
+- **Primary: a cheaper model.** `gpt-5-nano` replaces `gpt-5-mini`, with
+  everything else identical (frozen suite, prompt, tools, limits).
+  Compared against `proof-mini-a` (the baseline), with `proof-mini-b`
+  reported too. Expected: flagged if nano is at least ~10 points worse;
+  whatever the gate says is published. The run doubles as the published
+  nano results. Estimated at ≤ $0.47.
+- **Fallback, only if nano is not flagged: a prompt edit that breaks the
+  grading contract.** `gpt-5-mini` with
+  `prompts/pagila-degraded-no-final-query.txt`, which is the baseline
+  prompt minus its last sentence ("Call run_query exactly once with your
+  final answer query."). This is the realistic mistake of simplifying a
+  prompt and dropping the line the evaluation depends on. Compared against
+  `proof-mini-a`. Estimated at $0.57.
+- No third degradation without writing these two up first.

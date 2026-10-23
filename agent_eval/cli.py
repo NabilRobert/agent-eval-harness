@@ -131,7 +131,10 @@ def cmd_run(args: argparse.Namespace) -> int:
         # MCP-backbone's optional api_key parameter fails OpenAI strict
         # mode with a 400 (Phase 4 revision), so strict schemas are off.
         "model_args": {"strict_tools": False},
-        "system_prompt": PAGILA_SYSTEM_PROMPT,
+        "system_prompt": (
+            Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
+            if args.system_prompt_file else PAGILA_SYSTEM_PROMPT
+        ),
         "tool_allowlist": None,
         "message_limit": 20,
         "time_limit": 120,
@@ -330,6 +333,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--prices", default=str(REPO_ROOT / "prices.yaml"))
     run.add_argument("--plan-only", action="store_true", help="print the plan and stop")
     run.add_argument("--exclude-tools", help="comma-separated tools to withhold (a degraded agent)")
+    run.add_argument("--system-prompt-file", help="replace the suite's system prompt (a degraded agent)")
     run.add_argument("--out", default="runs")
     run.add_argument("--run-id")
     run.add_argument("--env-file", default=str(REPO_ROOT / ".env"))
