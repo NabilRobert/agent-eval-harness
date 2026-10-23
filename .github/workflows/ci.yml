@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install (exact versions from uv.lock)
+        run: uv sync --frozen --extra dev
+
+      - name: Lint (ruff)
+        run: uv run --frozen ruff check .
+
+      - name: Type check (pyright)
+        run: uv run --frozen pyright agent_eval/ tests/
+
+      - name: Test (pytest)
+        run: uv run --frozen pytest -v
+
+      # The gate CI exists for: comparing committed runs needs no API key
+      # and no network. (Slice D replaces this self-comparison with
+      # baseline-vs-candidate.)
+      - name: Compare committed runs
+        run: uv run --frozen agent-eval compare runs/skeleton runs/skeleton

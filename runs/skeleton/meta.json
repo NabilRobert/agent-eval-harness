@@ -1,0 +1,55 @@
+{
+  "agent": {
+    "epochs": 1,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "tool_allowlist": null
+  },
+  "created_at": "2026-10-23T09:29:07+00:00",
+  "inspect_status": "success",
+  "provenance": {
+    "data_fingerprint": null,
+    "harness_git": "47157d7d4efc-dirty",
+    "healthz_version": null,
+    "inspect_ai_version": "0.3.283",
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "server_name": "database-mcp",
+    "server_version": null,
+    "tool_list_sha256": "ba48f1adcf4cee9b0fb766337c164f959d34e33dcf03d856ffd514e3954dcaa3",
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ]
+  },
+  "run_id": "skeleton",
+  "schema_version": 1,
+  "status": "complete",
+  "suite": {
+    "name": "pagila-skeleton",
+    "task_hashes": {
+      "easy-01": "ff14f371902890de34de5973cbd499cd4715014e05310a39c11818fa4e107ae7"
+    }
+  },
+  "totals": {
+    "cost_usd": null,
+    "errors": 0,
+    "input_tokens": 3262,
+    "output_tokens": 381,
+    "pass_lenient": 1,
+    "pass_strict": 1,
+    "trials": 1
+  },
+  "trials_sha256": "03f49586a9c93d4bbe7453b9e8b3bd55f06e70bc8f85420f708956c25033be69"
+}
