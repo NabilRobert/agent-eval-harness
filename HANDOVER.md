@@ -264,7 +264,12 @@ parallel a little at a time.
   training. Measured-rate simulation: A/A 0.5%, 3-pt drop caught 14%,
   10-pt 88.5%, 15-pt 99%. Fixed: the regrade now fails limit-hit trials
   like the export does. Results in Phase 7 + JOURNEY.
-- **Next (needs Arthur):** a second pre-registered degradation.
-  Recommended: `gpt-5-nano` as the candidate (a realistic "cheaper model"
-  regression; it's the planned nano Pagila run anyway, ≈ $0.15–0.47).
+- **Second degradation run (pre-registered):** `proof-nano` 182/200, −4.5
+  vs a (not flagged), −5.0 vs b (inconclusive), $0.28, 2× latency (warning
+  fired). Fallback `proof-mini-prompt` (no final-query line) 186/200, −2.5,
+  not flagged. **Live "degraded agent is flagged" metric NOT met**; the gate
+  never false-alarmed; the suite is saturated and Pagila is likely in the
+  training data. Total proof spend ≈ $2.41.
+- **Next (needs Arthur):** see options in the final message of the session
+  (`confirm` step on nano; a harder or unseen suite; more attempts).
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

@@ -181,3 +181,26 @@ discovery. Second, the regrade check caught a real inconsistency: a trial
 that ran the right query and then hit the message cap was failed by the
 export but passed by the regrade. Both now apply the same rule (a cap hit
 is a fail).
+
+## 2026-10-23 — The second degradation, and what five live runs say
+
+Two more pre-registered runs. Neither was flagged:
+- **`gpt-5-nano` in place of mini:** 182/200, −4.5 points (interval
+  −10.0 to +0.5). Against the other baseline it was "inconclusive",
+  −5.0 points.
+- **The fallback prompt, without "call run_query exactly once with your
+  final answer query":** 186/200, −2.5 points. The model ended on a
+  correct query anyway.
+
+So the live half of "a degraded agent is flagged" isn't met, and the
+README won't claim it. What the runs do establish: the gate didn't raise
+a false alarm in any of the four comparisons, and its misses are where its
+measured power says they'd be. This suite, close to saturated and on a
+dataset the model already knows, barely moves under any of the three
+degradations tried. That's the most useful thing the harness has found so
+far, and it's a finding about the suite rather than the gate.
+
+Nano is the one consistent drop: about −5 points against both baselines,
+at half the cost and twice the latency. The latency warning is the only
+thing that fired. Resolving a 5-point drop needs either more attempts on
+the tasks that moved (the `confirm` step) or a less saturated suite.

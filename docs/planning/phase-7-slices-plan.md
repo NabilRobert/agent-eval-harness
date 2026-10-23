@@ -150,3 +150,35 @@ before running.
   prompt and dropping the line the evaluation depends on. Compared against
   `proof-mini-a`. Estimated at $0.57.
 - No third degradation without writing these two up first.
+
+### Second-degradation results (2026-10-23)
+
+| Run | Strict | vs `proof-mini-a` | Verdict | Cost | Median s |
+|---|---|---|---|---|---|
+| `proof-nano` (cheaper model) | 182/200 (91.0%) | −4.5 pts (−10.0 to +0.5) | no regression; vs b: inconclusive (−5.0) | $0.276 | 27.4 |
+| `proof-mini-prompt` (final-query line removed) | 186/200 (93.0%) | −2.5 pts (−7.5 to +2.0) | no regression | $0.424 | — |
+
+Neither was flagged. **The Phase 1 metric "a deliberately degraded
+agent is flagged" is not met on live runs.** It's met only on synthetic
+runs and in simulation, and that's how it's reported.
+
+What the five live runs show:
+
+- **The gate doesn't false-alarm.** The A/A pair, and two of the three
+  degradations, landed inside the noise, as the measured simulation says
+  a drop of under 5 points will (14% detection at 3 points).
+- **`gpt-5-mini` is robust to all three degradations on this suite:**
+  schema tools removed (−3.0), a cheaper model (−4.5), the final-query
+  instruction removed (−2.5). The suite is near saturation (95% baseline,
+  33 of 40 tasks at 100%), and Pagila is very likely in the model's
+  training data. Together those leave little room for a degradation to
+  show.
+- **Nano is the one real, consistent regression:** about −5 points
+  against both baselines, half the cost, and **twice the latency**. The
+  latency warning (+110%) is the only flag that fired. At 5 attempts per
+  task the gate can't separate −5 points from noise; that's what the
+  "inconclusive" verdict and its confirmation step (ADR-001, a Should)
+  exist for.
+
+No third degradation is run before this write-up; the next step is
+Arthur's call.
