@@ -147,4 +147,69 @@ agent → MCP → grade → record → compare connects end to end.
 
 ## Spike results
 
-*(filled in as each spike runs)*
+Run 2026-10-23 from the laptop against the live endpoint. Total model
+spend: one trial, about 2,250 tokens, well under one US cent.
+
+### Spike 1 result: PASS — usage on every response, and a trial is cheap
+
+One easy Pagila task, one trial, the configured Sumopod model, capped at 8
+model requests and 60k tokens. Every one of the 4 model responses carried
+input and output tokens, plus details such as reasoning tokens. Totals:
+2,084 input + 167 output tokens, 4 requests, 7.6 s wall time, correct
+answer. At typical mini-model prices that's a fraction of a cent per easy
+trial, so a full Pagila run (150 trials, with harder tasks using several
+times more tokens) should land well under $1, comfortably inside the $5
+cap. **Still open:** Sumopod's actual per-model prices for `prices.yaml`
+(Arthur to supply or point to them), and the second model, held back to
+keep spend down until one is chosen.
+
+### Spike 2 result: PASS — the trace has what graders need
+
+`result.all_messages()` gives every tool call (name, arguments, id) and
+every result as structured data (a `list` or `dict`, e.g. `run_query`'s
+`{"status", "rows", "error"}`), linked by call id. Timings aren't in the
+trace, but a `process_tool_call` hook measured each call (83–127 ms). One
+quirk: MCP-backbone's tool schemas list an optional `api_key` parameter,
+so the model sends `"api_key": null` on every call. That's harmless (over
+HTTP the server uses the header), but the harness strips it from records.
+Working versions on the laptop: pydantic-ai-slim 2.55.0, mcp 2.3.0,
+fastmcp-slim 4.1.0, openai 3.31.0. These are pinned exactly, and checked
+again on Python 3.12, since the laptop venv is 3.14.
+
+### Spike 3: deferred
+
+The Docker part runs on the VPS later (Arthur, 2026-10-23).
+
+### Spike 4 result: PASS — every reference answer is reachable through the endpoint
+
+All 30 reference queries succeeded through `run_query` with the eval key:
+none truncated (the largest result is 6 rows), none rejected by the cost
+check or function allowlist, each 150–500 ms. So expected answers can be
+generated through the endpoint, against exactly what the agent sees. The
+fingerprint also passes the endpoint's checks: counts (customer 999,
+film 1000, rental 51805, payment 51061) and max ids; and `md5(string_agg(…))`
+is allowed. The full-row hash matched the VPS session's
+(`689f0fad…8442`), which confirms the server's session timezone is +08.
+The harness uses hashes over non-timestamp columns, so the fingerprint
+doesn't depend on timezone.
+
+### Spike 5 result: FAIL as drafted — fixed and re-run
+
+Monte Carlo, 300 simulated pairs per case, 2,000 bootstrap resamples, on a
+mostly-easy suite (24 tasks at 97%, 6 between 40% and 80%) and a mixed
+suite (30 tasks from 30% to 100%).
+
+| | Mostly-easy | Mixed |
+|---|---|---|
+| A/A false alarms, rule as drafted (5/5 → ≤1/5) | 5.0% | **11.0%** |
+| A/A false alarms, tightened (5/5 → 0/5) | 1.0% | 4.0% |
+| Uniform 10-point drop flagged | 50% | 29% |
+| Uniform 15-point drop flagged | 90% | 64% |
+| Uniform 20-point drop flagged | 100% | 91% |
+| One task collapsing (5/5 → 0/5) flagged | 100% | 100% |
+
+The suite-level CI alone stays at 0.7–1.3% false alarms, as designed. The
+"task broke" rule was the problem, so it's now 5/5 → 0/5 (ADR-001
+updated). The "about 10 points" claim was wrong: the honest number is
+about 13–14 points on an easy suite and about 18 on a mixed one, at 80%
+detection. That's what the README will say.

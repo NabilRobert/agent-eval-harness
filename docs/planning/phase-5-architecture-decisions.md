@@ -49,9 +49,11 @@ CI at suite level + a "task broke" rule; (d) gate on pass^k.
    replacement, then within each drawn task draw its baseline and candidate
    trials with replacement. 10,000 resamples, fixed seed, percentile
    interval.
-2. Any task went from 5/5 to 1/5 or less. If its true pass rate is 90%,
-   the chance of that is about 1 in 2,000, so it holds up across 30 tasks
-   without false alarms.
+2. Any task went from 5/5 to 0/5. (First drafted as "1/5 or less";
+   Spike 5 showed that version firing on 4–10% of A/A pairs, because a
+   task that passes 50–70% of the time can swing from 5/5 to 1/5 by luck,
+   and several such tasks add up. With 0/5 the A/A false-alarm rate is
+   1–4%, and a task that really collapses is still caught every time.)
 
 pass^k is reported, not used as a gate. Cost (+25% median) and latency only
 **warn** by default.
@@ -60,8 +62,10 @@ power with 5 trials, and 30 tests stacked together give false alarms;
 (d) is too blunt for a single number.
 **Proof required (Phase 7):** a degraded agent **is** flagged; an A/A run
 (the same agent twice) is **not**.
-**Consequences:** the smallest drop it reliably detects is about 10 points
-of pass rate. Smaller drops show in the report but don't fail CI, and the
+**Consequences (measured in Spike 5):** a uniform drop is caught 80% of
+the time at about 13–14 points of pass rate on a mostly-easy suite, and
+about 18 points on a mixed one. A 10-point drop is caught only 30–50% of
+the time. Smaller drops show in the report but don't fail CI, and the
 README says so. The percentile bootstrap with ~30 clusters is approximate;
 that's acceptable for a gate, and stated.
 **Revisit if:** suites grow past ~100 tasks (consider a clustered standard

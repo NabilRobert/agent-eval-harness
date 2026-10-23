@@ -18,7 +18,7 @@ non-zero if the run is a regression.
 
 - **Flaky tasks:** expected, not a bug. Handled by 5 repeats per task and
   the regression rule (suite-level paired bootstrap CI, plus the "task broke"
-  rule: 5/5 → ≤1/5). The details go in an ADR in Phase 5.
+  rule: 5/5 → 0/5). The details go in an ADR in Phase 5.
 - **Infra errors vs agent failures:** an API 5xx, rate limit, timeout from
   the provider, or an MCP server that is down is an **error**, not a fail.
   These are retried with backoff. A trial that still errors after retries is

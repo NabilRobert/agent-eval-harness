@@ -41,7 +41,7 @@
 3. Work out each task's pass rate in both runs. Then:
    - **Suite level:** the average change across tasks, with a 95% CI from a
      paired bootstrap (fixed seed, 10,000 resamples).
-   - **Broken tasks:** tasks that went from 5/5 to 1/5 or less.
+   - **Broken tasks:** tasks that went from 5/5 to 0/5 (ADR-001).
    - **Cost and latency:** the change in median cost and latency.
 4. Verdict → exit code (0 / 1 / 2), and render the comparison report.
 
