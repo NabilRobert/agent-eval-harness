@@ -94,3 +94,39 @@ def test_changed_pass_rate_is_undecided_until_the_gate_exists(run_factory: RunFa
 def test_error_trials_are_left_out_of_pass_rates(run_factory: RunFactory) -> None:
     run = run_factory([make_trial(1, GOOD), make_trial(2, None, outcome="error")])
     assert compare_runs(run, run).per_task == {"easy-01": (1.0, 1.0)}
+
+
+def test_column_order_survives_writing_and_loading(run_factory: RunFactory) -> None:
+    """The bug the slice B smoke run caught: records written with sorted
+    keys reordered every row's columns, so regrading a stored correct
+    multi-column answer failed it. Columns here are deliberately not in
+    alphabetical order."""
+    rows = [{"rating": "G", "title": "CAT CONEHEADS", "n": 123}]
+    trial = make_trial(1, rows)
+    trial["graders"][0]["expected"] = [{"rating": "G", "title": "CAT CONEHEADS", "n": 123}]
+    trial["strict"] = trial["lenient"] = True
+    trial["outcome"] = "pass"
+    run = run_factory([trial])
+    [loaded] = load_run(run).trials
+    assert list(loaded["graders"][0]["input"]["graded_rows"][0]) == ["rating", "title", "n"]
+    result = compare_runs(run, run)
+    assert result.regrade_mismatches == []
+
+
+def test_task_hash_notices_reordered_expected_columns() -> None:
+    from agent_eval.records import task_hash
+
+    a = {"prompt": "q", "graders": [{"result_match": {"tool": "t", "expected": [{"x": 1, "y": 2}]}}]}
+    b = {"prompt": "q", "graders": [{"result_match": {"tool": "t", "expected": [{"y": 2, "x": 1}]}}]}
+    assert task_hash(a) != task_hash(b)
+
+
+def test_every_committed_run_is_intact_and_regrades_to_its_stored_grades() -> None:
+    """Runs off the repo: CI fails if any committed run was edited, or if
+    the current graders would grade any stored trial differently."""
+    runs = sorted(p.parent for p in (Path(__file__).resolve().parent.parent / "runs").glob("*/meta.json"))
+    assert runs
+    for run_dir in runs:
+        result = compare_runs(run_dir, run_dir)
+        assert result.regrade_mismatches == [], run_dir.name
+        assert result.exit_code == EXIT_OK, (run_dir.name, result.reasons)

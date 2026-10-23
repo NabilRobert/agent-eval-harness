@@ -1,0 +1,257 @@
+# Source for suites/pagila.yaml. Edit questions here, then regenerate the
+# expected answers with `agent-eval generate-expected`. Never hand-edit
+# suites/pagila.yaml: it's generated.
+suite: pagila
+version: 1
+target: mcp-backbone
+description: MCP-backbone's 30 Pagila questions (verbatim, same prompts as its published benchmark) plus
+  10 expert ones added by the agent-eval-harness. Expected answers are generated through the live endpoint
+  by `agent-eval generate-expected`.
+tasks:
+- id: e01
+  tags:
+  - easy
+  prompt: How many films are in the database?
+  reference_sql: select count(*) from film
+- id: e02
+  tags:
+  - easy
+  prompt: How many films are rated 'R'?
+  reference_sql: select count(*) from film where rating = 'R'
+- id: e03
+  tags:
+  - easy
+  prompt: How many actors are there?
+  reference_sql: select count(*) from actor
+- id: e04
+  tags:
+  - easy
+  prompt: What is the average film length in minutes, rounded to 2 decimal places?
+  reference_sql: select round(avg(length), 2) from film
+- id: e05
+  tags:
+  - easy
+  prompt: How many films have a rental rate of 4.99?
+  reference_sql: select count(*) from film where rental_rate = 4.99
+- id: e06
+  tags:
+  - easy
+  prompt: What is the length in minutes of the longest film?
+  reference_sql: select max(length) from film
+- id: e07
+  tags:
+  - easy
+  prompt: How many countries are there?
+  reference_sql: select count(*) from country
+- id: e08
+  tags:
+  - easy
+  prompt: What is the total of all payment amounts?
+  reference_sql: select sum(amount) from payment
+- id: e09
+  tags:
+  - easy
+  prompt: How many films have a replacement cost greater than 25?
+  reference_sql: select count(*) from film where replacement_cost > 25
+- id: e10
+  tags:
+  - easy
+  prompt: How many rentals have not been returned yet?
+  reference_sql: select count(*) from rental where return_date is null
+- id: m01
+  tags:
+  - medium
+  prompt: How many films are there for each rating?
+  reference_sql: select rating, count(*) from film group by rating
+- id: m02
+  tags:
+  - medium
+  prompt: How many films are there in each language? Give the language name and the count.
+  reference_sql: select l.name, count(*) from film f join language l on l.language_id = f.language_id
+    group by l.name
+- id: m03
+  tags:
+  - medium
+  prompt: How many films are in the 'Action' category?
+  reference_sql: select count(*) from film_category fc join category c on c.category_id = fc.category_id
+    where c.name = 'Action'
+- id: m04
+  tags:
+  - medium
+  prompt: How many rentals were made in 2025 (UTC)?
+  reference_sql: select count(*) from rental where (rental_date at time zone 'UTC') >= '2025-01-01' and
+    (rental_date at time zone 'UTC') < '2026-01-01'
+- id: m05
+  tags:
+  - medium
+  prompt: What is the average rental rate for each rating, rounded to 2 decimal places?
+  reference_sql: select rating, round(avg(rental_rate), 2) from film group by rating
+- id: m06
+  tags:
+  - medium
+  prompt: How many films has the actor with actor_id 1 appeared in?
+  reference_sql: select count(*) from film_actor where actor_id = 1
+- id: m07
+  tags:
+  - medium
+  prompt: What is the total payment amount for each year (UTC)? Give the year and the total.
+  reference_sql: select extract(year from payment_date at time zone 'UTC')::int, sum(amount) from payment
+    group by 1
+- id: m08
+  tags:
+  - medium
+  prompt: How many cities are in the country 'Canada'?
+  reference_sql: select count(*) from city ci join country co on co.country_id = ci.country_id where co.country
+    = 'Canada'
+- id: m09
+  tags:
+  - medium
+  prompt: Which film category has the fewest films, and how many does it have?
+  reference_sql: select c.name, count(*) from film_category fc join category c on c.category_id = fc.category_id
+    group by c.name order by count(*) asc limit 1
+- id: m10
+  tags:
+  - medium
+  prompt: How many distinct customers have rented at least one film?
+  reference_sql: select count(distinct customer_id) from rental
+- id: h01
+  tags:
+  - hard
+  prompt: Who are the top 5 customers by total payment amount? Give customer_id and the total.
+  reference_sql: select customer_id, sum(amount) as total from payment group by customer_id order by total
+    desc limit 5
+- id: h02
+  tags:
+  - hard
+  prompt: What are the 3 most rented films? Give the title and the number of rentals.
+  reference_sql: select f.title, count(*) as n from rental r join inventory i on i.inventory_id = r.inventory_id
+    join film f on f.film_id = i.film_id group by f.film_id, f.title order by n desc limit 3
+- id: h03
+  tags:
+  - hard
+  prompt: Which film category has generated the most payment revenue, and how much? Count a film's full
+    revenue toward every category it belongs to.
+  reference_sql: select c.name, sum(p.amount) as revenue from payment p join rental r on r.rental_id =
+    p.rental_id join inventory i on i.inventory_id = r.inventory_id join film_category fc on fc.film_id
+    = i.film_id join category c on c.category_id = fc.category_id group by c.name order by revenue desc
+    limit 1
+- id: h04
+  tags:
+  - hard
+  prompt: What is the average number of rentals per customer, counting only customers who have rented
+    at least once, rounded to 2 decimal places?
+  reference_sql: select round(count(*)::numeric / count(distinct customer_id), 2) from rental
+- id: h05
+  tags:
+  - hard
+  prompt: How many films have never been rented?
+  reference_sql: select count(*) from film f where not exists (select 1 from inventory i join rental r
+    on r.inventory_id = i.inventory_id where i.film_id = f.film_id)
+- id: h06
+  tags:
+  - hard
+  prompt: In which month (as YYYY-MM, UTC) were the most rentals made, and how many?
+  reference_sql: select to_char(rental_date at time zone 'UTC', 'YYYY-MM') as m, count(*) as n from rental
+    group by m order by n desc limit 1
+- id: h07
+  tags:
+  - hard
+  prompt: How many customers have made more than 60 rentals?
+  reference_sql: select count(*) from (select customer_id from rental group by customer_id having count(*)
+    > 60) t
+- id: h08
+  tags:
+  - hard
+  prompt: How many films are longer than the average film length?
+  reference_sql: select count(*) from film where length > (select avg(length) from film)
+- id: h09
+  tags:
+  - hard
+  prompt: Which actor has appeared in the most films? Give first name, last name and the number of films.
+  reference_sql: select a.first_name, a.last_name, count(*) as n from actor a join film_actor fa on fa.actor_id
+    = a.actor_id group by a.actor_id, a.first_name, a.last_name order by n desc limit 1
+- id: h10
+  tags:
+  - hard
+  prompt: Which customer has spent the most in total? Give first name, last name and the total.
+  reference_sql: select c.first_name, c.last_name, sum(p.amount) as total from customer c join payment
+    p on p.customer_id = c.customer_id group by c.customer_id, c.first_name, c.last_name order by total
+    desc limit 1
+- id: x01
+  tags:
+  - expert
+  prompt: Which store took the most payment revenue? Count each payment toward the store of the staff
+    member who processed it. Give the store_id and the total.
+  reference_sql: select st.store_id, sum(p.amount) from payment p join staff st on st.staff_id = p.staff_id
+    group by st.store_id order by 2 desc limit 1
+- id: x02
+  tags:
+  - expert
+  prompt: For each film rating, which film was rented the most times? If two films tie, give the one whose
+    title comes first alphabetically. Give the rating, the title and the number of rentals.
+  reference_sql: select rating, title, n from (select f.rating, f.title, count(*) as n, row_number() over
+    (partition by f.rating order by count(*) desc, f.title asc) as rk from rental r join inventory i on
+    i.inventory_id = r.inventory_id join film f on f.film_id = i.film_id group by f.film_id, f.rating,
+    f.title) t where rk = 1
+- id: x03
+  tags:
+  - expert
+  prompt: What percentage of returned rentals came back late, meaning returned more than the film's rental_duration
+    days after being rented? Round to 2 decimal places.
+  reference_sql: select round(100.0 * count(*) filter (where r.return_date > r.rental_date + f.rental_duration
+    * interval '1 day') / count(*), 2) from rental r join inventory i on i.inventory_id = r.inventory_id
+    join film f on f.film_id = i.film_id where r.return_date is not null
+- id: x04
+  tags:
+  - expert
+  prompt: How many customers have rented at least one film from every film category?
+  reference_sql: select count(*) from (select r.customer_id from rental r join inventory i on i.inventory_id
+    = r.inventory_id join film_category fc on fc.film_id = i.film_id group by r.customer_id having count(distinct
+    fc.category_id) = (select count(*) from category)) t
+- id: x05
+  tags:
+  - expert
+  prompt: Which country has the most customers, going by each customer's address, and how many customers
+    does it have?
+  reference_sql: select co.country, count(*) from customer cu join address a on a.address_id = cu.address_id
+    join city ci on ci.city_id = a.city_id join country co on co.country_id = ci.country_id group by co.country
+    order by 2 desc limit 1
+- id: x06
+  tags:
+  - expert
+  prompt: Which actor's films have brought in the most payment revenue? Count a payment toward every actor
+    in the rented film. Give first name, last name and the total.
+  reference_sql: select a.first_name, a.last_name, sum(p.amount) from payment p join rental r on r.rental_id
+    = p.rental_id join inventory i on i.inventory_id = r.inventory_id join film_actor fa on fa.film_id
+    = i.film_id join actor a on a.actor_id = fa.actor_id group by a.actor_id, a.first_name, a.last_name
+    order by 3 desc limit 1
+- id: x07
+  tags:
+  - expert
+  prompt: How many customers made their very first rental in 2023 (UTC)?
+  reference_sql: select count(*) from (select customer_id, min(rental_date at time zone 'UTC') as first_rental
+    from rental group by customer_id) t where first_rental >= '2023-01-01' and first_rental < '2024-01-01'
+- id: x08
+  tags:
+  - expert
+  prompt: On average, how many days pass between a customer's consecutive rentals? Average over every
+    pair of consecutive rentals by the same customer, rounded to 2 decimal places.
+  reference_sql: select round(avg(extract(epoch from gap) / 86400)::numeric, 2) from (select rental_date
+    - lag(rental_date) over (partition by customer_id order by rental_date) as gap from rental) t where
+    gap is not null
+- id: x09
+  tags:
+  - expert
+  prompt: Among film categories with at least 50 films, which has the highest average rental rate? Give
+    the category name and the average rounded to 2 decimal places.
+  reference_sql: select c.name, round(avg(f.rental_rate), 2) from film f join film_category fc on fc.film_id
+    = f.film_id join category c on c.category_id = fc.category_id group by c.name having count(*) >= 50
+    order by avg(f.rental_rate) desc limit 1
+- id: x10
+  tags:
+  - expert
+  prompt: Which month (as YYYY-MM, UTC) saw the largest increase in the number of rentals compared with
+    the previous month, and how large was the increase?
+  reference_sql: select m, inc from (select m, n - lag(n) over (order by m) as inc from (select to_char(rental_date
+    at time zone 'UTC', 'YYYY-MM') as m, count(*) as n from rental group by m) t) u where inc is not null
+    order by inc desc limit 1

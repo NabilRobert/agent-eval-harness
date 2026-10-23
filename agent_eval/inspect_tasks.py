@@ -86,16 +86,22 @@ def build_task(
     target: dict[str, Any],
     agent: dict[str, Any],
     auth_token: str,
+    tools_override: list[Any] | None = None,
 ) -> Task:
     """One Inspect sample per suite task. The auth token goes only into the
     MCP connection's headers; it never enters a sample, a score or a
-    prompt."""
-    server = mcp_server_http(
-        name=target["name"],
-        url=target["url"],
-        headers={"Authorization": f"Bearer {auth_token}"},
-    )
-    tools = mcp_tools(server, tools=agent.get("tool_allowlist") or "all")
+    prompt. `tools_override` replaces the MCP server with local tools, so
+    tests can run the whole pipeline offline against Inspect's mock model."""
+    tools: Any
+    if tools_override is not None:
+        tools = tools_override
+    else:
+        server = mcp_server_http(
+            name=target["name"],
+            url=target["url"],
+            headers={"Authorization": f"Bearer {auth_token}"},
+        )
+        tools = [mcp_tools(server, tools=agent.get("tool_allowlist") or "all")]
     dataset = [
         Sample(
             id=task["id"],
@@ -106,7 +112,7 @@ def build_task(
     ]
     return Task(
         dataset=dataset,
-        solver=react(prompt=agent["system_prompt"], tools=[tools]),
+        solver=react(prompt=agent["system_prompt"], tools=tools),
         scorer=suite_scorer(target["infra_error_patterns"]),
         message_limit=agent["message_limit"],
         time_limit=agent["time_limit"],

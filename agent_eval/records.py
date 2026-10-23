@@ -17,8 +17,19 @@ class RecordError(Exception):
     hash recorded when the run finished (edited after the fact)."""
 
 
-def canonical_json(value: Any) -> str:
-    """One fixed serialisation, so equal content always hashes equal."""
+def ordered_json(value: Any) -> str:
+    """Compact JSON that keeps key order. Used wherever rows appear (trial
+    records, task hashes): a row's column order is part of the answer, and
+    strict grading compares columns in order. Sorting keys here once
+    reordered every stored row alphabetically, so regrading a stored
+    multi-column answer failed a correct one (caught by `compare`'s
+    regrade check in the slice B smoke run)."""
+    return json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+
+
+def stable_json(value: Any) -> str:
+    """Compact JSON with sorted keys, for hashing things whose key order
+    carries no meaning (the data fingerprint, the tool list)."""
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
@@ -30,7 +41,7 @@ def task_hash(task: dict[str, Any]) -> str:
     """A task's identity for comparison: its prompt and graders, expected
     answers included. Edit any of them and old scores stop being
     comparable, without anyone having to remember to bump a version."""
-    return sha256_hex(canonical_json({"prompt": task["prompt"], "graders": task["graders"]}))
+    return sha256_hex(ordered_json({"prompt": task["prompt"], "graders": task["graders"]}))
 
 
 @dataclass(frozen=True)
@@ -44,11 +55,11 @@ def write_run(run_dir: Path, meta: dict[str, Any], trials: list[dict[str, Any]])
     hash, so a meta.json only ever vouches for a trials file that exists
     in full."""
     run_dir.mkdir(parents=True, exist_ok=True)
-    trials_text = "".join(canonical_json(t) + "\n" for t in trials)
+    trials_text = "".join(ordered_json(t) + "\n" for t in trials)
     (run_dir / "trials.jsonl").write_text(trials_text, encoding="utf-8")
     full_meta = {**meta, "schema_version": SCHEMA_VERSION, "trials_sha256": sha256_hex(trials_text)}
     (run_dir / "meta.json").write_text(
-        json.dumps(full_meta, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8"
+        json.dumps(full_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
 
 

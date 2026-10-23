@@ -9,12 +9,17 @@ import importlib.metadata
 from pathlib import Path
 from typing import Any
 
-from inspect_ai.log import EvalLog, EvalSample, read_eval_log
+from inspect_ai.log import EvalLog, EvalSample, read_eval_log, resolve_sample_attachments
 
-from agent_eval.records import canonical_json
+from agent_eval.budget import cost_usd
+from agent_eval.records import ordered_json, sha256_hex, task_hash
+from agent_eval.suites import FROZEN_SUITES
 
 # More than this share of errored trials and the run can't be compared.
 INCOMPLETE_ERROR_SHARE = 0.10
+# Bump when export output changes; `reexport` records which version
+# rebuilt a run's trials.
+EXPORT_VERSION = 2
 
 
 class SecretLeakError(Exception):
@@ -66,7 +71,14 @@ def _model_calls(sample: EvalSample) -> list[dict[str, Any]]:
     return calls
 
 
-def trial_from_sample(sample: EvalSample, task_hashes: dict[str, str]) -> dict[str, Any]:
+def trial_from_sample(
+    sample: EvalSample, task_hashes: dict[str, str], price: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    # Inspect moves long strings (e.g. a long SQL query) out to an
+    # attachments table and leaves "attachment://<id>" in their place;
+    # without resolving them the record would hold the reference, not the
+    # query (found by the slice B smoke run).
+    sample = resolve_sample_attachments(sample, "full")
     score = (sample.scores or {}).get("suite_scorer")
     score_meta: dict[str, Any] = (score.metadata or {}) if score else {}
     value: dict[str, Any] = score.value if score and isinstance(score.value, dict) else {}  # pyright: ignore[reportUnknownMemberType]
@@ -112,8 +124,8 @@ def trial_from_sample(sample: EvalSample, task_hashes: dict[str, str]) -> dict[s
         "model_calls": model_calls,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
-        # No price table yet (slice C): unknown, never 0 (Phase 3).
-        "cost_usd": None,
+        # Unknown (None), never 0, when the model has no price (Phase 3).
+        "cost_usd": cost_usd(input_tokens, output_tokens, price),
         "seconds": round(sample.total_time, 3) if sample.total_time else None,
     }
 
@@ -129,21 +141,24 @@ def build_meta(
     preflight_info: dict[str, Any],
     harness_git: str,
     system_prompt_sha256: str,
+    suite_sha256: str | None = None,
+    budget_plan: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    errors = sum(1 for t in trials if t["outcome"] == "error")
-    finished = log.status == "success"
-    status = (
-        "complete"
-        if finished and trials and errors / len(trials) <= INCOMPLETE_ERROR_SHARE
-        else "incomplete"
-    )
+    status = run_status(log.status, trials)
     reported = sorted({c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]})
     return {
         "run_id": run_id,
         "created_at": log.eval.created,
         "status": status,
         "inspect_status": log.status,
-        "suite": {"name": suite["suite"], "task_hashes": task_hashes},
+        "suite": {
+            "name": suite["suite"],
+            "sha256": suite_sha256,
+            # True only for the whole frozen suite, never a subset of it.
+            "frozen": suite_sha256 is not None and FROZEN_SUITES.get(suite["suite"]) == suite_sha256,
+            "task_hashes": task_hashes,
+        },
+        "budget": budget_plan,
         "agent": {
             "model": agent["model"],
             "model_args": agent["model_args"],
@@ -161,18 +176,36 @@ def build_meta(
             "models_reported": reported,
             "harness_git": harness_git,
             "inspect_ai_version": importlib.metadata.version("inspect-ai"),
-            "data_fingerprint": None,  # slice B
         },
-        "totals": {
-            "trials": len(trials),
-            "pass_strict": sum(1 for t in trials if t["outcome"] == "pass"),
-            "pass_lenient": sum(1 for t in trials if t["outcome"] != "error" and t["lenient"]),
-            "errors": errors,
-            "input_tokens": sum(t["input_tokens"] for t in trials),
-            "output_tokens": sum(t["output_tokens"] for t in trials),
-            "cost_usd": None,
-        },
+        "export_version": EXPORT_VERSION,
+        "totals": totals(trials),
     }
+
+
+def run_status(inspect_status: str, trials: list[dict[str, Any]]) -> str:
+    errors = sum(1 for t in trials if t["outcome"] == "error")
+    ok = inspect_status == "success" and trials and errors / len(trials) <= INCOMPLETE_ERROR_SHARE
+    return "complete" if ok else "incomplete"
+
+
+def totals(trials: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "trials": len(trials),
+        "pass_strict": sum(1 for t in trials if t["outcome"] == "pass"),
+        "pass_lenient": sum(1 for t in trials if t["outcome"] != "error" and t["lenient"]),
+        "errors": sum(1 for t in trials if t["outcome"] == "error"),
+        "input_tokens": sum(t["input_tokens"] for t in trials),
+        "output_tokens": sum(t["output_tokens"] for t in trials),
+        "cost_usd": _total_cost(trials),
+    }
+
+
+def _total_cost(trials: list[dict[str, Any]]) -> dict[str, Any]:
+    """A total that includes an unknown trial cost is a lower bound, and
+    says so (Phase 3), rather than quietly counting it as $0."""
+    known = [t["cost_usd"] for t in trials if t["cost_usd"] is not None]
+    return {"usd": round(sum(known), 6) if known else None,
+            "complete": len(known) == len(trials)}
 
 
 def assert_no_secrets(texts: list[str], secrets: list[str]) -> None:
@@ -187,5 +220,35 @@ def assert_no_secrets(texts: list[str], secrets: list[str]) -> None:
 def inspect_log_contains_secret(log_path: Path, secrets: list[str]) -> bool:
     """Inspect's .eval file is a zip, so it's checked decoded, not as bytes."""
     log = read_eval_log(str(log_path))
-    text = canonical_json(log.model_dump(mode="json"))
+    text = ordered_json(log.model_dump(mode="json"))
     return any(len(s) >= 8 and s in text for s in secrets)
+
+
+def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
+             at: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Rebuilds a run's trials from its saved Inspect log with the current
+    export code, so an export bug never needs a paid re-run. The raw log is
+    the evidence and is untouched; the rebuild is recorded in the meta, so
+    it can't happen silently."""
+    log = read_eval_log(str(log_path))
+    # Task hashes are recomputed from the task each sample carries, so a
+    # change in how hashes are computed (export v2 keeps column order)
+    # reaches old runs too, in the meta's own task order.
+    from_samples = {str(s.id): task_hash(s.metadata["task"]) for s in (log.samples or [])}
+    old: dict[str, str] = meta["suite"]["task_hashes"]
+    hashes: dict[str, str] = {tid: from_samples.get(tid, h) for tid, h in old.items()}
+    trials = [trial_from_sample(s, hashes, price) for s in (log.samples or [])]
+    new_meta = {k: v for k, v in meta.items() if k not in ("schema_version", "trials_sha256")}
+    new_meta["suite"] = {
+        **meta["suite"],
+        "task_hashes": hashes,
+        "sha256": sha256_hex(ordered_json([[tid, h] for tid, h in hashes.items()])),
+    }
+    new_meta["status"] = run_status(log.status, trials)
+    new_meta["totals"] = totals(trials)
+    new_meta["reexports"] = [*meta.get("reexports", []), {
+        "at": at, "from_export_version": meta.get("export_version", 1),
+        "to_export_version": EXPORT_VERSION,
+    }]
+    new_meta["export_version"] = EXPORT_VERSION
+    return new_meta, trials

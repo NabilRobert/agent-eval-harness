@@ -8,16 +8,15 @@ from pathlib import Path
 from inspect_ai.log import read_eval_log
 
 from agent_eval.export import clean_arguments, trial_from_sample
-from agent_eval.records import canonical_json, load_run
-from agent_eval.suites import SKELETON_SUITE, suite_task_hashes
+from agent_eval.records import ordered_json, load_run
 
 SKELETON = Path(__file__).resolve().parent.parent / "runs" / "skeleton"
 
 
 def test_exporting_the_committed_log_reproduces_the_committed_trials() -> None:
     log = read_eval_log(str(SKELETON / "inspect.eval"))
-    hashes = suite_task_hashes(SKELETON_SUITE)
-    exported = [canonical_json(trial_from_sample(s, hashes)) for s in (log.samples or [])]
+    hashes = load_run(SKELETON).meta["suite"]["task_hashes"]
+    exported = [ordered_json(trial_from_sample(s, hashes)) for s in (log.samples or [])]
     committed = (SKELETON / "trials.jsonl").read_text().splitlines()
     assert exported == committed
 
@@ -46,3 +45,25 @@ def test_api_key_argument_is_never_recorded() -> None:
     assert clean_arguments({"sql": "select 1", "api_key": "dbmcp_x"}) == {"sql": "select 1"}
     assert clean_arguments({"api_key": None}) == {}
     assert clean_arguments(None) == {}
+
+
+SMOKE = Path(__file__).resolve().parent.parent / "runs" / "smoke-b1"
+
+
+def test_long_tool_arguments_are_resolved_not_left_as_attachment_refs() -> None:
+    """Inspect stores long strings as "attachment://<id>". The slice B smoke
+    run caught the export recording the reference instead of the SQL."""
+    log = read_eval_log(str(SMOKE / "inspect.eval"))
+    hashes = load_run(SMOKE).meta["suite"]["task_hashes"]
+    trials = [trial_from_sample(s, hashes) for s in (log.samples or [])]
+    text = json.dumps(trials)
+    assert "attachment://" not in text
+    sqls = [c["arguments"]["sql"] for t in trials for c in t["tool_calls"] if c["tool"] == "run_query"]
+    assert any(len(sql) > 100 for sql in sqls)  # long ones present, and resolved
+
+
+def test_exporting_the_smoke_log_reproduces_its_committed_trials() -> None:
+    log = read_eval_log(str(SMOKE / "inspect.eval"))
+    hashes = load_run(SMOKE).meta["suite"]["task_hashes"]
+    exported = [ordered_json(trial_from_sample(s, hashes)) for s in (log.samples or [])]
+    assert exported == (SMOKE / "trials.jsonl").read_text().splitlines()

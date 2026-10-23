@@ -1,0 +1,13 @@
+# Model prices in US dollars per million tokens, used for cost and the
+# budget cap. Every entry needs a source and the date it was checked: cost
+# is a headline number, so it's never guessed (ADR-005).
+#
+# Empty on purpose until Sumopod's real per-model prices are in. Until
+# then, unpriced models can only run smoke-sized runs (see budget.py), and
+# reports show cost as unknown.
+models: {}
+#  gpt-5-mini:
+#    input: 0.00
+#    output: 0.00
+#    source: https://...
+#    checked: 2026-10-23
