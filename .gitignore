@@ -9,3 +9,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
+
+# Raw Inspect logs (a copy is kept next to each run once checked for secrets)
+.inspect-logs/
