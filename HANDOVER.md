@@ -181,5 +181,10 @@ parallel a little at a time.
   worth it?" before/after comparison as a README section, only after a
   one-trial cost check. Also possible later: one non-OpenAI model (Gemini /
   DeepSeek / Qwen flash) once tool calling through Sumopod is checked.
-- **Next:** Phase 7 (slices), then the walking skeleton.
+- **Phase 7 drafted:** slices A skeleton → B suites/repeats/failures → C
+  report → D compare + gate + live proofs → E filesystem → G publish; F
+  (container on VPS) whenever the VPS is free. Spend plan: dev only on a
+  3-task smoke suite at 1 repeat; every full run announced with its
+  estimate and needs Arthur's OK; ~6 full runs for all of v1.
+- **Next:** Arthur reviews Phase 7, then build slice A.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
