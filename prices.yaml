@@ -2,12 +2,19 @@
 # budget cap. Every entry needs a source and the date it was checked: cost
 # is a headline number, so it's never guessed (ADR-005).
 #
-# Empty on purpose until Sumopod's real per-model prices are in. Until
-# then, unpriced models can only run smoke-sized runs (see budget.py), and
-# reports show cost as unknown.
-models: {}
-#  gpt-5-mini:
-#    input: 0.00
-#    output: 0.00
-#    source: https://...
-#    checked: 2026-10-23
+# cache_read is the price of cached input tokens. The harness's own cost
+# figure charges every input token at the full `input` price, so it errs
+# high, never low, when the provider served some input from cache.
+models:
+  gpt-5-mini:
+    input: 0.25
+    cache_read: 0.025
+    output: 2.00
+    source: Sumopod model pricing table (screenshot supplied by Arthur)
+    checked: 2026-10-23
+  gpt-5-nano:
+    input: 0.05
+    cache_read: 0.005
+    output: 0.40
+    source: Sumopod model pricing table (screenshot supplied by Arthur)
+    checked: 2026-10-23

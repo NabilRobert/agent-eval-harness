@@ -211,9 +211,19 @@ fastmcp-slim 4.1.0, openai 3.31.0. (Superseded as the runner by Inspect AI,
 ADR-009; the finding about the trace still holds, since Inspect records
 the same things.)
 
-### Spike 3: deferred
+### Spike 3 result: PASS (slice F, 2026-10-24, in the harness container)
 
-The Docker part runs on the VPS later (Arthur, 2026-10-23).
+Image: `node:22.23.3-bookworm-slim` (builds the pinned filesystem server
+from its lockfile) and `python:3.12.12-slim-bookworm`, non-root, with a
+read-only root filesystem, 1 CPU and a 1 GB cap.
+- **Warm start:** 0.12–0.20 s per server (target ≤ 2 s).
+- **Confinement:** reading `/etc/passwd` is refused ("path outside
+  allowed directories").
+- **Clean-up:** no `node` server processes and no temporary fixture copies
+  left after the servers exit.
+- **Resources:** a 2-trial smoke run inside the container passed 2/2.
+  It peaked at about 232 MiB of the 1 GiB cap, with CPU briefly at the
+  1-CPU cap during start-up. 4 concurrent trials fit comfortably.
 
 ### Spike 4 result: PASS — every reference answer is reachable through the endpoint
 
@@ -274,3 +284,20 @@ merge and deploy. **Limit that remains:** Sumopod reports the model as
 `gpt-5-mini`, an alias, so a silent provider-side model update can't be
 seen in the name. Only an A/A pair run over time would show it, and the
 methodology says so.
+
+### Spike 5, rerun on the shipped gate (slice D)
+
+The same simulation, now run through `agent_eval.compare` itself
+(`scripts/simulate_gate.py`; 200 pairs per case, 2,000 resamples):
+
+| | Mostly-easy | Mixed |
+|---|---|---|
+| A/A false alarms | 3.0% | 1.0% |
+| Uniform 10-point drop flagged | 54.5% | 25.0% |
+| Uniform 15-point drop flagged | 86.5% | 58.0% |
+| Uniform 20-point drop flagged | 98.0% | 93.0% |
+| The most reliable task collapsing to 0 | 174/174 | 200/200 |
+
+This matches the throwaway version: the shipped code behaves as the
+design said. The pass rates are still assumed; the rerun on measured rates
+follows the A/A pair.

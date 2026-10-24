@@ -69,6 +69,14 @@ about 18 points on a mixed one. A 10-point drop is caught only 30–50% of
 the time. Smaller drops show in the report but don't fail CI, and the
 README says so. The percentile bootstrap with ~30 clusters is approximate;
 that's acceptable for a gate, and stated.
+**Measured on real runs (slice D/E, 2026-10-24):** on the per-task rates
+of the two Pagila baseline runs, false alarms are 0.5%, and a uniform drop
+is caught 14% of the time at 3 points, 40.5% at 5, 88.5% at 10 and 99% at
+15. Live: the A/A pair wasn't flagged; three Pagila degradations of 2.5–4.5
+points weren't flagged (below the gate's power, published as failed
+proofs); the filesystem degradation (−61.2 points) was flagged on both
+rules; `confirm` resolved an inconclusive −5-point model swap into a
+confirmed regression.
 **Revisit if:** suites grow past ~100 tasks (consider a clustered standard
 error instead), or repeats change.
 **Amendments (2026-10-23, senior review):**
@@ -223,6 +231,14 @@ latency excludes real network time, and the methodology says so. CI is
 unaffected: it only compares committed runs.
 **Revisit if:** scheduled regression runs become worth the cost (then
 (b), with a smaller suite).
+**Built (slice F, 2026-10-24):**
+- `Dockerfile` and `deploy/compose.yaml`, with `deploy/RUNBOOK.md`.
+- Locked down: a non-root user whose uid matches the host's `runs/`
+  owner, a read-only root filesystem, no capabilities, 1 CPU, 1 GB.
+- The keys come from an env file outside the repo, and never from the
+  image (`.dockerignore` excludes `.env`).
+- The image has no `.git`, so the build commit is stamped in, and full
+  runs still refuse a dirty or unknown one.
 
 ### ADR-009: Run trials on Inspect AI; build the regression gate on its logs
 **Context:** the first question a senior reviewer would ask is "why not
@@ -279,3 +295,14 @@ pinned commit and the published runs are made after that. Local latency
 isn't comparable with the VPS's, and the README says so.
 **Rejected:** (b) spends Arthur's rate limit and breaks the "no public
 use on his keys" non-goal; (c) fails the reproducibility metric.
+**Outcome (slice H, 2026-10-24):**
+- **The first candidate matched.** Pagila at upstream `85bf46a` (the last
+  commit to touch the schema or data) gives exactly the published
+  fingerprint `fa70dca8…`, and the local server's tool list hash equals
+  the published runs'.
+- **No host bind mount.** It hung on a macOS folder permission during
+  development, so generated settings and the local key live in a Docker
+  volume, and the harness reads the key with `docker compose exec`.
+- **The fingerprint guard became general.** Every run checks it against
+  the suite's recorded fingerprint, for the live endpoint as well as the
+  local copy.

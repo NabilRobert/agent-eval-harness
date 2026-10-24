@@ -1,0 +1,131 @@
+{
+  "run_id": "confirm-20261023T173807Z-baseline",
+  "created_at": "2026-10-23T17:38:11+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "pagila",
+    "sha256": "97a2775303136a4929aef20ca00da872d8bd1719ae4135187580caf9ef6bd400",
+    "frozen": false,
+    "task_hashes": {
+      "h03": "b22e6e00ba9f73d8c0bb6c2c30261979a7f29027c6b63b504ac825b378cedb38",
+      "h06": "fc5013a3e13b8333af80f18b1f779b0bb829c65c51083746cdb7381c058e200e",
+      "h08": "48c708801a764ca24a63afaa670effe55af9087da327cf030b345a5ee97ff12c",
+      "m04": "3dac82deb7b0cc02f14620c5d8bdb5e098b9ba47f008f036ca4a5c0fc0667243",
+      "m07": "1d08e1591213356c6d1d3472e72a74345e1eace61b8b41f323c370a89a528486",
+      "m09": "b3bd27f3fe1952b728429922fd9e6daa1806d63701e699f93607ccc596b9d20c",
+      "x03": "43d3897c3720d8d1c7b602b205c6077bd4d57456293aefd2e81de8ecec471e25",
+      "x08": "089a5ee80e75822c80f9657cbc9b0ff3899899dcf4f4e0227ff1022784e4c6b1"
+    },
+    "task_tags": {
+      "h03": [
+        "hard"
+      ],
+      "h06": [
+        "hard"
+      ],
+      "h08": [
+        "hard"
+      ],
+      "m04": [
+        "medium"
+      ],
+      "m07": [
+        "medium"
+      ],
+      "m09": [
+        "medium"
+      ],
+      "x03": [
+        "expert"
+      ],
+      "x08": [
+        "expert"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": 0.2136,
+    "per_trial_cap_usd": 0.0625,
+    "token_basis": "measured",
+    "priced": true
+  },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
+  "agent": {
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "system_prompt": "You answer questions about a database by using the available tools: list_tables, describe_table, sample_rows, and run_query. Always explore the schema before writing SQL. Call run_query exactly once with your final answer query.",
+    "tool_allowlist": null,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "epochs": 10
+  },
+  "provenance": {
+    "server_name": "database-mcp",
+    "server_version": null,
+    "healthz_version": null,
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ],
+    "tool_list_sha256": "ba48f1adcf4cee9b0fb766337c164f959d34e33dcf03d856ffd514e3954dcaa3",
+    "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
+    "data_fingerprint_parts": [
+      {
+        "customers": 999,
+        "films": 1000,
+        "rentals": 51805,
+        "payments": 51061,
+        "max_rental_id": 87559,
+        "max_payment_id": 102094
+      },
+      {
+        "customers_md5": "aa111d185f802a08f8c5b460cc529acc"
+      },
+      {
+        "films_md5": "94a45252a98d4da71961c1eb4e274ccc"
+      },
+      {
+        "rentals_md5": "c7365fb8ef794a5cf52b4f55ba2ad88d"
+      },
+      {
+        "payments_md5": "a4ac45be39ec18114f9ab7befd508b74"
+      }
+    ],
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "harness_git": "26713edaac57",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 4,
+  "totals": {
+    "trials": 80,
+    "pass_strict": 73,
+    "pass_lenient": 75,
+    "errors": 0,
+    "input_tokens": 299261,
+    "output_tokens": 82760,
+    "cost_usd": {
+      "usd": 0.240335,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "904333562516fa4b2f14538fc9795ef490f82c264f4bbef88b502a8e5b9e7168"
+}

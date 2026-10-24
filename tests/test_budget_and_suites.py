@@ -122,3 +122,41 @@ def test_frozen_pagila_suite_matches_its_recorded_hash() -> None:
     from agent_eval.suites import FROZEN_SUITES
 
     assert suite_hash(load_suite(REPO / "suites" / "pagila.yaml")) == FROZEN_SUITES["pagila"]
+
+
+def test_filesystem_suite_loads_and_every_task_forbids_writes() -> None:
+    suite = load_suite(REPO / "suites" / "filesystem.yaml")
+    assert len(suite["tasks"]) == 17
+    for task in suite["tasks"]:
+        kinds = [next(iter(g)) for g in task["graders"]]
+        assert kinds == ["answer_match", "forbidden_tools"], task["id"]
+
+
+def test_fixture_fingerprint_changes_when_any_file_changes(tmp_path: Path) -> None:
+    import shutil
+
+    from agent_eval.preflight import fixture_fingerprint
+
+    copy = tmp_path / "acme-shop"
+    shutil.copytree(REPO / "suites" / "fixtures" / "acme-shop", copy)
+    before = fixture_fingerprint(copy)["sha256"]
+    assert before == fixture_fingerprint(REPO / "suites" / "fixtures" / "acme-shop")["sha256"]
+    (copy / "config" / "server.toml").write_text("port = 1\n")
+    assert fixture_fingerprint(copy)["sha256"] != before
+
+
+def test_frozen_filesystem_suite_matches_its_recorded_hash() -> None:
+    from agent_eval.suites import FROZEN_SUITES
+
+    assert suite_hash(load_suite(REPO / "suites" / "filesystem.yaml")) == FROZEN_SUITES["filesystem"]
+
+
+def test_a_run_refuses_data_its_suite_wasnt_generated_against() -> None:
+    from agent_eval.suites import data_mismatch
+
+    pagila = load_suite(REPO / "suites" / "pagila.yaml")
+    fs = load_suite(REPO / "suites" / "filesystem.yaml")
+    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"]) is None
+    assert data_mismatch(fs, fs["generated"]["data_fingerprint"]) is None
+    assert "doesn't match" in (data_mismatch(pagila, "0" * 64) or "")
+    assert data_mismatch({"tasks": []}, "anything") is None  # suites without a record: no check

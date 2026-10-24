@@ -15,8 +15,9 @@ SKELETON = Path(__file__).resolve().parent.parent / "runs" / "skeleton"
 
 def test_exporting_the_committed_log_reproduces_the_committed_trials() -> None:
     log = read_eval_log(str(SKELETON / "inspect.eval"))
-    hashes = load_run(SKELETON).meta["suite"]["task_hashes"]
-    exported = [ordered_json(trial_from_sample(s, hashes)) for s in (log.samples or [])]
+    meta = load_run(SKELETON).meta
+    hashes = meta["suite"]["task_hashes"]
+    exported = [ordered_json(trial_from_sample(s, hashes, meta["price"])) for s in (log.samples or [])]
     committed = (SKELETON / "trials.jsonl").read_text().splitlines()
     assert exported == committed
 
@@ -28,7 +29,8 @@ def test_skeleton_trial_records_what_graders_and_reports_need() -> None:
     assert "run_query" in {c["tool"] for c in trial["tool_calls"]}
     assert all(c["input_tokens"] and c["output_tokens"] for c in trial["model_calls"])
     assert trial["graders"][0]["input"]["graded_rows"]
-    assert trial["cost_usd"] is None  # no price table yet: unknown, not 0
+    # tokens x the price the run records, per million
+    assert trial["cost_usd"] == (trial["input_tokens"] * 0.25 + trial["output_tokens"] * 2.0) / 1e6
 
 
 def test_skeleton_meta_records_provenance() -> None:
@@ -64,6 +66,7 @@ def test_long_tool_arguments_are_resolved_not_left_as_attachment_refs() -> None:
 
 def test_exporting_the_smoke_log_reproduces_its_committed_trials() -> None:
     log = read_eval_log(str(SMOKE / "inspect.eval"))
-    hashes = load_run(SMOKE).meta["suite"]["task_hashes"]
-    exported = [ordered_json(trial_from_sample(s, hashes)) for s in (log.samples or [])]
+    meta = load_run(SMOKE).meta
+    exported = [ordered_json(trial_from_sample(s, meta["suite"]["task_hashes"], meta["price"]))
+                for s in (log.samples or [])]
     assert exported == (SMOKE / "trials.jsonl").read_text().splitlines()

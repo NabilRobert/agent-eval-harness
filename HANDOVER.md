@@ -238,7 +238,71 @@ parallel a little at a time.
   Fixed; `agent-eval reexport` rebuilt both committed runs from their
   Inspect logs. 57 tests. JOURNEY.md started.
 - **Spend today:** ~12 small trials + a 3-call caching probe, well under $0.10.
-- **Next:** slice C (report.md), then D (the gate + live proofs, which need
-  3 full Pagila runs: announce estimate, get Arthur's OK; needs Sumopod
-  prices first or they can't run).
+- **Harness on GitHub** (github.com/NabilRobert/agent-eval-harness), CI green
+  on `e9e2589`. Arthur says the code is on the VPS too. MCP-backbone's
+  `feat/server-version` is NOT pushed/deployed yet (live /healthz has no
+  version).
+- **Slice C done (2026-10-23, not pushed):** `agent_eval/report.py` renders
+  report.md deterministically from records (strict headline, lenient,
+  pass^k/pass@k, errors beside rates, cost unknown/lower-bound, latency,
+  per-difficulty and per-task tables, failed-trial details with safe
+  fences, provenance). `agent-eval report [--check]`; run and reexport
+  write it; CI checks every committed report. Export v3 (task tags in
+  meta). 65 tests, mutation-checked.
+- **Prices in (Arthur, 2026-10-23):** gpt-5-mini $0.25/$2.00, gpt-5-nano
+  $0.05/$0.40 per M (cache read 1/10). Full Pagila run ≈ $0.61 on mini.
+  Fixed a non-atomic `write_run` the YAML date exposed.
+- **Slice D offline done:** gate in `compare` (paired bootstrap via
+  binomial draws, 10k resamples, seed 20261023; broken = all→0 with ≥5
+  trials each side; inconclusive at ≤ −5 pts; cost/latency warnings),
+  `scripts/simulate_gate.py` (A/A false alarms 3.0% / 1.0%),
+  `--exclude-tools`, clean-tree guard for full runs. 74 tests.
+- **Live proofs run (branch `feat/slice-d-proofs`, $1.71):** a 191/200, b
+  192/200, degraded 185/200. A/A not flagged ✓. Degraded NOT flagged
+  (−3.0 pts, CI −9.5..+2.5): the proof failed as pre-registered and is
+  published as such. Likely cause: the model knows Pagila's schema from
+  training. Measured-rate simulation: A/A 0.5%, 3-pt drop caught 14%,
+  10-pt 88.5%, 15-pt 99%. Fixed: the regrade now fails limit-hit trials
+  like the export does. Results in Phase 7 + JOURNEY.
+- **Second degradation run (pre-registered):** `proof-nano` 182/200, −4.5
+  vs a (not flagged), −5.0 vs b (inconclusive), $0.28, 2× latency (warning
+  fired). Fallback `proof-mini-prompt` (no final-query line) 186/200, −2.5,
+  not flagged. **Live "degraded agent is flagged" metric NOT met**; the gate
+  never false-alarmed; the suite is saturated and Pagila is likely in the
+  training data. Total proof spend ≈ $2.41.
+- **Slice E done + proof met live (2026-10-24, branch feat/slice-d-proofs):**
+  filesystem target (pinned server-filesystem 2026.8.31 in tools/fs-server,
+  fresh fixture copy per trial via agent_eval/fs_server.py), synthetic
+  acme-shop fixture + 17-task suite (frozen, built by
+  scripts/build_filesystem_suite.py), graders answer_match/forbidden_tools.
+  `fs-mini-base` 84/85 vs `fs-mini-degraded` (no discovery tools) 32/85 →
+  **regression, exit 1** (−61.2 pts, 9 broken tasks). Injection task 5/5.
+- **confirm step built + validated + used:** `agent-eval confirm` on
+  mini-b vs nano (the inconclusive pair) → fresh 8 tasks × 10: mini 73/80,
+  nano 58/80 → **regression confirmed** (−18.8 pts on those tasks). a vs
+  nano not eligible (−4.5). Record in `confirmations/`.
+- **Spend:** proofs ≈ $2.41 + filesystem $0.54 + confirm $0.37 ≈ $3.3 total.
+- **Slice G done (2026-10-24):** `fs-nano` 67/85 (−20 pts vs mini, flagged).
+  `agent-eval publish [--check]` renders RESULTS.md + the README results
+  block from records named in `results.yaml` (CI checks it). README
+  rewritten (results, gate, measured power, methodology, caveats, not-done).
+  Injection resisted in every fs run (0 write calls). 89 tests.
+- **Spend to date ≈ $3.45** (proofs, confirm, fs runs).
+- **Slice H done (2026-10-24):** `repro/` (Dockerfile + compose + setup):
+  MCP-backbone 4e418e9 + Pagila upstream 85bf46a → fingerprint fa70dca8
+  matches exactly, tool list hash matches. Target `mcp-backbone-local`
+  (http://127.0.0.1:8765/mcp/, key read via `docker compose exec`);
+  `--target`; every run refuses data its suite wasn't generated against
+  (`data_mismatch`). Smoke `runs/smoke-h1` 2/3. 91 tests.
+- **Follow-ups:** MCP-backbone CI publishing a prebuilt image (slow builds);
+  strict-schema `api_key` fix; server-version deploy.
+- **Slice F built + tested locally (2026-10-24):** `Dockerfile` (node stage
+  for fs-server, python image, non-root uid=1000 build arg, build commit
+  stamped via HARNESS_GIT), `.dockerignore`, `deploy/compose.yaml` (1 CPU,
+  1 GB, read-only root, cap_drop ALL, env file
+  ~/.config/agent-eval/env), `deploy/RUNBOOK.md`. Spike 3 passed in the
+  container. **Remaining: first build + smoke on the VPS (Arthur / VPS
+  session).** Also: open a PR feat/slice-d-proofs → main so CI runs.
+  Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
+  `feat/server-version`; the strict-schema fix proposal.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

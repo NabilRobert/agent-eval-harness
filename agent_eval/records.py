@@ -4,6 +4,7 @@ and `report` can use it in CI without Inspect or a network."""
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -50,17 +51,27 @@ class Run:
     trials: list[dict[str, Any]]
 
 
+def _replace(path: Path, text: str) -> None:
+    """Write-then-rename: the file is either the old one or the new one in
+    full, never half-written."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def write_run(run_dir: Path, meta: dict[str, Any], trials: list[dict[str, Any]]) -> None:
-    """Writes the trials first, then the meta with the trials file's
-    hash, so a meta.json only ever vouches for a trials file that exists
-    in full."""
-    run_dir.mkdir(parents=True, exist_ok=True)
+    """Serialises everything before touching the disk, so a value that
+    can't be written (once: a YAML date in the price table) fails before
+    any file changes. Then trials, then the meta that vouches for them, each
+    swapped in atomically. A crash between the two leaves a meta whose hash
+    doesn't match, which load_run refuses, rather than a silently
+    inconsistent run."""
     trials_text = "".join(ordered_json(t) + "\n" for t in trials)
-    (run_dir / "trials.jsonl").write_text(trials_text, encoding="utf-8")
     full_meta = {**meta, "schema_version": SCHEMA_VERSION, "trials_sha256": sha256_hex(trials_text)}
-    (run_dir / "meta.json").write_text(
-        json.dumps(full_meta, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    meta_text = json.dumps(full_meta, indent=2, ensure_ascii=False) + "\n"
+    run_dir.mkdir(parents=True, exist_ok=True)
+    _replace(run_dir / "trials.jsonl", trials_text)
+    _replace(run_dir / "meta.json", meta_text)
 
 
 def load_run(run_dir: Path) -> Run:

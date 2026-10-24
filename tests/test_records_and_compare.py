@@ -16,7 +16,7 @@ GOOD = [{"count": 1000}]
 def test_a_run_compared_with_itself_is_no_change(run_factory: RunFactory) -> None:
     run = run_factory([make_trial(1, GOOD)])
     result = compare_runs(run, run)
-    assert (result.exit_code, result.verdict) == (EXIT_OK, "no change")
+    assert (result.exit_code, result.verdict) == (EXIT_OK, "no regression")
 
 
 def test_hand_edited_trials_file_is_refused(run_factory: RunFactory) -> None:
@@ -84,13 +84,6 @@ def test_stored_grade_that_current_graders_disagree_with_is_reported(
     assert result.per_task == {"easy-01": (0.0, 0.0)}
 
 
-def test_changed_pass_rate_is_undecided_until_the_gate_exists(run_factory: RunFactory) -> None:
-    result = compare_runs(run_factory([make_trial(1, GOOD)]),
-                          run_factory([make_trial(1, [{"count": 1}])]))
-    assert result.exit_code == EXIT_UNDECIDED
-    assert result.per_task == {"easy-01": (1.0, 0.0)}
-
-
 def test_error_trials_are_left_out_of_pass_rates(run_factory: RunFactory) -> None:
     run = run_factory([make_trial(1, GOOD), make_trial(2, None, outcome="error")])
     assert compare_runs(run, run).per_task == {"easy-01": (1.0, 1.0)}
@@ -130,3 +123,40 @@ def test_every_committed_run_is_intact_and_regrades_to_its_stored_grades() -> No
         result = compare_runs(run_dir, run_dir)
         assert result.regrade_mismatches == [], run_dir.name
         assert result.exit_code == EXIT_OK, (run_dir.name, result.reasons)
+
+
+def test_a_meta_that_cant_be_written_leaves_the_run_untouched(tmp_path: Path) -> None:
+    """The bug a reexport hit: a value JSON can't hold made the meta write
+    fail after trials.jsonl was already replaced, leaving a run whose
+    files disagreed. Now nothing is written unless everything serialises."""
+    import datetime
+
+    from agent_eval.records import write_run
+
+    run = tmp_path / "run"
+    write_run(run, make_meta(), [make_trial(1, GOOD)])
+    before = {p.name: p.read_text() for p in run.iterdir()}
+    with pytest.raises(TypeError):
+        write_run(run, make_meta(price={"checked": datetime.date(2026, 10, 23)}),
+                  [make_trial(1, [{"count": 1}])])
+    assert {p.name: p.read_text() for p in run.iterdir()} == before
+    load_run(run)  # still consistent
+
+
+def test_a_trial_that_hit_a_limit_regrades_as_a_fail_even_with_correct_rows(
+    run_factory: RunFactory,
+) -> None:
+    from agent_eval.compare import regrade
+
+    trial = make_trial(1, GOOD)
+    trial.update({"stop_reason": "message", "outcome": "fail", "strict": False, "lenient": False})
+    assert regrade(trial) == (False, False)
+    run = run_factory([trial])
+    assert compare_runs(run, run).regrade_mismatches == []
+
+
+def test_env_text_parsing_handles_quotes_comments_and_blanks() -> None:
+    from agent_eval.envfile import parse_env_text
+
+    text = '# comment\n\nA=1\nB="two"\nC=\'three\'\nnot a line\n'
+    assert parse_env_text(text) == {"A": "1", "B": "two", "C": "three"}

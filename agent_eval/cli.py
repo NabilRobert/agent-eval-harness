@@ -14,11 +14,12 @@ from pathlib import Path
 from typing import Any
 
 from agent_eval.compare import EXIT_UNDECIDED, compare_runs
-from agent_eval.envfile import read_env_file
+from agent_eval.envfile import parse_env_text, read_env_file
 from agent_eval.records import ordered_json, sha256_hex, write_run
 from agent_eval.suites import (
     PAGILA_SYSTEM_PROMPT,
     SuiteError,
+    data_mismatch,
     load_suite,
     required_tools,
     suite_hash,
@@ -33,6 +34,11 @@ RAW_LOG_DIR = REPO_ROOT / ".inspect-logs"
 
 
 def _harness_git() -> str:
+    """The exact harness commit, `-dirty` if the checkout has edits. In the
+    container (no .git) it's the commit stamped in at build time."""
+    stamped = os.environ.get("AGENT_EVAL_HARNESS_GIT")
+    if stamped:
+        return stamped
     try:
         out = subprocess.run(
             ["git", "describe", "--always", "--dirty", "--abbrev=12"],
@@ -74,20 +80,33 @@ def cmd_run(args: argparse.Namespace) -> int:
     except (SuiteError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
-    target = TARGETS.get(suite["target"])
+    target = TARGETS.get(args.target or suite["target"])
     if target is None:
-        print(f"error: unknown target {suite['target']!r}", file=sys.stderr)
+        print(f"error: unknown target {args.target or suite['target']!r}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    if args.target and target.get("serves", target["name"]) != suite["target"]:
+        print(f"error: target {args.target!r} doesn't serve suite target {suite['target']!r}",
+              file=sys.stderr)
         return EXIT_UNDECIDED
     env = read_env_file(Path(args.env_file))
+    if target.get("auth_env_command"):
+        try:
+            out = subprocess.run(target["auth_env_command"], capture_output=True, text=True,
+                                 timeout=30, check=True).stdout
+        except (OSError, subprocess.SubprocessError):
+            print(f"error: couldn't read the {target['name']} key; is it running? "
+                  "(docker compose -f repro/compose.yaml up -d)", file=sys.stderr)
+            return EXIT_UNDECIDED
+        env = {**env, **parse_env_text(out)}
     sumopod_key = _require(env, "SUMOPOD_AI_API_KEY")
     base_url = _require(env, "SUMOPOD_BASE_URL")
-    auth_token = _require(env, target["auth_env"])
+    auth_token = _require(env, target["auth_env"]) if target.get("auth_env") else ""
     # Inspect's openai-api/<service>/<model> provider reads <SERVICE>_API_KEY
     # and <SERVICE>_BASE_URL from this process's environment.
     os.environ["SUMOPOD_API_KEY"] = sumopod_key
     os.environ["SUMOPOD_BASE_URL"] = base_url
     os.environ.setdefault("INSPECT_DISPLAY", "none")
-    secrets = [sumopod_key, auth_token]
+    secrets = [s for s in (sumopod_key, auth_token) if s]
 
     run_id = args.run_id or (
         datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -117,12 +136,27 @@ def cmd_run(args: argparse.Namespace) -> int:
     if args.plan_only:
         return 0
 
+    from agent_eval.budget import SMOKE_MAX_TRIALS
+
+    harness_git = _harness_git()
+    if n_trials > SMOKE_MAX_TRIALS and (harness_git.endswith("-dirty") or harness_git == "unknown"):
+        # A full run is evidence: it must trace back to one exact commit.
+        print(f"error: harness checkout is {harness_git}; commit first (full runs need a clean "
+              "tree, smoke runs don't)", file=sys.stderr)
+        return EXIT_UNDECIDED
+
     agent: dict[str, Any] = {
         "model": args.model,
         # MCP-backbone's optional api_key parameter fails OpenAI strict
         # mode with a 400 (Phase 4 revision), so strict schemas are off.
         "model_args": {"strict_tools": False},
-        "system_prompt": PAGILA_SYSTEM_PROMPT,
+        "system_prompt": (
+            args.system_prompt if args.system_prompt
+            else Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
+            if args.system_prompt_file
+            # A suite can carry its own prompt; Pagila uses MCP-backbone's.
+            else suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
+        ),
         "tool_allowlist": None,
         "message_limit": 20,
         "time_limit": 120,
@@ -136,6 +170,23 @@ def cmd_run(args: argparse.Namespace) -> int:
     except PreflightError as exc:
         print(f"error: preflight failed: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
+    # The suite's expected answers were generated against one specific
+    # dataset; grading against any other would score right answers wrong.
+    mismatch = data_mismatch(suite, info["data_fingerprint"])
+    if mismatch:
+        print(f"error: {mismatch}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    if args.exclude_tools:
+        # A deliberately degraded agent (the regression proof): the same
+        # model and prompt with tools taken away. Recorded in the meta, so
+        # `compare` names it as the difference between the runs.
+        excluded = set(args.exclude_tools.split(","))
+        unknown = excluded - set(info["tool_names"])
+        if unknown or excluded & required_tools(suite):
+            print(f"error: can't exclude {sorted(excluded)}: unknown {sorted(unknown)}, or "
+                  f"needed by the graders {sorted(excluded & required_tools(suite))}", file=sys.stderr)
+            return EXIT_UNDECIDED
+        agent["tool_allowlist"] = [t for t in info["tool_names"] if t not in excluded]
 
     from inspect_ai import eval as inspect_eval  # pyright: ignore[reportUnknownVariableType]
     from inspect_ai.model import ModelCost
@@ -149,9 +200,10 @@ def cmd_run(args: argparse.Namespace) -> int:
             "model_cost_config": {
                 args.model: ModelCost(
                     input=float(price["input"]), output=float(price["output"]),
+                    # Cache writes cost the full input price; reads use the
+                    # cached price when the table has one.
                     input_cache_write=float(price["input"]),
-                    # No discount assumed for cached input: conservative.
-                    input_cache_read=float(price["input"]),
+                    input_cache_read=float(price.get("cache_read", price["input"])),
                 )
             },
         }
@@ -173,9 +225,9 @@ def cmd_run(args: argparse.Namespace) -> int:
     trials = [trial_from_sample(s, task_hashes, price) for s in (log.samples or [])]
     meta = build_meta(
         log, trials, run_id=run_id, suite=suite, task_hashes=task_hashes, agent=agent,
-        preflight_info=info, harness_git=_harness_git(),
+        preflight_info=info, harness_git=harness_git,
         system_prompt_sha256=sha256_hex(agent["system_prompt"]),
-        suite_sha256=suite_hash(suite), budget_plan=budget,
+        suite_sha256=suite_hash(suite), budget_plan=budget, price=price,
     )
     try:
         assert_no_secrets([ordered_json(meta)] + [ordered_json(t) for t in trials], secrets)
@@ -183,6 +235,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
     write_run(run_dir, meta, trials)
+    _write_report(run_dir)
 
     raw_log = Path(log.location)
     if inspect_log_contains_secret(raw_log, secrets):
@@ -235,13 +288,114 @@ def cmd_reexport(args: argparse.Namespace) -> int:
     at = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
     meta, trials = reexport(run.meta, log_path, price, at)
     write_run(run_dir, meta, trials)
+    _write_report(run_dir)
     print(f"{run_dir.name}: rebuilt {len(trials)} trials with export v{meta['export_version']}")
+    return 0
+
+
+def _write_report(run_dir: Path) -> None:
+    from agent_eval.records import load_run
+    from agent_eval.report import render
+
+    (run_dir / "report.md").write_text(render(load_run(run_dir)), encoding="utf-8")
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    """Renders report.md from the records; with --check, fails (exit 1) if
+    the committed report doesn't match what the records render to."""
+    from agent_eval.records import RecordError, load_run
+    from agent_eval.report import render
+
+    run_dir = Path(args.run_dir)
+    try:
+        text = render(load_run(run_dir))
+    except RecordError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    path = run_dir / "report.md"
+    if args.check:
+        if not path.is_file() or path.read_text(encoding="utf-8") != text:
+            print(f"{path}: out of date with its records (run `agent-eval report {run_dir}`)")
+            return 1
+        print(f"{path}: up to date")
+        return 0
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path}")
+    return 0
+
+
+def cmd_confirm(args: argparse.Namespace) -> int:
+    """Reruns the dropped tasks of an inconclusive comparison for both
+    agents and decides on the fresh trials alone (agent_eval/confirm.py)."""
+    import json
+
+    from agent_eval.confirm import ConfirmError, plan
+
+    try:
+        p = plan(Path(args.baseline), Path(args.candidate), REPO_ROOT / "suites", args.epochs)
+    except ConfirmError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
+    ids = {"baseline": f"confirm-{stamp}-baseline", "candidate": f"confirm-{stamp}-candidate"}
+    print(f"confirming {p['candidate']} vs {p['baseline']}: {len(p['tasks'])} dropped tasks "
+          f"x {p['epochs']} attempts, both agents: {p['tasks']}")
+    for side in ("baseline", "candidate"):
+        cmd = [sys.executable, "-m", "agent_eval.cli", "run", *p[f"{side}_args"],
+               "--run-id", ids[side], "--out", args.out, "--budget", str(args.budget)]
+        code = subprocess.run(cmd, cwd=REPO_ROOT, check=False).returncode
+        if code != 0:
+            print(f"error: the {side} confirmation run failed (exit {code})", file=sys.stderr)
+            return EXIT_UNDECIDED
+    result = compare_runs(Path(args.out) / ids["baseline"], Path(args.out) / ids["candidate"])
+    record = {**{k: v for k, v in p.items() if not k.endswith("_args")}, "runs": ids,
+              "verdict": result.verdict, "exit_code": result.exit_code,
+              "point": result.point, "interval": result.interval, "reasons": result.reasons}
+    out = REPO_ROOT / "confirmations"
+    out.mkdir(exist_ok=True)
+    (out / f"{stamp}.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    print(f"confirmation verdict (fresh trials only): {result.verdict} (exit {result.exit_code})")
+    if result.interval is not None and result.point is not None:
+        print(f"  change {result.point:+.1%} (95% interval {result.interval[0]:+.1%} to "
+              f"{result.interval[1]:+.1%})")
+    for line in result.reasons:
+        print(f"  reason: {line}")
+    return result.exit_code
+
+
+def cmd_publish(args: argparse.Namespace) -> int:
+    """Renders RESULTS.md and the README's results block from the records
+    named in results.yaml; with --check, fails if either is out of date."""
+    from agent_eval.publish import apply_readme, render
+
+    results_md, block = render(REPO_ROOT)
+    readme_path, results_path = REPO_ROOT / "README.md", REPO_ROOT / "RESULTS.md"
+    readme = apply_readme(readme_path.read_text(encoding="utf-8"), block)
+    if args.check:
+        stale = [p.name for p, text in ((results_path, results_md), (readme_path, readme))
+                 if not p.is_file() or p.read_text(encoding="utf-8") != text]
+        if stale:
+            print(f"out of date with the run records: {stale} (run `agent-eval publish`)")
+            return 1
+        print("RESULTS.md and README results are up to date")
+        return 0
+    results_path.write_text(results_md, encoding="utf-8")
+    readme_path.write_text(readme, encoding="utf-8")
+    print("wrote RESULTS.md and the README results block")
     return 0
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
     result = compare_runs(Path(args.baseline), Path(args.candidate))
-    print(f"verdict: {result.verdict}")
+    print(f"verdict: {result.verdict} (exit {result.exit_code})")
+    if result.interval is not None and result.point is not None:
+        low, high = result.interval
+        print(f"  suite strict pass rate change: {result.point:+.1%} "
+              f"(95% interval {low:+.1%} to {high:+.1%})")
+    for line in result.warnings:
+        print(f"  warning: {line}")
+    if result.missing:
+        print(f"  only in one run (not compared): {result.missing}")
     for line in result.reasons:
         print(f"  reason: {line}")
     for line in result.differences:
@@ -249,7 +403,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
     for line in result.regrade_mismatches:
         print(f"  regraded differently: {line}")
     for task, (b, c) in result.per_task.items():
-        print(f"  {task}: {b:.0%} -> {c:.0%}")
+        if b != c:
+            print(f"  {task}: {b:.0%} -> {c:.0%}")
     return result.exit_code
 
 
@@ -261,11 +416,15 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--suite", default=str(REPO_ROOT / "suites" / "pagila.yaml"))
     run.add_argument("--tasks", help="comma-separated task ids (e.g. a smoke suite)")
     run.add_argument("--model", default="openai-api/sumopod/gpt-5-mini")
+    run.add_argument("--target", help="run against another target serving the suite's (e.g. mcp-backbone-local)")
     run.add_argument("--epochs", type=int, default=5)
     run.add_argument("--max-samples", type=int, default=4, help="trials running at once")
     run.add_argument("--budget", type=float, default=5.0, help="US dollars for the whole run")
     run.add_argument("--prices", default=str(REPO_ROOT / "prices.yaml"))
     run.add_argument("--plan-only", action="store_true", help="print the plan and stop")
+    run.add_argument("--exclude-tools", help="comma-separated tools to withhold (a degraded agent)")
+    run.add_argument("--system-prompt-file", help="replace the suite's system prompt (a degraded agent)")
+    run.add_argument("--system-prompt", help=argparse.SUPPRESS)  # exact text, used by `confirm`
     run.add_argument("--out", default="runs")
     run.add_argument("--run-id")
     run.add_argument("--env-file", default=str(REPO_ROOT / ".env"))
@@ -281,6 +440,23 @@ def main(argv: list[str] | None = None) -> int:
     rex.add_argument("run_dir")
     rex.add_argument("--prices", default=str(REPO_ROOT / "prices.yaml"))
     rex.set_defaults(func=cmd_reexport)
+
+    rep = sub.add_parser("report", help="render report.md from a run's records")
+    rep.add_argument("run_dir")
+    rep.add_argument("--check", action="store_true", help="fail if report.md is out of date")
+    rep.set_defaults(func=cmd_report)
+
+    con = sub.add_parser("confirm", help="rerun the dropped tasks of an inconclusive comparison")
+    con.add_argument("baseline")
+    con.add_argument("candidate")
+    con.add_argument("--epochs", type=int, default=10)
+    con.add_argument("--budget", type=float, default=5.0, help="US dollars per confirmation run")
+    con.add_argument("--out", default="runs")
+    con.set_defaults(func=cmd_confirm)
+
+    pub = sub.add_parser("publish", help="render RESULTS.md and the README results from records")
+    pub.add_argument("--check", action="store_true", help="fail if they're out of date")
+    pub.set_defaults(func=cmd_publish)
 
     cmp = sub.add_parser("compare", help="compare a candidate run with a baseline")
     cmp.add_argument("baseline")

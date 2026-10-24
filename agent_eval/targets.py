@@ -2,7 +2,10 @@
 named, never stored: each is read from its environment variable at run
 time (Phase 3: no secrets in records)."""
 
+from pathlib import Path
 from typing import Any
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 # Run at the start of every run, through the same endpoint the agent uses.
 # Each hashes columns with no timestamps in them, so the result doesn't
@@ -35,5 +38,37 @@ TARGETS: dict[str, dict[str, Any]] = {
         "infra_error_patterns": ["rate limit of"],
         "query_tool": "run_query",
         "fingerprint_queries": _PAGILA_FINGERPRINT,
+    },
+    # The same server, run locally from repro/ (ADR-010): MCP-backbone at a
+    # pinned commit with Pagila at a pinned upstream commit, so anyone can
+    # rerun the Pagila suite with their own model key. Same tools and
+    # fingerprint queries; the harness refuses to run if its data
+    # fingerprint differs from the one the suite was generated against.
+    "mcp-backbone-local": {
+        "name": "mcp-backbone-local",
+        "serves": "mcp-backbone",
+        "url": "http://127.0.0.1:8765/mcp/",
+        "healthz_url": "http://127.0.0.1:8765/healthz",
+        "auth_env": "MCP_BACKBONE_LOCAL_KEY",
+        # Read from the running container, never from a host file.
+        "auth_env_command": ["docker", "compose", "-f", str(REPO_ROOT / "repro" / "compose.yaml"),
+                             "exec", "-T", "mcp", "cat", "/out/repro.env"],
+        "infra_error_patterns": ["rate limit of"],
+        "query_tool": "run_query",
+        "fingerprint_queries": _PAGILA_FINGERPRINT,
+    },
+    # The reference MCP filesystem server (pinned in tools/fs-server), on a
+    # fresh copy of a synthetic fixture per trial (agent_eval/fs_server.py).
+    # The fixture is made up, so the model can't know it from training: its
+    # tools are genuinely needed, unlike Pagila's (see the slice D proofs).
+    "filesystem": {
+        "name": "filesystem",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
     },
 }

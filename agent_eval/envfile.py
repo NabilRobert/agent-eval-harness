@@ -5,10 +5,14 @@ from pathlib import Path
 
 
 def read_env_file(path: Path) -> dict[str, str]:
-    values: dict[str, str] = {}
     if not path.is_file():
-        return values
-    for line in path.read_text(encoding="utf-8").splitlines():
+        return {}
+    return parse_env_text(path.read_text(encoding="utf-8"))
+
+
+def parse_env_text(text: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in text.splitlines():
         line = line.strip()
         if not line or line.startswith("#") or "=" not in line:
             continue

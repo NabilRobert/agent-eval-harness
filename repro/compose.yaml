@@ -1,0 +1,42 @@
+# Local reproduction of the Pagila target (ADR-010):
+#   docker compose -f repro/compose.yaml up -d --build
+# then run the harness with --target mcp-backbone-local. Reset with
+#   docker compose -f repro/compose.yaml down -v
+# Nothing on the host is mounted: generated settings and the local key
+# live in the `out` volume, and the harness reads the key with
+# `docker compose exec` (no file-sharing permissions needed).
+name: agent-eval-repro
+
+services:
+  db:
+    image: postgres:16.10-alpine
+    environment:
+      POSTGRES_PASSWORD: repro  # a throwaway local database, never exposed
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      retries: 30
+    volumes: [db:/var/lib/postgresql/data]
+
+  setup:
+    build: .
+    command: ["python", "/repro/setup_repro.py"]
+    environment:
+      # Upstream Pagila at the commit whose data matches the published
+      # runs' fingerprint (checked by the harness on every run).
+      PAGILA_COMMIT: 85bf46a569294e3afc834ec1946964bf413588ff
+    depends_on:
+      db: {condition: service_healthy}
+    volumes: [out:/out]
+
+  mcp:
+    build: .
+    command: ["sh", "/repro/serve.sh"]
+    depends_on:
+      setup: {condition: service_completed_successfully}
+    ports: ["127.0.0.1:8765:8000"]  # localhost only
+    volumes: [out:/out:ro]
+
+volumes:
+  db:
+  out:

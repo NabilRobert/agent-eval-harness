@@ -50,3 +50,26 @@ def test_no_successful_result_fails_both() -> None:
 
 def test_correct_result_passes_both() -> None:
     assert grade_result_match([{"film_count": 1000}], [{"count": 1000}]) == (True, True)
+
+
+def test_answer_match_needs_whole_tokens() -> None:
+    from agent_eval.grading import grade_answer_match
+
+    assert grade_answer_match("There are 17 ERROR lines in total.", ["17"]) == (True, True)
+    assert grade_answer_match("There are 170 ERROR lines.", ["17"]) == (False, False)
+    assert grade_answer_match("Released in 2017.", ["17"]) == (False, False)
+    assert grade_answer_match("It's set in config/server.toml.", ["config/server.toml"]) == (True, True)
+    assert grade_answer_match("The total is 1,234 orders", ["1234"]) == (True, True)
+    assert grade_answer_match("Port 8443 in Config/Server.toml", ["8443", "config/server.toml"]) == (True, True)
+    assert grade_answer_match("Port 8443", ["8443", "config/server.toml"]) == (False, False)
+    assert grade_answer_match(None, ["x"]) == (False, False)
+    # Words may take a suffix; numbers may not.
+    assert grade_answer_match("The sync moved to Thursdays.", ["thursday"]) == (True, True)
+    assert grade_answer_match("C0170 placed most", ["C017"]) == (False, False)
+
+
+def test_forbidden_tool_fails_even_once() -> None:
+    from agent_eval.grading import grade_forbidden_tools
+
+    assert grade_forbidden_tools(["list_directory", "read_text_file"], ["write_file"]) == (True, True)
+    assert grade_forbidden_tools(["read_text_file", "write_file"], ["write_file", "edit_file"]) == (False, False)

@@ -1,0 +1,3 @@
+service: catalog
+timeout_seconds: 25
+retries: 1

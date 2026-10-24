@@ -1,0 +1,3 @@
+service: accounts
+timeout_seconds: 18
+retries: 3

@@ -12,6 +12,7 @@ from typing import Any
 from inspect_ai.log import EvalLog, EvalSample, read_eval_log, resolve_sample_attachments
 
 from agent_eval.budget import cost_usd
+from agent_eval.grading import GRADER_VERSION, grade_one
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 from agent_eval.suites import FROZEN_SUITES
 
@@ -19,7 +20,7 @@ from agent_eval.suites import FROZEN_SUITES
 INCOMPLETE_ERROR_SHARE = 0.10
 # Bump when export output changes; `reexport` records which version
 # rebuilt a run's trials.
-EXPORT_VERSION = 2
+EXPORT_VERSION = 4  # v2: column order, attachments; v3: task tags; v4: grades recomputed at export
 
 
 class SecretLeakError(Exception):
@@ -81,9 +82,17 @@ def trial_from_sample(
     sample = resolve_sample_attachments(sample, "full")
     score = (sample.scores or {}).get("suite_scorer")
     score_meta: dict[str, Any] = (score.metadata or {}) if score else {}
-    value: dict[str, Any] = score.value if score and isinstance(score.value, dict) else {}  # pyright: ignore[reportUnknownMemberType]
-    strict = bool(value.get("strict"))
-    lenient = bool(value.get("lenient"))
+    # Grades are recomputed from the stored grader inputs with the current
+    # grader code, so a rebuilt run reflects the graders as they are now
+    # (`compare` would otherwise flag every trial a grader fix changed).
+    graders: list[dict[str, Any]] = []
+    for g in score_meta.get("graders", []):
+        spec = g.get("spec") or {"tool": g.get("tool"), "expected": g.get("expected")}
+        g = {**g}
+        g["strict"], g["lenient"] = grade_one(g["kind"], spec, g["input"])
+        graders.append(g)
+    strict = bool(graders) and all(g["strict"] for g in graders)
+    lenient = bool(graders) and all(g["lenient"] for g in graders)
 
     error_kind: str | None = None
     if sample.error is not None:
@@ -117,8 +126,8 @@ def trial_from_sample(
         "error_kind": error_kind,
         "error_message": sample.error.message if sample.error else None,
         "stop_reason": stop_reason,
-        "grader_version": score_meta.get("grader_version"),
-        "graders": score_meta.get("graders", []),
+        "grader_version": GRADER_VERSION,
+        "graders": graders,
         "final_answer": sample.output.completion if sample.output else None,
         "tool_calls": _tool_calls(sample),
         "model_calls": model_calls,
@@ -143,6 +152,7 @@ def build_meta(
     system_prompt_sha256: str,
     suite_sha256: str | None = None,
     budget_plan: dict[str, Any] | None = None,
+    price: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     status = run_status(log.status, trials)
     reported = sorted({c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]})
@@ -157,12 +167,18 @@ def build_meta(
             # True only for the whole frozen suite, never a subset of it.
             "frozen": suite_sha256 is not None and FROZEN_SUITES.get(suite["suite"]) == suite_sha256,
             "task_hashes": task_hashes,
+            "task_tags": {t["id"]: t.get("tags", []) for t in suite["tasks"]},
         },
         "budget": budget_plan,
+        # The exact price the costs below were computed with, and its source.
+        "price": price,
         "agent": {
             "model": agent["model"],
             "model_args": agent["model_args"],
             "system_prompt_sha256": system_prompt_sha256,
+            # The text too, not only its hash: it isn't secret, and a reader
+            # comparing two runs should be able to see what changed.
+            "system_prompt": agent["system_prompt"],
             "tool_allowlist": agent.get("tool_allowlist"),
             "limits": {
                 "message_limit": agent["message_limit"],
@@ -239,16 +255,20 @@ def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
     hashes: dict[str, str] = {tid: from_samples.get(tid, h) for tid, h in old.items()}
     trials = [trial_from_sample(s, hashes, price) for s in (log.samples or [])]
     new_meta = {k: v for k, v in meta.items() if k not in ("schema_version", "trials_sha256")}
+    tags = {str(s.id): s.metadata["task"].get("tags", []) for s in (log.samples or [])}
     new_meta["suite"] = {
         **meta["suite"],
         "task_hashes": hashes,
+        "task_tags": {tid: tags.get(tid, []) for tid in hashes},
         "sha256": sha256_hex(ordered_json([[tid, h] for tid, h in hashes.items()])),
     }
     new_meta["status"] = run_status(log.status, trials)
+    new_meta["price"] = price
     new_meta["totals"] = totals(trials)
     new_meta["reexports"] = [*meta.get("reexports", []), {
         "at": at, "from_export_version": meta.get("export_version", 1),
         "to_export_version": EXPORT_VERSION,
+        "price_checked": price.get("checked") if price else None,
     }]
     new_meta["export_version"] = EXPORT_VERSION
     return new_meta, trials

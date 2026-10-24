@@ -21,7 +21,7 @@
     "token_basis": "default (pessimistic)"
   },
   "created_at": "2026-10-23T09:45:59+00:00",
-  "export_version": 2,
+  "export_version": 4,
   "inspect_status": "success",
   "provenance": {
     "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
@@ -73,6 +73,28 @@
       "at": "2026-10-23T09:49:05+00:00",
       "from_export_version": 2,
       "to_export_version": 2
+    },
+    {
+      "at": "2026-10-23T09:59:28+00:00",
+      "from_export_version": 2,
+      "to_export_version": 2
+    },
+    {
+      "at": "2026-10-23T09:59:43+00:00",
+      "from_export_version": 2,
+      "to_export_version": 3
+    },
+    {
+      "at": "2026-10-23T10:04:55+00:00",
+      "from_export_version": 3,
+      "to_export_version": 3,
+      "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-10-23T17:25:38+00:00",
+      "from_export_version": 3,
+      "to_export_version": 4,
+      "price_checked": "2026-10-23"
     }
   ],
   "run_id": "smoke-b1",
@@ -84,6 +106,17 @@
       "e01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b",
       "h03": "b22e6e00ba9f73d8c0bb6c2c30261979a7f29027c6b63b504ac825b378cedb38",
       "x02": "43e6704a7fd6bfef86d60e4968ff80066f885fd2aedf5969864769baca5a7371"
+    },
+    "task_tags": {
+      "e01": [
+        "easy"
+      ],
+      "h03": [
+        "hard"
+      ],
+      "x02": [
+        "expert"
+      ]
     }
   },
   "totals": {
@@ -94,10 +127,17 @@
     "input_tokens": 22108,
     "output_tokens": 6457,
     "cost_usd": {
-      "usd": null,
-      "complete": false
+      "usd": 0.018441,
+      "complete": true
     }
   },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
   "schema_version": 1,
-  "trials_sha256": "be73c300fc58ad3c9fbbdf8a7dc71b25f211606f265a22945af4500867f8c9a3"
+  "trials_sha256": "776c3cbf117a1965637b145d34d4f86a09532718e3ac8176d52a9b34c5b471aa"
 }

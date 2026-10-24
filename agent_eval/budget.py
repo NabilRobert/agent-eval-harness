@@ -35,6 +35,8 @@ def load_prices(path: Path) -> dict[str, dict[str, Any]]:
         for field in ("input", "output", "source", "checked"):
             if field not in entry:
                 raise BudgetError(f"prices.yaml: {name} has no {field!r}")
+        # YAML reads 2026-10-23 as a date object, which JSON can't hold.
+        entry["checked"] = str(entry["checked"])
     return models
 
 
