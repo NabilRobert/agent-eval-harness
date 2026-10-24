@@ -241,3 +241,28 @@ predictor was miscalibrated. The −20-point result stands.
 This closes two of the cold read's open requests: a second live A/A pair,
 and a live moderate degradation caught. Still open, and needing more
 spend: a second model family.
+
+### Gate v2, as shipped (2026-10-24)
+
+Adopted for future comparisons, with published comparisons pinned to v1.
+Re-simulated through the shipped code:
+
+```
+40 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/proof-mini-a', '../runs/proof-mini-b']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (4.8%) |
+|---|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 12.0% | 34.5% | 88.0% | 100.0% | 21.5% |
+| gate v2 (pooled z + task rule), as shipped | 0.5% | 18.0% | 51.5% | 94.0% | 100.0% | 44.0% |
+
+17 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs-mini-base', '../runs/fs-mini-base2']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (20.0%) |
+|---|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 5.5% | 23.5% | 70.0% | 92.0% | 99.0% |
+| gate v2 (pooled z + task rule), as shipped | 0.5% | 20.5% | 37.5% | 81.5% | 96.5% | 100.0% |
+
+30 tasks x 5 attempts, 200 simulated pairs per case, base ['mixed']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 1.0% | 5.0% | 8.5% | 28.0% | 66.0% |
+| gate v2 (pooled z + task rule), as shipped | 1.0% | 7.5% | 15.5% | 40.5% | 80.5% |
+```

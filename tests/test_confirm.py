@@ -13,11 +13,11 @@ def test_only_an_inconclusive_comparison_can_be_confirmed() -> None:
     """a vs nano was 'no regression' (-4.5 pts): not eligible, so confirm
     can't be used to go fishing after a clean result."""
     with pytest.raises(ConfirmError, match="'no regression'"):
-        plan(RUNS / "proof-mini-a", RUNS / "proof-nano", REPO / "suites")
+        plan(RUNS / "proof-mini-a", RUNS / "proof-nano", REPO / "suites", gate="v1")
 
 
 def test_plan_reruns_exactly_the_dropped_tasks_with_each_agent_reproduced() -> None:
-    p = plan(RUNS / "proof-mini-b", RUNS / "proof-nano", REPO / "suites")
+    p = plan(RUNS / "proof-mini-b", RUNS / "proof-nano", REPO / "suites", gate="v1")
     assert p["tasks"] and p["epochs"] == 10
     base, cand = p["baseline_args"], p["candidate_args"]
     assert base[base.index("--model") + 1] == "openai-api/sumopod/gpt-5-mini"

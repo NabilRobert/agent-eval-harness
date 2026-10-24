@@ -14,7 +14,7 @@ import random
 import sys
 from collections.abc import Callable
 
-from agent_eval.compare import bootstrap_interval, broken_tasks
+from agent_eval.compare import Z_CRITICAL, bootstrap_interval, broken_tasks, pooled_test
 from simulate_gate import measured_rates  # pyright: ignore[reportMissingImports]
 
 K = 5
@@ -68,8 +68,13 @@ def rules(resamples: int) -> dict[str, Callable[[Counts, Counts, int], bool]]:
     def fisher_any(alpha: float) -> Callable[[Counts, Counts, int], bool]:
         return lambda b, c, _s: any(fisher_one_sided(*b[t], *c[t]) < alpha for t in b)
 
+    def v2(b: Counts, c: Counts, _s: int) -> bool:
+        tasks = sorted(b)
+        return pooled_test(b, c, tasks)[0] > Z_CRITICAL or bool(broken_tasks(b, c, tasks))
+
     return {
-        "shipped gate (bootstrap + task rule)": shipped,
+        "gate v1 (bootstrap + task rule)": shipped,
+        "gate v2 (pooled z + task rule), as shipped": v2,
         "within-task bootstrap (fixed suite) + task rule": lambda b, c, s: (
             within_task_interval(b, c, resamples, s) < 0 or bool(broken_tasks(b, c, sorted(b)))),
         "fixed threshold: drop >= 5 pts": lambda b, c, _s: drop(b, c) >= 0.05,

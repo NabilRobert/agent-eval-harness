@@ -88,9 +88,21 @@ confirmed regression.
   (0–0.5%) and more detection than this gate on all three suites tested.
   Resampling tasks makes the gate conservative for a fixed-suite CI
   question.
-- Published verdicts keep this pre-registered gate. A gate v2 (pooled
-  z-test + task rule) is recommended for future comparisons, with the
-  numbers in docs/planning/evaluation.md.
+- Published verdicts keep this pre-registered gate.
+**Gate v2 adopted for future comparisons (Arthur, 2026-10-24):**
+- **The rule:** a pooled two-proportion z-test on strict passes over the
+  shared tasks, one-sided, flag at z > 1.96 (the same 2.5% tail as v1),
+  **or** the task rule (all → none, at least 5 trials each side).
+  "Inconclusive" and `confirm` are defined as before.
+- **Closed-form:** no resampling, so no seed.
+- **How it's applied:** `compare` and `confirm` default to v2, `compare`
+  reports both verdicts, and every comparison published before the
+  amendment stays pinned to v1 in `results.yaml`.
+- **Measured as shipped** (`scripts/compare_rules.py`, 200 pairs per case):
+  false alarms 0.5% / 0.5% / 1.0% (Pagila / filesystem / flaky suite,
+  against v1's 0 / 0 / 1.0%). Detection is higher everywhere, e.g. a
+  10-point drop: 94 / 81.5 / 40.5% against v1's 88 / 70 / 28%. Nano's
+  real uneven drop on Pagila: 44% against 21.5%.
 **Revisit if:** suites grow past ~100 tasks (consider a clustered standard
 error instead), or repeats change.
 **Amendments (2026-10-23, senior review):**

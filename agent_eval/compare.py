@@ -16,8 +16,18 @@ diff, then the regression gate (ADR-001):
    whose false-alarm rate was 5–11%.)
 
 A drop of 5 points or more whose interval still crosses 0 is
-"inconclusive": exit 0, with the tasks that dropped named."""
+"inconclusive": exit 0, with the tasks that dropped named.
 
+Two gates (ADR-001, amended 2026-10-24):
+- **v1**, the bootstrap above: every comparison published before the
+  amendment was pre-registered with it, and stays pinned to it.
+- **v2**, the default for new comparisons: a pooled two-proportion z-test
+  on strict passes (one-sided, flag at z > 1.96) plus the same task rule.
+  In simulation it was as safe as v1 and caught more on every suite
+  (scripts/compare_rules.py), and it's a closed-form test: no seed.
+`compare` reports both verdicts; the exit code follows the chosen gate."""
+
+import math
 import random
 import statistics
 from dataclasses import dataclass, field
@@ -29,6 +39,9 @@ from agent_eval.records import RecordError, Run, load_run
 
 EXIT_OK, EXIT_REGRESSION, EXIT_UNDECIDED = 0, 1, 2
 
+GATES = ("v1", "v2")
+DEFAULT_GATE = "v2"
+Z_CRITICAL = 1.96  # one-sided alpha = 0.025, the same tail as v1's 95% interval
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_SEED = 20261023  # fixed: the same two runs always get the same verdict
 INCONCLUSIVE_DROP = -0.05
@@ -60,6 +73,8 @@ class Comparison:
     per_task: dict[str, tuple[float, float]] = field(default_factory=lambda: dict[str, tuple[float, float]]())
     interval: tuple[float, float] | None = None
     point: float | None = None
+    gate: str = DEFAULT_GATE
+    gate_verdicts: dict[str, str] = field(default_factory=lambda: dict[str, str]())
     broken: list[str] = field(default_factory=lambda: list[str]())
     dropped: list[str] = field(default_factory=lambda: list[str]())
     warnings: list[str] = field(default_factory=lambda: list[str]())
@@ -125,6 +140,24 @@ def bootstrap_interval(
     return low, high, point
 
 
+def pooled_test(
+    base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]], tasks: list[str]
+) -> tuple[float, float, float]:
+    """Gate v2: (z, low, high). z for "the candidate passes less often",
+    with attempts pooled across the shared tasks; (low, high) is the 95%
+    Wald interval of the change in pooled pass rate. Pooling treats the
+    suite as fixed, the question a CI gate asks, and conditioning on the
+    same tasks on both sides makes it conservative rather than optimistic."""
+    bp, bn = sum(base[t][0] for t in tasks), sum(base[t][1] for t in tasks)
+    cp, cn = sum(cand[t][0] for t in tasks), sum(cand[t][1] for t in tasks)
+    rb, rc = bp / bn, cp / cn
+    pooled = (bp + cp) / (bn + cn)
+    se0 = math.sqrt(pooled * (1 - pooled) * (1 / bn + 1 / cn))
+    z = (rb - rc) / se0 if se0 > 0 else 0.0
+    se = math.sqrt(rb * (1 - rb) / bn + rc * (1 - rc) / cn)
+    return z, (rc - rb) - Z_CRITICAL * se, (rc - rb) + Z_CRITICAL * se
+
+
 def broken_tasks(
     base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]], tasks: list[str]
 ) -> list[str]:
@@ -165,7 +198,11 @@ def _differences(baseline: Run, candidate: Run) -> list[str]:
     return out
 
 
-def compare_runs(baseline_dir: Path, candidate_dir: Path) -> Comparison:
+def compare_runs(
+    baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GATE
+) -> Comparison:
+    if gate not in GATES:
+        raise ValueError(f"unknown gate {gate!r}; one of {GATES}")
     try:
         baseline, candidate = load_run(baseline_dir), load_run(candidate_dir)
     except RecordError as exc:
@@ -205,32 +242,40 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path) -> Comparison:
     if not shared:
         return Comparison(EXIT_UNDECIDED, "undecided", ["no tasks in common"], differences)
 
-    low, high, point = bootstrap_interval(base, cand, shared)
+    point = statistics.fmean(per_task[t][1] - per_task[t][0] for t in shared)
     broken = broken_tasks(base, cand, shared)
     dropped = [t for t in shared if per_task[t][1] < per_task[t][0]]
     warnings = _warnings(baseline, candidate)
 
-    def result(exit_code: int, verdict: str, why: list[str]) -> Comparison:
-        return Comparison(
-            exit_code, verdict, why, differences, regrade_mismatches, per_task,
-            interval=(low, high), point=point, broken=broken, dropped=dropped,
-            warnings=warnings, missing=missing,
-        )
+    def decide(which: str) -> tuple[int, str, list[str], tuple[float, float]]:
+        why: list[str] = []
+        if which == "v1":
+            low, high, _ = bootstrap_interval(base, cand, shared)
+            if high < 0:
+                why.append(f"suite pass rate dropped {-point:.1%} (95% interval {low:+.1%} to "
+                           f"{high:+.1%}, entirely below 0)")
+        else:
+            z, low, high = pooled_test(base, cand, shared)
+            if z > Z_CRITICAL:
+                why.append(f"suite pass rate dropped {-point:.1%} (pooled z = {z:.2f} > "
+                           f"{Z_CRITICAL}; 95% interval {low:+.1%} to {high:+.1%})")
+        if broken:
+            why.append(f"task(s) went from every attempt passing to none: {broken}")
+        if why:
+            return EXIT_REGRESSION, "regression", why, (low, high)
+        if point <= INCONCLUSIVE_DROP:
+            return EXIT_OK, "inconclusive", [
+                f"suite pass rate down {-point:.1%}, but not significant under gate {which} "
+                f"(95% interval {low:+.1%} to {high:+.1%}); rerun the dropped tasks to confirm"
+            ], (low, high)
+        return EXIT_OK, "no regression", [], (low, high)
 
-    why: list[str] = []
-    if high < 0:
-        why.append(
-            f"suite pass rate dropped {-point:.1%} (95% interval {low:+.1%} to {high:+.1%}, "
-            "entirely below 0)"
-        )
-    if broken:
-        why.append(f"task(s) went from every attempt passing to none: {broken}")
-    if why:
-        return result(EXIT_REGRESSION, "regression", why)
-    if point <= INCONCLUSIVE_DROP:
-        return result(EXIT_OK, "inconclusive", [
-            f"suite pass rate down {-point:.1%}, but the 95% interval ({low:+.1%} to "
-            f"{high:+.1%}) includes no change; rerun the dropped tasks to confirm"
-        ])
-    return result(EXIT_OK, "no regression", [])
+    decisions = {g: decide(g) for g in GATES}
+    exit_code, verdict, why, interval = decisions[gate]
+    return Comparison(
+        exit_code, verdict, why, differences, regrade_mismatches, per_task,
+        interval=interval, point=point, broken=broken, dropped=dropped,
+        warnings=warnings, missing=missing, gate=gate,
+        gate_verdicts={g: d[1] for g, d in decisions.items()},
+    )
 

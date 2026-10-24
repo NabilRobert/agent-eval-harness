@@ -406,3 +406,15 @@ Then the two runs the cold read asked for, both pre-registered:
 I'd predicted about −12 from the baseline's message counts. The miss was
 my predictor, not the gate: Inspect's limit binds about a message earlier
 than I counted.
+
+## 2026-10-24 — Gate v2
+
+The pooled two-proportion test is now gate v2, the default for new
+comparisons, with the same task rule as before. Every comparison already
+published stays pinned to v1 in `results.yaml`, so no verdict was switched
+after seeing data. Simulated through the shipped code, v2 raises false
+alarms by at most half a point and catches noticeably more: nano's real
+Pagila drop, 44% of the time against 21.5%. One synthetic case pins the
+difference in a test: six tasks each losing two passes, which v1's interval
+just fails to flag and v2 flags at z = 2.13. It's also a formula rather
+than a resampling procedure, so a reviewer can check a verdict by hand.

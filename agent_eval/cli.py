@@ -340,7 +340,7 @@ def cmd_confirm(args: argparse.Namespace) -> int:
     from agent_eval.confirm import ConfirmError, plan
 
     try:
-        p = plan(Path(args.baseline), Path(args.candidate), REPO_ROOT / "suites", args.epochs)
+        p = plan(Path(args.baseline), Path(args.candidate), REPO_ROOT / "suites", args.epochs, args.gate)
     except ConfirmError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
@@ -355,7 +355,7 @@ def cmd_confirm(args: argparse.Namespace) -> int:
         if code != 0:
             print(f"error: the {side} confirmation run failed (exit {code})", file=sys.stderr)
             return EXIT_UNDECIDED
-    result = compare_runs(Path(args.out) / ids["baseline"], Path(args.out) / ids["candidate"])
+    result = compare_runs(Path(args.out) / ids["baseline"], Path(args.out) / ids["candidate"], args.gate)
     record = {**{k: v for k, v in p.items() if not k.endswith("_args")}, "runs": ids,
               "verdict": result.verdict, "exit_code": result.exit_code,
               "point": result.point, "interval": result.interval, "reasons": result.reasons}
@@ -394,8 +394,10 @@ def cmd_publish(args: argparse.Namespace) -> int:
 
 
 def cmd_compare(args: argparse.Namespace) -> int:
-    result = compare_runs(Path(args.baseline), Path(args.candidate))
-    print(f"verdict: {result.verdict} (exit {result.exit_code})")
+    result = compare_runs(Path(args.baseline), Path(args.candidate), args.gate)
+    print(f"verdict: {result.verdict} (exit {result.exit_code}, gate {result.gate})")
+    if result.gate_verdicts:
+        print("  all gates: " + ", ".join(f"{g}: {v}" for g, v in result.gate_verdicts.items()))
     if result.interval is not None and result.point is not None:
         low, high = result.interval
         print(f"  suite strict pass rate change: {result.point:+.1%} "
@@ -460,6 +462,7 @@ def main(argv: list[str] | None = None) -> int:
     con.add_argument("baseline")
     con.add_argument("candidate")
     con.add_argument("--epochs", type=int, default=10)
+    con.add_argument("--gate", choices=["v1", "v2"], default="v2")
     con.add_argument("--budget", type=float, default=5.0, help="US dollars per confirmation run")
     con.add_argument("--out", default="runs")
     con.set_defaults(func=cmd_confirm)
@@ -471,6 +474,8 @@ def main(argv: list[str] | None = None) -> int:
     cmp = sub.add_parser("compare", help="compare a candidate run with a baseline")
     cmp.add_argument("baseline")
     cmp.add_argument("candidate")
+    cmp.add_argument("--gate", choices=["v1", "v2"], default="v2",
+                     help="decision rule (ADR-001); v1 for comparisons pre-registered with it")
     cmp.set_defaults(func=cmd_compare)
 
     args = parser.parse_args(argv)

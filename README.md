@@ -110,12 +110,21 @@ and CI fails if it drifts from them.
 It flags a regression if either rule fires
 ([ADR-001](docs/planning/phase-5-architecture-decisions.md)):
 
-1. **Suite level.** The 95% interval of the mean per-task change in strict
-   pass rate is entirely below zero. It comes from a paired bootstrap:
-   resample tasks, then each task's attempts. It uses 10,000 resamples with
-   a fixed seed, so the same runs always get the same verdict.
+1. **Suite level, gate v2 (the default).** A pooled two-proportion z-test
+   on strict passes across the shared tasks is significant: one-sided,
+   z > 1.96. It's a closed-form test, so the same runs always get the same
+   verdict.
 2. **Task level.** A task went from passing every attempt to passing none,
    with at least 5 attempts on each side.
+
+**Gate v1** used a paired bootstrap for rule 1 instead: resample tasks,
+then attempts, and flag if the 95% interval is entirely below zero.
+**Every comparison published here was pre-registered with v1 and is still
+decided by it.** v2 replaced it for new comparisons after a simulation
+showed it's as safe and catches more (table below); switching the
+published verdicts after seeing the data would defeat pre-registration.
+They wouldn't change under v2 anyway. `compare --gate v1|v2` picks the
+gate, and reports both verdicts.
 
 **Inconclusive.** A drop of 5 points or more whose interval still includes
 zero is reported as *inconclusive*. `agent-eval confirm` then reruns only
@@ -128,25 +137,24 @@ detection of a nano-shaped drop from 27% to 45%
 not regressions.
 
 **How sensitive it is.** These are simulations through the shipped gate
-code, using the per-task pass rates measured in the real baseline runs
-([`scripts/simulate_gate.py`](scripts/simulate_gate.py); 200 simulated pairs
-per row, so each rate is within about ±7 points around 50%, and ±1–4 points
-near 0% or 100%):
+code, using per-task pass rates measured in the real baseline runs, plus a
+flakier assumed suite ([`scripts/compare_rules.py`](scripts/compare_rules.py);
+200 simulated pairs per cell, so each rate is within about ±7 points
+around 50%, and ±1–4 points near 0% or 100%). Each cell is v1 → v2:
 
-| True change | Pagila (40 tasks) | Filesystem (17 tasks) |
-|---|---|---|
-| None (false alarm) | 0.5% | 0% |
-| −3 points, every task | 14% | 4% |
-| −5 points, every task | 40.5% | 22% |
-| −10 points, every task | 88.5% | 65.5% |
-| −15 points, every task | 99% | 95.5% |
-| One reliable task collapsing to 0 | 100% | 100% |
+| True change | Pagila (40 tasks) | Filesystem (17 tasks) | Flaky suite (30 tasks) |
+|---|---|---|---|
+| None (false alarm) | 0% → 0.5% | 0% → 0.5% | 1% → 1% |
+| −3 points, every task | 12% → 18% | 5.5% → 20.5% | 5% → 7.5% |
+| −5 points, every task | 34.5% → 51.5% | 23.5% → 37.5% | 8.5% → 15.5% |
+| −10 points, every task | 88% → 94% | 70% → 81.5% | 28% → 40.5% |
+| −15 points, every task | 100% → 100% | 92% → 96.5% | 66% → 80.5% |
+| A real uneven drop (nano) | 21.5% → 44% | 99% → 100% | – |
 
-So at 5 attempts per task, a drop under about 5 points (Pagila) or 10
-points (filesystem) usually goes unflagged. On suites with more flaky
-tasks, the false-alarm rate per comparison is higher: 1–4% in the earlier
-simulations on assumed pass rates (ADR-001). If every change is gated,
-expect an occasional false alarm. The report always shows the change and
+So at 5 attempts per task, even v2 usually misses a drop under about 5
+points, and on a flaky suite under about 10. If every change is gated,
+expect an occasional false alarm: 0.5–1% per comparison in these
+simulations, higher on suites with more flaky tasks. The report always shows the change and
 its interval, so a flag can be judged rather than obeyed.
 
 ## Methodology
@@ -187,8 +195,9 @@ its interval, so a flag can be judged rather than obeyed.
 
 - **Statistical power:** see the sensitivity table. Live evidence is two A/A
   pairs (not flagged), and two caught degradations: −61 and −20 points.
-  The gate is conservative: in simulation, a pooled two-proportion test was
-  just as safe and caught more
+  The published comparisons use gate v1, which turned out conservative;
+  gate v2, used for new comparisons, catches more for at most 0.5 points
+  more false alarms
   ([evaluation](docs/planning/evaluation.md#the-gate-against-simpler-rules-follow-up-2026-10-24)).
 - **One model family, through one provider:** OpenAI models via Sumopod, an
   OpenAI-compatible LiteLLM proxy.

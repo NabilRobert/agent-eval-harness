@@ -21,7 +21,7 @@ def test_render_is_deterministic() -> None:
 def test_failed_proofs_are_marked_not_hidden() -> None:
     results_md, _ = render(REPO)
     assert results_md.count("**(not as expected)**") == 3
-    assert "Filesystem: discovery tools removed | flagged | regression (1) |" in results_md
+    assert "Filesystem: discovery tools removed | v1 | flagged | regression (1) |" in results_md
 
 
 def test_readme_block_is_replaced_not_duplicated() -> None:

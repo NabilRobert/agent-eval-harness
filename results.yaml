@@ -14,24 +14,26 @@ runs:
   - {run: fs-mini-base2, label: "Filesystem, gpt-5-mini, run 2"}
   - {run: fs-mini-cap12, label: "Filesystem, gpt-5-mini, message cap 12"}
 
+# gate: the decision rule each comparison was pre-registered with
+# (ADR-001). Everything here predates gate v2, so all are v1.
 # expected: "flagged" / "not flagged" for pre-registered proofs (see
 # docs/planning/phase-7-slices-plan.md); "–" for information only.
 comparisons:
-  - {baseline: proof-mini-a, candidate: proof-mini-b, expected: "not flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-b, gate: v1, expected: "not flagged",
      label: "Pagila: same agent twice (A/A)"}
-  - {baseline: proof-mini-a, candidate: proof-mini-degraded, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-degraded, gate: v1, expected: "flagged",
      label: "Pagila: schema tools removed"}
-  - {baseline: proof-mini-a, candidate: proof-nano, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-nano, gate: v1, expected: "flagged",
      label: "Pagila: gpt-5-mini → gpt-5-nano"}
-  - {baseline: proof-mini-a, candidate: proof-mini-prompt, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-prompt, gate: v1, expected: "flagged",
      label: "Pagila: final-query line removed from the prompt"}
-  - {baseline: fs-mini-base, candidate: fs-mini-degraded, expected: "flagged",
+  - {baseline: fs-mini-base, candidate: fs-mini-degraded, gate: v1, expected: "flagged",
      label: "Filesystem: discovery tools removed"}
-  - {baseline: fs-mini-base, candidate: fs-mini-base2, expected: "not flagged",
+  - {baseline: fs-mini-base, candidate: fs-mini-base2, gate: v1, expected: "not flagged",
      label: "Filesystem: same agent twice (A/A)"}
-  - {baseline: fs-mini-base, candidate: fs-mini-cap12, expected: "flagged",
+  - {baseline: fs-mini-base, candidate: fs-mini-cap12, gate: v1, expected: "flagged",
      label: "Filesystem: message cap 20 → 12"}
-  - {baseline: fs-mini-base, candidate: fs-nano, expected: "–",
+  - {baseline: fs-mini-base, candidate: fs-nano, gate: v1, expected: "–",
      label: "Filesystem: gpt-5-mini → gpt-5-nano"}
 
 confirmations:
