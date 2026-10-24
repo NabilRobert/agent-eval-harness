@@ -41,8 +41,10 @@ def load_prices(path: Path) -> dict[str, dict[str, Any]]:
 
 
 def price_for(model: str, prices: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
-    """`openai-api/sumopod/gpt-5-mini` is priced as `gpt-5-mini`."""
-    return prices.get(model.rsplit("/", 1)[-1])
+    """Prices are keyed by the full model id, provider included: the same
+    model costs different amounts through different providers, and an
+    OpenAI run must never be costed at Sumopod's prices."""
+    return prices.get(model)
 
 
 def cost_usd(input_tokens: int, output_tokens: int, price: dict[str, Any] | None) -> float | None:

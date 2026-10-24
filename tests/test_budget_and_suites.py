@@ -43,9 +43,12 @@ def test_cost_is_unknown_without_a_price_never_zero() -> None:
     assert cost_usd(1_000_000, 0, PRICE) == approx(0.25)
 
 
-def test_price_lookup_uses_the_model_name_not_the_provider_path() -> None:
-    assert price_for("openai-api/sumopod/gpt-5-mini", {"gpt-5-mini": PRICE}) is PRICE
-    assert price_for("openai-api/sumopod/gpt-5-nano", {"gpt-5-mini": PRICE}) is None
+def test_price_lookup_needs_the_full_model_id() -> None:
+    """The same model through another provider is a different price."""
+    prices = {"openai-api/sumopod/gpt-5-mini": PRICE}
+    assert price_for("openai-api/sumopod/gpt-5-mini", prices) is PRICE
+    assert price_for("openai/gpt-5-mini", prices) is None
+    assert price_for("openai-api/sumopod/gpt-5-nano", prices) is None
 
 
 def test_measured_tokens_ignore_incomplete_and_other_runs(tmp_path: Path) -> None:

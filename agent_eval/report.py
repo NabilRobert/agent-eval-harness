@@ -187,9 +187,12 @@ def render(run: Run) -> str:
                 add("")
                 add(_fence(_clip(str(g["input"]["final_answer"] or "(none)"))))
                 add("")
-            else:
+            elif g["kind"] == "forbidden_tools":
                 used = sorted(set(g["input"]["tools_called"]) & set(g["spec"]))
                 add(f"- Forbidden tools: {'none used' if not used else 'USED ' + ', '.join(used)} ({mark})")
+            else:
+                missing = sorted(set(g["spec"]) - set(g["input"]["tools_called"]))
+                add(f"- Required tools: {'all called' if not missing else 'NOT CALLED ' + ', '.join(missing)} ({mark})")
         sql = [c["arguments"].get("sql") for c in t["tool_calls"] if c["tool"] == "run_query"]
         if sql and sql[-1]:
             add("- Last query:")
@@ -203,6 +206,9 @@ def render(run: Run) -> str:
 
     add("## Provenance")
     add("")
+    target: dict[str, Any] | None = meta.get("target")
+    if target:
+        add(f"- Target: `{target['name']}` ({target['transport']}, `{target['address']}`)")
     add(f"- Data fingerprint: `{prov.get('data_fingerprint') or 'not taken'}`")
     add(f"- Server: `{prov.get('server_name')}` build `{prov.get('server_version') or 'not reported'}`"
         f" (/healthz: `{prov.get('healthz_version') or 'not reported'}`)")

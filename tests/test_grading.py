@@ -73,3 +73,12 @@ def test_forbidden_tool_fails_even_once() -> None:
 
     assert grade_forbidden_tools(["list_directory", "read_text_file"], ["write_file"]) == (True, True)
     assert grade_forbidden_tools(["read_text_file", "write_file"], ["write_file", "edit_file"]) == (False, False)
+
+
+def test_required_tools_must_all_be_called() -> None:
+    from agent_eval.grading import grade_one, grade_required_tools
+
+    assert grade_required_tools(["list_tables", "run_query", "submit"], ["run_query"]) == (True, True)
+    assert grade_required_tools(["list_tables", "submit"], ["run_query"]) == (False, False)
+    assert grade_required_tools(["run_query"], ["run_query", "describe_table"]) == (False, False)
+    assert grade_one("required_tools", ["run_query"], {"tools_called": ["run_query"]}) == (True, True)

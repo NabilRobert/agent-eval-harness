@@ -88,6 +88,8 @@ def cmd_run(args: argparse.Namespace) -> int:
         print(f"error: target {args.target!r} doesn't serve suite target {suite['target']!r}",
               file=sys.stderr)
         return EXIT_UNDECIDED
+    from agent_eval.providers import is_secret_name, model_args_for, required_env
+
     env = read_env_file(Path(args.env_file))
     if target.get("auth_env_command"):
         try:
@@ -98,15 +100,21 @@ def cmd_run(args: argparse.Namespace) -> int:
                   "(docker compose -f repro/compose.yaml up -d)", file=sys.stderr)
             return EXIT_UNDECIDED
         env = {**env, **parse_env_text(out)}
-    sumopod_key = _require(env, "SUMOPOD_AI_API_KEY")
-    base_url = _require(env, "SUMOPOD_BASE_URL")
+    for name in required_env(args.model):
+        _require(env, name)
     auth_token = _require(env, target["auth_env"]) if target.get("auth_env") else ""
-    # Inspect's openai-api/<service>/<model> provider reads <SERVICE>_API_KEY
-    # and <SERVICE>_BASE_URL from this process's environment.
-    os.environ["SUMOPOD_API_KEY"] = sumopod_key
-    os.environ["SUMOPOD_BASE_URL"] = base_url
+    # Inspect's providers read their keys from this process's environment:
+    # its openai-api/<service>/<model> route wants <SERVICE>_API_KEY and
+    # <SERVICE>_BASE_URL, the native ones OPENAI_API_KEY and so on.
+    for name, value in env.items():
+        os.environ.setdefault(name, value)
+    if "SUMOPOD_AI_API_KEY" in env:
+        os.environ["SUMOPOD_API_KEY"] = env["SUMOPOD_AI_API_KEY"]
     os.environ.setdefault("INSPECT_DISPLAY", "none")
-    secrets = [s for s in (sumopod_key, auth_token) if s]
+    # Every secret-looking value from .env, plus the target's key: none may
+    # appear in the run records.
+    secrets = [v for k, v in env.items() if v and is_secret_name(k)]
+    secrets += [auth_token] if auth_token else []
 
     run_id = args.run_id or (
         datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
@@ -147,9 +155,9 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     agent: dict[str, Any] = {
         "model": args.model,
-        # MCP-backbone's optional api_key parameter fails OpenAI strict
-        # mode with a 400 (Phase 4 revision), so strict schemas are off.
-        "model_args": {"strict_tools": False},
+        # Per provider: strict tool schemas off on the OpenAI-compatible
+        # route, where MCP-backbone's optional api_key parameter breaks them.
+        "model_args": model_args_for(args.model),
         "system_prompt": (
             args.system_prompt if args.system_prompt
             else Path(args.system_prompt_file).read_text(encoding="utf-8").strip()
@@ -227,7 +235,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         log, trials, run_id=run_id, suite=suite, task_hashes=task_hashes, agent=agent,
         preflight_info=info, harness_git=harness_git,
         system_prompt_sha256=sha256_hex(agent["system_prompt"]),
-        suite_sha256=suite_hash(suite), budget_plan=budget, price=price,
+        suite_sha256=suite_hash(suite), budget_plan=budget, price=price, target=target,
     )
     try:
         assert_no_secrets([ordered_json(meta)] + [ordered_json(t) for t in trials], secrets)

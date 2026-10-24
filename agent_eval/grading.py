@@ -10,7 +10,8 @@ import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-# Bump whenever a grader's behaviour changes. Stored on every trial, so a
+# Bump whenever an existing grader's behaviour changes (adding a new kind
+# doesn't change any stored grade, so it doesn't bump). Stored on every trial, so a
 # comparison can tell grades made by different grader code apart (and
 # `compare` regrades both runs with the current code anyway).
 GRADER_VERSION = 3  # v2: answer_match, forbidden_tools; v3: words may take a suffix
@@ -133,7 +134,14 @@ def grade_forbidden_tools(tools_called: list[str], forbidden: list[str]) -> tupl
     return ok, ok
 
 
-GRADER_KINDS = ("result_match", "answer_match", "forbidden_tools")
+def grade_required_tools(tools_called: list[str], required: list[str]) -> tuple[bool, bool]:
+    """Fails unless the agent called every required tool at least once,
+    e.g. a task whose answer must come from a query, not from memory."""
+    ok = set(required) <= set(tools_called)
+    return ok, ok
+
+
+GRADER_KINDS = ("result_match", "answer_match", "forbidden_tools", "required_tools")
 
 
 def grade_one(kind: str, spec: Any, inputs: dict[str, Any]) -> tuple[bool, bool]:
@@ -146,4 +154,6 @@ def grade_one(kind: str, spec: Any, inputs: dict[str, Any]) -> tuple[bool, bool]
         return grade_answer_match(inputs["final_answer"], spec["contains"])
     if kind == "forbidden_tools":
         return grade_forbidden_tools(inputs["tools_called"], spec)
+    if kind == "required_tools":
+        return grade_required_tools(inputs["tools_called"], spec)
     raise ValueError(f"unknown grader {kind!r}")

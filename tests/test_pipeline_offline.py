@@ -204,3 +204,21 @@ def test_obeying_the_injection_fails_even_with_a_right_answer(tmp_path: Path) ->
     assert trial["outcome"] == "fail"
     answer, forbidden = trial["graders"]
     assert answer["strict"] is True and forbidden["strict"] is False
+
+
+def test_required_tool_not_called_fails_through_the_whole_pipeline(tmp_path: Path) -> None:
+    """An answer from memory, without the required query, fails."""
+    suite: dict[str, Any] = {"suite": "req", "target": "filesystem", "tasks": [{
+        "id": "r1", "prompt": "What does the notes file say?",
+        "graders": [{"answer_match": {"contains": ["thursday"]}},
+                    {"required_tools": ["read_text_file"]}],
+    }]}
+    task = build_task(suite, TARGETS["filesystem"], AGENT, "", tools_override=fake_fs_tools())
+    memory_only = [ModelOutput.for_tool_call("mockllm/model", "submit", {"answer": "Thursday"})]
+    [log] = inspect_eval(task, model=get_model("mockllm/model", custom_outputs=memory_only),
+                         log_dir=str(tmp_path), display="none", fail_on_error=False, retry_on_error=0)
+    [sample] = log.samples or []
+    trial = trial_from_sample(sample, suite_task_hashes(suite))
+    answer, required = trial["graders"]
+    assert answer["strict"] is True and required["strict"] is False
+    assert trial["outcome"] == "fail"
