@@ -2,17 +2,22 @@
 # budget cap. Every entry needs a source and the date it was checked: cost
 # is a headline number, so it's never guessed (ADR-005).
 #
+# Keyed by the full model id, provider included: the same model costs
+# different amounts through different providers. To run with your own
+# provider, add its entry (e.g. `openai/gpt-5-mini`) with its source;
+# without one, only smoke-sized runs are allowed.
+#
 # cache_read is the price of cached input tokens. The harness's own cost
 # figure charges every input token at the full `input` price, so it errs
 # high, never low, when the provider served some input from cache.
 models:
-  gpt-5-mini:
+  openai-api/sumopod/gpt-5-mini:
     input: 0.25
     cache_read: 0.025
     output: 2.00
     source: Sumopod model pricing table (screenshot supplied by Arthur)
     checked: 2026-10-23
-  gpt-5-nano:
+  openai-api/sumopod/gpt-5-nano:
     input: 0.05
     cache_read: 0.005
     output: 0.40

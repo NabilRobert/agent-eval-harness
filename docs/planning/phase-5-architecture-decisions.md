@@ -38,7 +38,8 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
 ## ADRs
 
 ### ADR-001: How a regression is decided
-**Context:** 5 repeats per task, about 30 tasks per suite. Pass rates move
+**Context:** 5 repeats per task, about 30 tasks per suite (as built: 40 for
+Pagila, 17 for the filesystem suite). Pass rates move
 by chance between identical runs, so "the pass rate went down" alone gives
 false alarms.
 **Options:** (a) fixed threshold on the change in suite pass rate; (b)
@@ -69,10 +70,13 @@ about 18 points on a mixed one. A 10-point drop is caught only 30–50% of
 the time. Smaller drops show in the report but don't fail CI, and the
 README says so. The percentile bootstrap with ~30 clusters is approximate;
 that's acceptable for a gate, and stated.
-**Measured on real runs (slice D/E, 2026-10-24):** on the per-task rates
-of the two Pagila baseline runs, false alarms are 0.5%, and a uniform drop
-is caught 14% of the time at 3 points, 40.5% at 5, 88.5% at 10 and 99% at
-15. Live: the A/A pair wasn't flagged; three Pagila degradations of 2.5–4.5
+**Measured on real runs (slice D/E, 2026-10-24; these supersede the
+assumed-rate figures above for the published suites):** on the per-task
+rates of the two Pagila baseline runs, false alarms are 0.5%, and a uniform
+drop is caught 14% of the time at 3 points, 40.5% at 5, 88.5% at 10 and 99%
+at 15. On the filesystem suite's measured rates (17 tasks): false alarms
+0%, and 4% / 22% / 65.5% / 95.5% at 3 / 5 / 10 / 15 points. Fewer tasks,
+less power. Live: the A/A pair wasn't flagged; three Pagila degradations of 2.5–4.5
 points weren't flagged (below the gate's power, published as failed
 proofs); the filesystem degradation (−61.2 points) was flagged on both
 rules; `confirm` resolved an inconclusive −5-point model swap into a

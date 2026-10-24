@@ -53,7 +53,11 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
         excluded = sorted(set(prov["tool_names"]) - set(allowlist))
         if excluded:
             args += ["--exclude-tools", ",".join(excluded)]
-    if agent.get("model_args") != {"strict_tools": False}:
+    from agent_eval.providers import model_args_for
+
+    if agent.get("model_args") != model_args_for(agent["model"]):
+        # `run` derives model_args from the model; anything else couldn't be
+        # reproduced through the CLI.
         raise ConfirmError(f"{run.meta['run_id']}: unexpected model_args {agent.get('model_args')}")
     return [*args, "--system-prompt", prompt]
 

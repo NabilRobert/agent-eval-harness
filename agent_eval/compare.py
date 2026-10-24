@@ -150,6 +150,9 @@ def _warnings(baseline: Run, candidate: Run) -> list[str]:
 
 def _differences(baseline: Run, candidate: Run) -> list[str]:
     out: list[str] = []
+    b_target, c_target = baseline.meta.get("target"), candidate.meta.get("target")
+    if b_target and c_target and b_target != c_target:
+        out.append(f"target: {b_target.get('name')} -> {c_target.get('name')}")
     for name in _PROVENANCE_FIELDS:
         b, c = baseline.meta["provenance"].get(name), candidate.meta["provenance"].get(name)
         if b != c:

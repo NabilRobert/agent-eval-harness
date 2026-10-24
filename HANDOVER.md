@@ -315,6 +315,12 @@ parallel a little at a time.
   d2d19f8, deployed, /healthz reports its version.
 - **Open (Arthur):** remove MCP_BACKBONE_EVAL_KEY from ~/MCP-backbone/.env;
   the other workspace's key in ~/.bash_history.
+- **Evaluation (2026-10-24, branch feat/evaluation-gaps):**
+  docs/planning/evaluation.md. Fixed: required_tools grader, target recorded
+  in run meta, provider-agnostic runs (SUMOPOD_* only for sumopod models;
+  prices keyed by full model id). Cold-read review by a fresh agent: 10/10
+  correct; over-claims in README fixed; filesystem power added; Limitations
+  section; CI badge. 98 tests.
 - **Next big piece:** Project 3, the Beobot case study (not started).
 - **Follow-ups:** pin base images by digest (from the draft); MCP-backbone
   strict-schema api_key fix; MCP-backbone CI publishing an image.

@@ -153,6 +153,7 @@ def build_meta(
     suite_sha256: str | None = None,
     budget_plan: dict[str, Any] | None = None,
     price: dict[str, Any] | None = None,
+    target: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     status = run_status(log.status, trials)
     reported = sorted({c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]})
@@ -172,6 +173,12 @@ def build_meta(
         "budget": budget_plan,
         # The exact price the costs below were computed with, and its source.
         "price": price,
+        # What the run talked to: never a key, only where (Phase 2).
+        "target": None if target is None else {
+            "name": target["name"],
+            "transport": target.get("transport", "streamable-http"),
+            "address": target.get("url") or target.get("fixture"),
+        },
         "agent": {
             "model": agent["model"],
             "model_args": agent["model_args"],

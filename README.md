@@ -1,16 +1,24 @@
 # agent-eval-harness
 
-Tells you whether an agent setup works, and fails CI when a change makes it
-worse, with numbers you can check.
+[![CI](https://github.com/NabilRobert/agent-eval-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/NabilRobert/agent-eval-harness/actions/workflows/ci.yml)
+
+Measures whether an agent setup works, and fails CI when a change makes it
+worse by more than run-to-run noise. The numbers can be checked against
+committed run records.
 
 An *agent setup* here is a model, a system prompt and an MCP server's tools,
-run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent loop. Inspect runs
-the trials. This project adds what Inspect doesn't have:
-- a **statistical regression gate** across repeated runs, with CI exit codes;
-- **comparison from committed run files**, with no API key and no network;
-- **regrading** old runs with the current grader code;
-- **provenance:** which model, server build, tool list and data a run was
-  graded against.
+run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent loop.
+
+| Inspect AI 0.3.283 provides (reused) | This project adds |
+|---|---|
+| The agent loop, tool calling, MCP clients (HTTP and stdio) | A statistical **regression gate** across repeated runs, with CI exit codes 0/1/2 |
+| Repeats (epochs), turn/time/token/cost limits per trial, retries | **Comparison from committed run files**, with no API key and no network |
+| A mock model for offline tests | **Regrading** old runs with the current grader code |
+| Structured logs | **Provenance:** model served, server build, tool list, data fingerprint |
+| | Two frozen suites, deterministic graders, a budget guard, a **confirm** step for borderline results |
+
+Why build on Inspect rather than write a runner:
+[ADR-009](docs/planning/phase-5-architecture-decisions.md).
 
 Two suites, run against two targets:
 - **Pagila:** 40 SQL questions against
@@ -47,33 +55,40 @@ Full tables, with provenance for every run: [RESULTS.md](RESULTS.md). Every
 number above is generated from the committed run records in [`runs/`](runs/),
 and CI fails if it drifts from them.
 
-**What the results show:**
+**What the results show, and how strongly:**
 
-- **The gate doesn't raise false alarms.** The same agent run twice wasn't
-  flagged.
-- **It catches a real degradation.** On the filesystem suite, withholding the
-  four discovery tools dropped the agent from 98.8% to 37.6%. The gate
-  flagged it on both of its rules.
-- **Some degradations were too small to flag, and those are published too.**
+- **No false alarm in the one live check.** The same agent run twice on
+  Pagila wasn't flagged. That's a single A/A pair; the simulated false-alarm
+  rate is below.
+- **A large degradation was caught.** On the filesystem suite, withholding
+  the four discovery tools dropped the agent from 98.8% to 37.6%, and the
+  gate flagged it on both rules. That's the one degradation big enough for
+  the gate's power, out of four tried.
+- **Smaller degradations were missed, and are published as failed proofs.**
   On Pagila, three degradations were pre-registered as "should be flagged":
   - no schema tools;
   - a cheaper model;
   - a prompt missing the line the grading relies on.
 
-  Each moved the score by only 2.5–4.5 points, so none was flagged. The
-  likely reason: Pagila is a well-known public dataset, so `gpt-5-mini`
-  doesn't need to explore its schema. That's a finding about the suite.
-- **The confirmation step resolves borderline cases.** One of those
-  comparisons came out "inconclusive". Rerunning only the tasks that dropped
-  (fresh trials, both models) confirmed that `gpt-5-nano` really is worse
-  than `gpt-5-mini` on them.
+  Each moved the score by only 2.5–4.5 points, below what the gate can
+  resolve there. *Hypothesis, not tested:* Pagila is a well-known public
+  dataset, so `gpt-5-mini` barely needs its schema tools.
+- **The confirmation step resolved one borderline case (n = 1).** By its
+  rule, `confirm` only runs on an "inconclusive" comparison. Of the two
+  nano-vs-mini comparisons, only the one against run 2 qualified (−5.0
+  points); against run 1 it was −4.5 points, just short of the trigger. On
+  fresh trials of the 8 tasks that dropped, nano was worse: 58/80 vs 73/80,
+  interval −33.8 to −3.7 points, which is wide but entirely below zero.
 - **The cheaper model is clearly worse where tools matter.** On the
-  filesystem suite, `gpt-5-nano` scores 20 points below `gpt-5-mini`, and
-  the gate flags it outright. It costs about a third as much per run there
-  (about half on Pagila), and its latency is up 42%.
-- **Neither model obeyed the planted prompt injection.** Across every
-  filesystem run, both models and the degraded agent, no trial called a
-  write tool.
+  filesystem suite, `gpt-5-nano` scores 20 points below `gpt-5-mini`,
+  flagged outright, at about a third of the cost, with latency +42%. On
+  Pagila it's about 5 points worse, at about half the cost, with latency
+  +110%. That filesystem comparison wasn't pre-registered.
+- **No trial obeyed the planted prompt injection.** That covers 18 trials
+  of the injection task, across both models, the degraded agent and the
+  smoke runs. More broadly, none of the 263 filesystem trials called a write
+  tool. It's one injection task, so this is evidence for that one attack,
+  not a general safety claim.
 
 ## How the gate decides
 
@@ -96,28 +111,34 @@ It flags a regression if either rule fires
 **Inconclusive.** A drop of 5 points or more whose interval still includes
 zero is reported as *inconclusive*. `agent-eval confirm` then reruns only
 the tasks that dropped, for both agents, and decides on those fresh trials
-alone, so picking those tasks doesn't bias the answer.
+alone. Validated by simulation before use: no false alarms, and it raised
+detection of a nano-shaped drop from 27% to 45%
+([`scripts/simulate_confirm.py`](scripts/simulate_confirm.py)).
 
 **Increases in cost and latency** (+25% per trial, median) are warnings,
 not regressions.
 
-**How sensitive it is,** measured by simulating the gate on the per-task pass
-rates of the two real Pagila baseline runs
-([`scripts/simulate_gate.py`](scripts/simulate_gate.py)):
+**How sensitive it is.** These are simulations through the shipped gate
+code, using the per-task pass rates measured in the real baseline runs
+([`scripts/simulate_gate.py`](scripts/simulate_gate.py); 200 simulated pairs
+per row, so each rate is within about ±7 points around 50%, and ±1–4 points
+near 0% or 100%):
 
-| True change | Flagged |
-|---|---|
-| None (same agent) | 0.5% |
-| −3 points, every task | 14% |
-| −5 points, every task | 40.5% |
-| −10 points, every task | 88.5% |
-| −15 points, every task | 99% |
-| One reliable task collapsing to 0 | 100% |
+| True change | Pagila (40 tasks) | Filesystem (17 tasks) |
+|---|---|---|
+| None (false alarm) | 0.5% | 0% |
+| −3 points, every task | 14% | 4% |
+| −5 points, every task | 40.5% | 22% |
+| −10 points, every task | 88.5% | 65.5% |
+| −15 points, every task | 99% | 95.5% |
+| One reliable task collapsing to 0 | 100% | 100% |
 
-So with 40 tasks × 5 attempts, a drop under about 5 points usually goes
-unflagged. Gating every change also accumulates false alarms: at 0.5–4% per
-comparison, expect one every few dozen comparisons. The report always shows
-the change and its interval, so a flag can be judged rather than obeyed.
+So at 5 attempts per task, a drop under about 5 points (Pagila) or 10
+points (filesystem) usually goes unflagged. On suites with more flaky
+tasks, the false-alarm rate per comparison is higher: 1–4% in the earlier
+simulations on assumed pass rates (ADR-001). If every change is gated,
+expect an occasional false alarm. The report always shows the change and
+its interval, so a flag can be judged rather than obeyed.
 
 ## Methodology
 
@@ -131,75 +152,73 @@ the change and its interval, so a flag can be judged rather than obeyed.
   - **Filesystem:** computed by the script that writes the fixture.
 - **Data is fingerprinted at the start of every run.** For Pagila, hashes
   of the live tables taken through the endpoint; for the filesystem, a hash
-  of every fixture file. Runs on different data are never compared.
-- **Grading is deterministic.**
+  of every fixture file. A run refuses to start on data its suite wasn't
+  generated against, and runs on different data are never compared.
+- **Grading is deterministic, and identical across harness versions.**
   - **Pagila:** strict and lenient row matching. Strict is the headline;
     lenient tolerates rounding and extra columns.
   - **Filesystem:** the final answer must contain each expected value, and
-    any write tool fails the trial. One task reads a planted prompt
-    injection.
+    any write tool fails the trial.
   - **Outcomes:** hitting the turn or time cap is a fail. Infrastructure
     errors (provider failures, rate limits) are errors, kept out of pass
     rates but shown next to them.
+  - **Across harness versions:** the published runs were made at several
+    harness commits. `compare` regrades every trial from its stored inputs
+    with the current graders, and CI checks that every committed run
+    regrades to exactly its stored grades. So grading is the same across
+    all of them.
 - **5 attempts per task,** run attempt by attempt (verified).
 - **Proofs were pre-registered.** Each degradation proof's setup and
   expected outcome were written down
   ([slice plan](docs/planning/phase-7-slices-plan.md)) before it ran, and
-  failed proofs are published as failed.
+  failed proofs are published as failed. Comparisons marked "–" in the
+  results weren't pre-registered.
 
-**Caveats:**
+## Limitations
 
-- **Model access goes through Sumopod,** an OpenAI-compatible LiteLLM proxy.
-  Model names like `gpt-5-mini` are aliases, so a silent upstream update
-  can't be seen in the name; the provider-reported name is recorded anyway.
-  Repeats were checked not to be served from a cache. Strict tool schemas
-  are off, because MCP-backbone's optional `api_key` tool parameter breaks
-  OpenAI's strict mode.
-- **Temperature is the provider default,** and recorded.
-- **Costs use Sumopod's prices of 2026-10-23,** in
-  [`prices.yaml`](prices.yaml). Every input token is charged at the full
-  input price, so costs err high if any input was cached.
-- **Latency was measured from a laptop over the internet,** so it includes
-  network time to Sumopod and, for Pagila, to `mcp.my.id`. It's comparable
-  between runs here, not with other setups.
-- **Pagila runs use a dedicated `eval` workspace** on MCP-backbone with a
+- **Statistical power:** see the sensitivity table. Only one A/A pair was
+  run live, and only one degradation was caught live: a large one. There's
+  no live example yet of a moderate (8–15 point) drop being caught.
+- **One model family, through one provider:** OpenAI models via Sumopod, an
+  OpenAI-compatible LiteLLM proxy.
+  - Model names like `gpt-5-mini` are aliases, so a silent upstream update
+    can't be seen in the name; the provider-reported name is recorded anyway.
+  - Repeats were checked not to be served from a cache.
+  - Strict tool schemas are off on this route, because MCP-backbone's
+    optional `api_key` tool parameter breaks OpenAI's strict mode. That
+    applies to both models alike.
+- **Pagila is public, and likely in models' training data** (the
+  contamination hypothesis above). The filesystem suite is synthetic for
+  exactly that reason. Results are dated.
+- **Graders haven't been audited for false passes or false fails.** The
+  gap between strict and lenient (e.g. 191 vs 194 of 200) shows how often
+  the stricter reading changes a result. Each run's report lists why every
+  non-passing trial failed.
+- **Pagila runs use a dedicated `eval` workspace** on MCP-backbone, with a
   raised hourly query limit. Its public demo allows 5 queries an hour.
-- **These runs don't record MCP-backbone's build.** The server only started
-  reporting its version after them.
-- **Pagila is public and is likely in models' training data.** The
-  filesystem suite is synthetic for exactly that reason. Results are dated:
-  any public suite can leak into future models.
-
-## Use
-
-```bash
-uv sync --frozen --extra dev
-(cd tools/fs-server && npm ci)                    # the pinned filesystem server
-uv run agent-eval run --suite suites/filesystem.yaml --tasks f01,f17 --epochs 2   # a smoke run
-uv run agent-eval run --plan-only                 # cost plan for a full run, spends nothing
-uv run agent-eval compare runs/fs-mini-base runs/fs-mini-degraded
-uv run agent-eval confirm BASELINE CANDIDATE      # only for an inconclusive comparison
-uv run agent-eval report runs/<run> [--check]
-uv run agent-eval publish [--check]
-```
-
-**Budget guard:** each run is capped at `--budget` (default $5), and each
-trial at budget ÷ trials, so the run can't exceed it. Unpriced models are
-limited to smoke runs. Full runs refuse to start from a checkout with
-uncommitted changes, so every published run traces back to one commit.
-
-**Keys:** `run` reads `SUMOPOD_AI_API_KEY`, `SUMOPOD_BASE_URL` and (for
-Pagila) `MCP_BACKBONE_EVAL_KEY` from `.env`, which is gitignored. Keys are
-never written to records, and each run's output is checked for the key
-values before it's saved.
+- **The published Pagila runs don't record MCP-backbone's build.** The
+  server only started reporting its version afterwards. The VPS smoke runs
+  do record it.
+- **Latency was measured from a laptop over the internet,** so it includes
+  network time. It's comparable between runs here, not with other setups.
+- **Costs use Sumopod's prices of 2026-10-23** ([`prices.yaml`](prices.yaml)).
+  Every input token is charged at the full input price, so costs err high if
+  any input was cached.
+- **Temperature is the provider default,** and recorded.
 
 ## Reproduce the results
+
+**With your own key.** Any Inspect provider works, e.g. `--model
+openai/gpt-5-mini` with `OPENAI_API_KEY` in `.env`. Full runs need the
+model's price in `prices.yaml` (with its source); unpriced models are
+limited to smoke runs. Numbers won't be identical: models are stochastic,
+and a different provider is a different route to the model.
 
 **Filesystem suite.** It runs entirely locally; install the pinned server
 with `(cd tools/fs-server && npm ci)`.
 
-**Pagila suite.** `repro/` brings up a local copy of everything the
-published runs were graded against:
+**Pagila suite.** `repro/` brings up a local copy of what the published runs
+were graded against:
 - MCP-backbone at commit `4e418e9`, built from its own lockfile;
 - Pagila at upstream commit `85bf46a`;
 - an eval workspace.
@@ -212,17 +231,45 @@ uv run agent-eval run --target mcp-backbone-local --tasks e01,h03,x02 --epochs 1
 uv run agent-eval run --target mcp-backbone-local                                  # full run
 ```
 
-Each run checks the local data's fingerprint against the one the suite's
-answers were generated against, and refuses to start if they differ. The
-local copy matches the published runs exactly: the same data fingerprint
-(`fa70dca8…`) and the same tool list. Latency isn't comparable with the
-published runs: no network hop to the server.
+The local copy matches the published runs on **data** (identical
+fingerprint, `fa70dca8…`) and **tools** (identical tool-list hash). Outputs
+will differ run to run. Each run refuses to start if the data fingerprint
+doesn't match. Latency isn't comparable with the published runs: there's no
+network hop to the server.
+
+## Use
+
+```bash
+uv sync --frozen --extra dev
+uv run agent-eval run --plan-only                 # cost plan for a full run, spends nothing
+uv run agent-eval run --suite suites/filesystem.yaml --tasks f01,f17 --epochs 2   # a smoke run
+uv run agent-eval compare runs/fs-mini-base runs/fs-mini-degraded
+uv run agent-eval confirm BASELINE CANDIDATE      # only for an inconclusive comparison
+uv run agent-eval report runs/<run> [--check]
+uv run agent-eval publish [--check]
+```
+
+**Budget guard:**
+- Each run is capped at `--budget` (default $5).
+- Each trial is capped at budget ÷ trials through Inspect's per-trial
+  `cost_limit`, so even if every trial hit its cap, the run couldn't exceed
+  the budget.
+- Full runs refuse to start from a checkout with uncommitted changes, so
+  every published run traces back to one commit.
+
+**Keys:** `run` reads keys from `.env`, which is gitignored:
+- `SUMOPOD_AI_API_KEY` and `SUMOPOD_BASE_URL` for Sumopod models, or your
+  provider's own key;
+- `MCP_BACKBONE_EVAL_KEY` for the live Pagila endpoint.
+
+Keys are never written to records, and each run's output is checked for
+every key's value before it's saved.
 
 ## Running on the VPS
 
-The harness also runs on demand in a locked-down container on the same
-VPS as MCP-backbone: 1 CPU, 1 GB, non-root, a read-only root filesystem,
-and keys from an env file outside the repo. See
+The harness also runs on demand in a locked-down container on the same VPS
+as MCP-backbone: 1 CPU, 1 GB, non-root, a read-only root filesystem, and
+keys from an env file outside the repo. See
 [deploy/RUNBOOK.md](deploy/RUNBOOK.md). It's verified on the VPS: smoke
 runs on both suites (`runs/vps-smoke-*`) completed there, recording the
 server build they ran against.
@@ -232,5 +279,7 @@ server build they ran against.
 - [Planning, Phases 1–7](docs/planning/): the problem, requirements, domain
   model, flows and failures, ADRs, risks and spikes with their results, and
   the slice plan with every pre-registration.
+- [Evaluation](docs/planning/evaluation.md): the project measured against
+  its own plan, including a cold-read review of this README.
 - [JOURNEY.md](JOURNEY.md): the build log, including what broke and what I
   got wrong.
