@@ -337,3 +337,31 @@ passed 2/2, and the Pagila one 1/1, reaching `mcp.my.id` from a container on
 the same machine through Caddy. Both runs record the server build
 (`d2d19f8b4aec`) and the harness commit stamped into the image. With that,
 all eight slices of the plan are done.
+
+## 2026-10-24 — Evaluating it against its own plan
+
+Checked item by item against Phase 1 and 2 (`docs/planning/evaluation.md`).
+Three real gaps:
+- **`required_tools`** was a Must that never got built.
+- **The target's address** wasn't recorded in run records.
+- **"Anyone can reproduce with their own key" wasn't true:** `run` demanded
+  Sumopod's variables for every model.
+
+All three are fixed. The provider fix had a trap in it: Sumopod's prices
+were looked up by model name alone, so an OpenAI run would have been
+costed at Sumopod's prices. Prices are now keyed by the full model id.
+
+Then a cold read. A fresh agent saw only the README, RESULTS and the ADRs,
+and answered ten reviewer questions. It got all ten right, which says the
+docs work, but it also caught me over-claiming:
+- "doesn't raise false alarms" from a single A/A pair;
+- "resolves borderline cases" from one case;
+- a contamination hypothesis called a finding;
+- two latency figures from different suites run together.
+
+Those are reworded to what the evidence supports. The filesystem suite got
+the power analysis it was missing (weaker than Pagila: 65.5% detection at
+10 points), and the README gained a single limitations section. The
+evidence the reviewer wanted but this project didn't buy (more A/A pairs, a
+moderate live degradation, a second model family) is listed as such, not
+glossed over.
