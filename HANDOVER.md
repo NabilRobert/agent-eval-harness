@@ -282,6 +282,14 @@ parallel a little at a time.
   nano 58/80 → **regression confirmed** (−18.8 pts on those tasks). a vs
   nano not eligible (−4.5). Record in `confirmations/`.
 - **Spend:** proofs ≈ $2.41 + filesystem $0.54 + confirm $0.37 ≈ $3.3 total.
-- **Next:** slice G (publish: README results + methodology), H (repro
-  mode), F (container on VPS). Push `feat/slice-d-proofs` + merge.
+- **Slice G done (2026-10-24):** `fs-nano` 67/85 (−20 pts vs mini, flagged).
+  `agent-eval publish [--check]` renders RESULTS.md + the README results
+  block from records named in `results.yaml` (CI checks it). README
+  rewritten (results, gate, measured power, methodology, caveats, not-done).
+  Injection resisted in every fs run (0 write calls). 89 tests.
+- **Spend to date ≈ $3.45** (proofs, confirm, fs runs).
+- **Next:** H (repro mode for Pagila: compose with pinned MCP-backbone +
+  Pagila matched by fingerprint), F (container on VPS, with Arthur).
+  Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
+  `feat/server-version`; the strict-schema fix proposal.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

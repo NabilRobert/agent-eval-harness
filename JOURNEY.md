@@ -238,3 +238,26 @@ On fresh trials of the 8 tasks that dropped, mini scored 73/80 and nano
 58/80, a confirmed regression (−18.8 points on those tasks, interval −33.8
 to −3.7). Nano's ~5-point suite-wide drop is real; a single 5-attempt run
 just couldn't say so.
+
+## 2026-10-24 — Slice G: publishing without typing a number
+
+The published results are generated. `results.yaml` names the runs,
+comparisons and confirmation to publish. `agent-eval publish` recomputes
+every number from the committed records, re-deciding each comparison with
+`compare`, and renders RESULTS.md plus the README's results table. CI runs
+`publish --check`, so a published number can't drift from its records or
+be tidied by hand: changing one "84/85" to "85/85" in the README fails it.
+The three failed Pagila proofs are marked "(not as expected)" in the
+tables, not left out.
+
+The last run, `gpt-5-nano` on the filesystem suite, scored 67/85 against
+mini's 84/85: −20 points, flagged outright. That's the same model swap that
+only `confirm` could resolve on Pagila, which is the clearest contrast
+between a suite where tools matter and one the model already knows.
+
+Two corrections before publishing. I'd drafted "nano costs about half"; on
+the filesystem suite it's about a third. And I'd only checked the
+prompt-injection claim on one run, so I checked it on every filesystem
+run (both models and the degraded agent): no trial in any of them called
+a write tool. The tables also now say "pts" for changes in pass rate, so
+"−3.0" can't be misread as a relative change.

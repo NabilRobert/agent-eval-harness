@@ -1,0 +1,32 @@
+# What's published. Every number and verdict is recomputed from the
+# committed run records by `agent-eval publish`; nothing here is a result.
+headline: [proof-mini-a, proof-mini-b, proof-nano, fs-mini-base, fs-nano]
+
+runs:
+  - {run: proof-mini-a, label: "Pagila, gpt-5-mini, run 1"}
+  - {run: proof-mini-b, label: "Pagila, gpt-5-mini, run 2"}
+  - {run: proof-nano, label: "Pagila, gpt-5-nano"}
+  - {run: proof-mini-degraded, label: "Pagila, gpt-5-mini, no schema tools"}
+  - {run: proof-mini-prompt, label: "Pagila, gpt-5-mini, final-query line removed"}
+  - {run: fs-mini-base, label: "Filesystem, gpt-5-mini"}
+  - {run: fs-nano, label: "Filesystem, gpt-5-nano"}
+  - {run: fs-mini-degraded, label: "Filesystem, gpt-5-mini, no discovery tools"}
+
+# expected: "flagged" / "not flagged" for pre-registered proofs (see
+# docs/planning/phase-7-slices-plan.md); "–" for information only.
+comparisons:
+  - {baseline: proof-mini-a, candidate: proof-mini-b, expected: "not flagged",
+     label: "Pagila: same agent twice (A/A)"}
+  - {baseline: proof-mini-a, candidate: proof-mini-degraded, expected: "flagged",
+     label: "Pagila: schema tools removed"}
+  - {baseline: proof-mini-a, candidate: proof-nano, expected: "flagged",
+     label: "Pagila: gpt-5-mini → gpt-5-nano"}
+  - {baseline: proof-mini-a, candidate: proof-mini-prompt, expected: "flagged",
+     label: "Pagila: final-query line removed from the prompt"}
+  - {baseline: fs-mini-base, candidate: fs-mini-degraded, expected: "flagged",
+     label: "Filesystem: discovery tools removed"}
+  - {baseline: fs-mini-base, candidate: fs-nano, expected: "–",
+     label: "Filesystem: gpt-5-mini → gpt-5-nano"}
+
+confirmations:
+  - confirmations/20261023T173807Z.json

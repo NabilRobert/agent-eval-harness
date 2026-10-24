@@ -338,6 +338,28 @@ def cmd_confirm(args: argparse.Namespace) -> int:
     return result.exit_code
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    """Renders RESULTS.md and the README's results block from the records
+    named in results.yaml; with --check, fails if either is out of date."""
+    from agent_eval.publish import apply_readme, render
+
+    results_md, block = render(REPO_ROOT)
+    readme_path, results_path = REPO_ROOT / "README.md", REPO_ROOT / "RESULTS.md"
+    readme = apply_readme(readme_path.read_text(encoding="utf-8"), block)
+    if args.check:
+        stale = [p.name for p, text in ((results_path, results_md), (readme_path, readme))
+                 if not p.is_file() or p.read_text(encoding="utf-8") != text]
+        if stale:
+            print(f"out of date with the run records: {stale} (run `agent-eval publish`)")
+            return 1
+        print("RESULTS.md and README results are up to date")
+        return 0
+    results_path.write_text(results_md, encoding="utf-8")
+    readme_path.write_text(readme, encoding="utf-8")
+    print("wrote RESULTS.md and the README results block")
+    return 0
+
+
 def cmd_compare(args: argparse.Namespace) -> int:
     result = compare_runs(Path(args.baseline), Path(args.candidate))
     print(f"verdict: {result.verdict} (exit {result.exit_code})")
@@ -405,6 +427,10 @@ def main(argv: list[str] | None = None) -> int:
     con.add_argument("--budget", type=float, default=5.0, help="US dollars per confirmation run")
     con.add_argument("--out", default="runs")
     con.set_defaults(func=cmd_confirm)
+
+    pub = sub.add_parser("publish", help="render RESULTS.md and the README results from records")
+    pub.add_argument("--check", action="store_true", help="fail if they're out of date")
+    pub.set_defaults(func=cmd_publish)
 
     cmp = sub.add_parser("compare", help="compare a candidate run with a baseline")
     cmp.add_argument("baseline")
