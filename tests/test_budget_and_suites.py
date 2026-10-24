@@ -89,6 +89,8 @@ def test_suite_hash_changes_when_any_expected_answer_changes() -> None:
 
 
 UNGRADABLE: list[dict[str, object]] = [
+    {"id": "a", "prompt": "q", "graders": [{"answer_match": {"contains": [[]]}}]},
+    {"id": "a", "prompt": "q", "graders": [{"answer_match": {"contains": [["x", 3]]}}]},
     {"id": "a"},
     {"id": "a", "prompt": "q"},
     {"id": "a", "prompt": "q", "graders": [{"llm_judge": {}}]},
@@ -180,3 +182,23 @@ def test_a_run_refuses_a_database_session_in_another_time_zone() -> None:
     # A suite that records no offset (the filesystem one) isn't checked for it.
     fs = load_suite(REPO / "suites" / "filesystem.yaml")
     assert data_mismatch(fs, fs["generated"]["data_fingerprint"], None) is None
+
+
+def test_filesystem_v2_is_frozen_and_keeps_v1_intact() -> None:
+    """v2 adds tasks and data without touching v1: v1's suite, fixture and
+    published runs stay valid."""
+    from agent_eval.preflight import fixture_fingerprint
+    from agent_eval.suites import FROZEN_SUITES
+
+    v1 = load_suite(REPO / "suites" / "filesystem.yaml")
+    v2 = load_suite(REPO / "suites" / "filesystem-v2.yaml")
+    assert suite_hash(v2) == FROZEN_SUITES["filesystem-v2"]
+    assert len(v2["tasks"]) == 34 and v2["target"] == "filesystem-v2"
+    assert all([next(iter(g)) for g in t["graders"]] == ["answer_match", "forbidden_tools"]
+               for t in v2["tasks"])
+    v2_fp = fixture_fingerprint(REPO / "suites" / "fixtures" / "acme-shop-v2")["sha256"]
+    assert v2_fp == v2["generated"]["data_fingerprint"] != v1["generated"]["data_fingerprint"]
+    # v1's 16 other tasks are byte-identical in v2; only f09 gained alternatives.
+    v1_tasks = {t["id"]: t for t in v1["tasks"]}
+    changed = [t["id"] for t in v2["tasks"] if t["id"] in v1_tasks and t != v1_tasks[t["id"]]]
+    assert changed == ["f09"]

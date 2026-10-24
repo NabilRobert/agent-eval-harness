@@ -418,3 +418,22 @@ Pagila drop, 44% of the time against 21.5%. One synthetic case pins the
 difference in a test: six tasks each losing two passes, which v1's interval
 just fails to flag and v2 flags at z = 2.13. It's also a formula rather
 than a resampling procedure, so a reviewer can check a verdict by hand.
+
+## 2026-10-24 — Filesystem suite v2
+
+The 17-task filesystem suite was the weaker one (65.5% detection at −10
+points under v1). v2 keeps v1's 17 tasks and adds 17 harder ones, on a copy
+of the fixture extended with returns and region settings. That includes
+joins across two files. f09 now accepts "March 14, 2026" as well as
+`2026-03-14`, through a new grader option for alternatives (the audit's
+false fail). v1 is untouched, byte for byte, so every published v1 run
+still stands.
+
+Every new answer is computed by parsing the fixture files, then checked
+again with plain shell tools. The builder's tie checks caught three
+problems before anything ran:
+- two workers tied on ERROR lines (the question became WARN lines);
+- several files tied on TODO comments (it became a count);
+- a check of my own on a field no task used (removed).
+
+A 3-task smoke run passed 3/3, including the join.

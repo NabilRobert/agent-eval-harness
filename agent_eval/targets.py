@@ -82,4 +82,15 @@ TARGETS: dict[str, dict[str, Any]] = {
         "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
                             "search_files"],
     },
+    # Suite v2's fixture: v1's files, unchanged, plus returns and regions.
+    "filesystem-v2": {
+        "name": "filesystem-v2",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-v2"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
 }

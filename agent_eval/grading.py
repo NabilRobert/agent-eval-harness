@@ -116,13 +116,20 @@ def _contains(answer: str, expected: str) -> bool:
     return re.search(pattern, _normalize_text(answer)) is not None
 
 
-def grade_answer_match(final_answer: str | None, contains: list[str]) -> tuple[bool, bool]:
+def grade_answer_match(
+    final_answer: str | None, contains: list[str | list[str]]
+) -> tuple[bool, bool]:
     """(strict, lenient) for `answer_match`: every expected value must
-    appear in the agent's final answer. One standard for both: there's no
-    lenient reading of a wrong number."""
+    appear in the agent's final answer. An item may be a list of
+    acceptable alternatives, any one of which counts, e.g. a date written
+    "2026-03-14" or "March 14, 2026" (the grader audit's one false fail).
+    One standard for both: there's no lenient reading of a wrong number."""
     if not final_answer:
         return False, False
-    ok = all(_contains(final_answer, expected) for expected in contains)
+    ok = all(
+        any(_contains(final_answer, alt) for alt in ([item] if isinstance(item, str) else item))
+        for item in contains
+    )
     return ok, ok
 
 
