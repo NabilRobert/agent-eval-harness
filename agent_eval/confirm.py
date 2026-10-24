@@ -47,7 +47,8 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
     if changed:
         raise ConfirmError(f"{run.meta['run_id']}: tasks changed since the run: {changed}")
     args = ["--suite", str(suite_path), "--tasks", ",".join(tasks), "--epochs", str(epochs),
-            "--model", agent["model"]]
+            "--model", agent["model"],
+            "--message-limit", str(agent.get("limits", {}).get("message_limit", 20))]
     allowlist = agent.get("tool_allowlist")
     if allowlist is not None:
         excluded = sorted(set(prov["tool_names"]) - set(allowlist))

@@ -35,3 +35,10 @@ def test_withheld_tools_are_reproduced(tmp_path: Path) -> None:
     run = load_run(RUNS / "proof-mini-degraded")
     args = agent_args(run, REPO / "suites" / "pagila.yaml", ["e01"], 10)
     assert args[args.index("--exclude-tools") + 1] == "describe_table,sample_rows"
+
+
+def test_the_message_limit_is_reproduced() -> None:
+    from agent_eval.confirm import agent_args
+
+    args = agent_args(load_run(RUNS / "proof-mini-a"), REPO / "suites" / "pagila.yaml", ["e01"], 10)
+    assert args[args.index("--message-limit") + 1] == "20"

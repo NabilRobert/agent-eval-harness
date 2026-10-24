@@ -166,7 +166,7 @@ def cmd_run(args: argparse.Namespace) -> int:
             else suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
         ),
         "tool_allowlist": None,
-        "message_limit": 20,
+        "message_limit": args.message_limit,
         "time_limit": 120,
         "token_limit": 60_000,
         "epochs": args.epochs,
@@ -433,6 +433,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--exclude-tools", help="comma-separated tools to withhold (a degraded agent)")
     run.add_argument("--system-prompt-file", help="replace the suite's system prompt (a degraded agent)")
     run.add_argument("--system-prompt", help=argparse.SUPPRESS)  # exact text, used by `confirm`
+    run.add_argument("--message-limit", type=int, default=20,
+                     help="messages per trial before the trial stops as a fail (default 20)")
     run.add_argument("--out", default="runs")
     run.add_argument("--run-id")
     run.add_argument("--env-file", default=str(REPO_ROOT / ".env"))
