@@ -310,9 +310,12 @@ parallel a little at a time.
   ~/agent-eval-harness-draft-2026-10-23/ (has digest-pinned base images,
   worth carrying over). MCP-backbone deployed at d2d19f8 (version reported).
   The VPS session working on this is "Harness container smoke tests".
-- **Open (Arthur):** PR feat/slice-d-proofs → main so CI runs on GitHub;
-  remove MCP_BACKBONE_EVAL_KEY from ~/MCP-backbone/.env; the other
-  workspace's key in ~/.bash_history.
+- **Project 2 complete (2026-10-24):** everything merged to main (99eb7aa),
+  CI green on GitHub (incl. report/publish checks). MCP-backbone main at
+  d2d19f8, deployed, /healthz reports its version.
+- **Open (Arthur):** remove MCP_BACKBONE_EVAL_KEY from ~/MCP-backbone/.env;
+  the other workspace's key in ~/.bash_history.
+- **Next big piece:** Project 3, the Beobot case study (not started).
 - **Follow-ups:** pin base images by digest (from the draft); MCP-backbone
   strict-schema api_key fix; MCP-backbone CI publishing an image.
   Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
