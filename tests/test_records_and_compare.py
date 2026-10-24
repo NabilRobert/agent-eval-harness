@@ -153,3 +153,10 @@ def test_a_trial_that_hit_a_limit_regrades_as_a_fail_even_with_correct_rows(
     assert regrade(trial) == (False, False)
     run = run_factory([trial])
     assert compare_runs(run, run).regrade_mismatches == []
+
+
+def test_env_text_parsing_handles_quotes_comments_and_blanks() -> None:
+    from agent_eval.envfile import parse_env_text
+
+    text = '# comment\n\nA=1\nB="two"\nC=\'three\'\nnot a line\n'
+    assert parse_env_text(text) == {"A": "1", "B": "two", "C": "three"}

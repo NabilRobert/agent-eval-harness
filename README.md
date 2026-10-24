@@ -193,12 +193,33 @@ Pagila) `MCP_BACKBONE_EVAL_KEY` from `.env`, which is gitignored. Keys are
 never written to records, and each run's output is checked for the key
 values before it's saved.
 
+## Reproduce the results
+
+**Filesystem suite.** It runs entirely locally; install the pinned server
+with `(cd tools/fs-server && npm ci)`.
+
+**Pagila suite.** `repro/` brings up a local copy of everything the
+published runs were graded against:
+- MCP-backbone at commit `4e418e9`, built from its own lockfile;
+- Pagila at upstream commit `85bf46a`;
+- an eval workspace.
+
+Nothing on your machine is mounted.
+
+```bash
+docker compose -f repro/compose.yaml up -d --build
+uv run agent-eval run --target mcp-backbone-local --tasks e01,h03,x02 --epochs 1   # smoke
+uv run agent-eval run --target mcp-backbone-local                                  # full run
+```
+
+Each run checks the local data's fingerprint against the one the suite's
+answers were generated against, and refuses to start if they differ. The
+local copy matches the published runs exactly: the same data fingerprint
+(`fa70dca8…`) and the same tool list. Latency isn't comparable with the
+published runs: no network hop to the server.
+
 ## Not done yet
 
-- **Reproduction by others** (slice H): a local MCP-backbone with pinned
-  data, so anyone can rerun the Pagila suite with their own key. Until then,
-  Pagila results depend on the live endpoint. The filesystem suite already
-  runs entirely locally.
 - **The container on the VPS** (slice F).
 
 ## Records

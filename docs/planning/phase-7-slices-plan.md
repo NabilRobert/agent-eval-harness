@@ -247,3 +247,18 @@ What this does and doesn't say:
   just short of the −5-point trigger), and wasn't confirmed. Taken
   together: nano is a real regression of about 5 points overall, which a
   single 5-attempt run can't resolve and the confirmation step can.
+
+## Slice H results (2026-10-24)
+
+`docker compose -f repro/compose.yaml up -d --build` brings up the setup:
+- Postgres 16.10;
+- MCP-backbone at `4e418e9`, built from its lockfile;
+- Pagila at upstream `85bf46a`, loaded by MCP-backbone's own loader with
+  all 69 tables row-count verified;
+- the read-only role, and an `eval` workspace.
+
+Preflight against it gives the published data fingerprint exactly, and
+the same tool-list hash. A smoke run (`runs/smoke-h1`, 3 tasks) completed
+end to end, 2/3 strict; the one fail is h03, which mini passes 60–80% of
+the time. Every run now refuses to start if the target's data fingerprint
+differs from the one its suite was generated against.

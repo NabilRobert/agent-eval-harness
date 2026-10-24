@@ -1,0 +1,111 @@
+{
+  "run_id": "smoke-h1",
+  "created_at": "2026-10-24T06:46:52+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "pagila",
+    "sha256": "e3babff6ef47c50f26ae786e9b0ea9b5965fd442084af4f717f2775979acf1b8",
+    "frozen": false,
+    "task_hashes": {
+      "e01": "fb6081213204d5e9ba87ffb0d3354ca136540128999248a3efb6a6a8649ce63b",
+      "h03": "b22e6e00ba9f73d8c0bb6c2c30261979a7f29027c6b63b504ac825b378cedb38",
+      "x02": "43e6704a7fd6bfef86d60e4968ff80066f885fd2aedf5969864769baca5a7371"
+    },
+    "task_tags": {
+      "e01": [
+        "easy"
+      ],
+      "h03": [
+        "hard"
+      ],
+      "x02": [
+        "expert"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": 0.0081,
+    "per_trial_cap_usd": 1.6666666666666667,
+    "token_basis": "measured",
+    "priced": true
+  },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
+  "agent": {
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "system_prompt": "You answer questions about a database by using the available tools: list_tables, describe_table, sample_rows, and run_query. Always explore the schema before writing SQL. Call run_query exactly once with your final answer query.",
+    "tool_allowlist": null,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "epochs": 1
+  },
+  "provenance": {
+    "server_name": "database-mcp",
+    "server_version": null,
+    "healthz_version": null,
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ],
+    "tool_list_sha256": "ba48f1adcf4cee9b0fb766337c164f959d34e33dcf03d856ffd514e3954dcaa3",
+    "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
+    "data_fingerprint_parts": [
+      {
+        "customers": 999,
+        "films": 1000,
+        "rentals": 51805,
+        "payments": 51061,
+        "max_rental_id": 87559,
+        "max_payment_id": 102094
+      },
+      {
+        "customers_md5": "aa111d185f802a08f8c5b460cc529acc"
+      },
+      {
+        "films_md5": "94a45252a98d4da71961c1eb4e274ccc"
+      },
+      {
+        "rentals_md5": "c7365fb8ef794a5cf52b4f55ba2ad88d"
+      },
+      {
+        "payments_md5": "a4ac45be39ec18114f9ab7befd508b74"
+      }
+    ],
+    "models_reported": [
+      "gpt-5-mini"
+    ],
+    "harness_git": "c9aff6b2339b-dirty",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 4,
+  "totals": {
+    "trials": 3,
+    "pass_strict": 2,
+    "pass_lenient": 3,
+    "errors": 0,
+    "input_tokens": 9644,
+    "output_tokens": 2828,
+    "cost_usd": {
+      "usd": 0.008067,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "db0d933870b13a87347df06d515c6b4598d0818cf4fb5453ed72a1a37962d922"
+}

@@ -98,6 +98,18 @@ def suite_hash(suite: dict[str, Any]) -> str:
     return sha256_hex(ordered_json([[t["id"], task_hash(t)] for t in suite["tasks"]]))
 
 
+def data_mismatch(suite: dict[str, Any], target_fingerprint: str | None) -> str | None:
+    """Why a run must not start, or None. A suite records the fingerprint
+    of the data its expected answers were generated against; a target
+    serving any other data would score right answers as wrong."""
+    generated: dict[str, Any] = suite.get("generated") or {}
+    expected: str | None = generated.get("data_fingerprint")
+    if expected and target_fingerprint != expected:
+        return (f"target data fingerprint {str(target_fingerprint)[:12]} doesn't match the "
+                f"{expected[:12]} this suite's answers were generated against")
+    return None
+
+
 def required_tools(suite: dict[str, Any]) -> set[str]:
     """Tools the graders read results from: an agent config may not
     withhold them, and the target must have them."""

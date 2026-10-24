@@ -287,3 +287,14 @@ pinned commit and the published runs are made after that. Local latency
 isn't comparable with the VPS's, and the README says so.
 **Rejected:** (b) spends Arthur's rate limit and breaks the "no public
 use on his keys" non-goal; (c) fails the reproducibility metric.
+**Outcome (slice H, 2026-10-24):**
+- **The first candidate matched.** Pagila at upstream `85bf46a` (the last
+  commit to touch the schema or data) gives exactly the published
+  fingerprint `fa70dca8…`, and the local server's tool list hash equals
+  the published runs'.
+- **No host bind mount.** It hung on a macOS folder permission during
+  development, so generated settings and the local key live in a Docker
+  volume, and the harness reads the key with `docker compose exec`.
+- **The fingerprint guard became general.** Every run checks it against
+  the suite's recorded fingerprint, for the live endpoint as well as the
+  local copy.

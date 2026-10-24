@@ -261,3 +261,32 @@ prompt-injection claim on one run, so I checked it on every filesystem
 run (both models and the degraded agent): no trial in any of them called
 a write tool. The tables also now say "pts" for changes in pass rate, so
 "−3.0" can't be misread as a relative change.
+
+## 2026-10-24 — Slice H: anyone can rerun Pagila
+
+The published Pagila numbers came from my VPS, which nobody else can use.
+`repro/` now brings up the same server and the same data locally, so they
+can be checked with your own model key:
+- MCP-backbone pinned to a commit and built from its lockfile;
+- Pagila pinned to an upstream commit;
+- everything loaded and provisioned by MCP-backbone's own scripts, not
+  copies of them.
+
+Which upstream commit matched the VPS was an open question, since the VPS
+had loaded `master` unpinned. The fingerprint answered it: the first
+candidate, the last commit to touch the schema or data, matched exactly.
+The local tool list's hash matched too.
+
+The first attempt hung on a host bind mount: Docker needed macOS permission
+for the Desktop folder. Even though it came through later, the setup now
+keeps everything in Docker volumes and the harness reads the local key with
+`docker compose exec`, so nobody reproducing it hits the same wall. The
+image build was slow (Debian mirrors at tens of KB/s). Publishing a
+prebuilt image from MCP-backbone's CI would fix that, and is a follow-up.
+
+Two small things I got wrong along the way. My first secret scan of the
+local smoke run printed nothing: piping a heredoc into Python had used up
+the script's input, so the scan never ran. "No output" isn't "clean", so it
+was rerun properly (clean). And the fingerprint check that ADR-010 asked
+for is now a general rule rather than a local-mode one: every run refuses
+data its suite wasn't generated against, including the live endpoint.

@@ -14,11 +14,12 @@ from pathlib import Path
 from typing import Any
 
 from agent_eval.compare import EXIT_UNDECIDED, compare_runs
-from agent_eval.envfile import read_env_file
+from agent_eval.envfile import parse_env_text, read_env_file
 from agent_eval.records import ordered_json, sha256_hex, write_run
 from agent_eval.suites import (
     PAGILA_SYSTEM_PROMPT,
     SuiteError,
+    data_mismatch,
     load_suite,
     required_tools,
     suite_hash,
@@ -74,11 +75,24 @@ def cmd_run(args: argparse.Namespace) -> int:
     except (SuiteError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_UNDECIDED
-    target = TARGETS.get(suite["target"])
+    target = TARGETS.get(args.target or suite["target"])
     if target is None:
-        print(f"error: unknown target {suite['target']!r}", file=sys.stderr)
+        print(f"error: unknown target {args.target or suite['target']!r}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    if args.target and target.get("serves", target["name"]) != suite["target"]:
+        print(f"error: target {args.target!r} doesn't serve suite target {suite['target']!r}",
+              file=sys.stderr)
         return EXIT_UNDECIDED
     env = read_env_file(Path(args.env_file))
+    if target.get("auth_env_command"):
+        try:
+            out = subprocess.run(target["auth_env_command"], capture_output=True, text=True,
+                                 timeout=30, check=True).stdout
+        except (OSError, subprocess.SubprocessError):
+            print(f"error: couldn't read the {target['name']} key; is it running? "
+                  "(docker compose -f repro/compose.yaml up -d)", file=sys.stderr)
+            return EXIT_UNDECIDED
+        env = {**env, **parse_env_text(out)}
     sumopod_key = _require(env, "SUMOPOD_AI_API_KEY")
     base_url = _require(env, "SUMOPOD_BASE_URL")
     auth_token = _require(env, target["auth_env"]) if target.get("auth_env") else ""
@@ -150,6 +164,12 @@ def cmd_run(args: argparse.Namespace) -> int:
         info = asyncio.run(preflight(target, auth_token, required_tools(suite)))
     except PreflightError as exc:
         print(f"error: preflight failed: {exc}", file=sys.stderr)
+        return EXIT_UNDECIDED
+    # The suite's expected answers were generated against one specific
+    # dataset; grading against any other would score right answers wrong.
+    mismatch = data_mismatch(suite, info["data_fingerprint"])
+    if mismatch:
+        print(f"error: {mismatch}", file=sys.stderr)
         return EXIT_UNDECIDED
     if args.exclude_tools:
         # A deliberately degraded agent (the regression proof): the same
@@ -391,6 +411,7 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--suite", default=str(REPO_ROOT / "suites" / "pagila.yaml"))
     run.add_argument("--tasks", help="comma-separated task ids (e.g. a smoke suite)")
     run.add_argument("--model", default="openai-api/sumopod/gpt-5-mini")
+    run.add_argument("--target", help="run against another target serving the suite's (e.g. mcp-backbone-local)")
     run.add_argument("--epochs", type=int, default=5)
     run.add_argument("--max-samples", type=int, default=4, help="trials running at once")
     run.add_argument("--budget", type=float, default=5.0, help="US dollars for the whole run")

@@ -149,3 +149,14 @@ def test_frozen_filesystem_suite_matches_its_recorded_hash() -> None:
     from agent_eval.suites import FROZEN_SUITES
 
     assert suite_hash(load_suite(REPO / "suites" / "filesystem.yaml")) == FROZEN_SUITES["filesystem"]
+
+
+def test_a_run_refuses_data_its_suite_wasnt_generated_against() -> None:
+    from agent_eval.suites import data_mismatch
+
+    pagila = load_suite(REPO / "suites" / "pagila.yaml")
+    fs = load_suite(REPO / "suites" / "filesystem.yaml")
+    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"]) is None
+    assert data_mismatch(fs, fs["generated"]["data_fingerprint"]) is None
+    assert "doesn't match" in (data_mismatch(pagila, "0" * 64) or "")
+    assert data_mismatch({"tasks": []}, "anything") is None  # suites without a record: no check

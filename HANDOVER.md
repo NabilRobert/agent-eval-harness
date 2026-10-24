@@ -288,8 +288,15 @@ parallel a little at a time.
   rewritten (results, gate, measured power, methodology, caveats, not-done).
   Injection resisted in every fs run (0 write calls). 89 tests.
 - **Spend to date ≈ $3.45** (proofs, confirm, fs runs).
-- **Next:** H (repro mode for Pagila: compose with pinned MCP-backbone +
-  Pagila matched by fingerprint), F (container on VPS, with Arthur).
+- **Slice H done (2026-10-24):** `repro/` (Dockerfile + compose + setup):
+  MCP-backbone 4e418e9 + Pagila upstream 85bf46a → fingerprint fa70dca8
+  matches exactly, tool list hash matches. Target `mcp-backbone-local`
+  (http://127.0.0.1:8765/mcp/, key read via `docker compose exec`);
+  `--target`; every run refuses data its suite wasn't generated against
+  (`data_mismatch`). Smoke `runs/smoke-h1` 2/3. 91 tests.
+- **Follow-ups:** MCP-backbone CI publishing a prebuilt image (slow builds);
+  strict-schema `api_key` fix; server-version deploy.
+- **Next:** F (container on VPS, with Arthur).
   Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
   `feat/server-version`; the strict-schema fix proposal.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).
