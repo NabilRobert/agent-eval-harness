@@ -382,3 +382,27 @@ fingerprint couldn't see this, because it isn't about the data. Now every
 run records the session's UTC offset, the suite records the one it was
 published at, a mismatch refuses to run, and the local database runs at
 +08. The lesson: a fingerprint only vouches for what it hashes.
+
+## 2026-10-24 — The gate, measured against its alternatives, and two more proofs
+
+Comparing the gate with simpler rules on the same simulated pairs gave a
+mixed result:
+- The rules ADR-001 rejected failed exactly as it predicted. A fixed
+  threshold raised 12% false alarms on a flaky suite, and per-task tests
+  are useless at 5 attempts.
+- But a plain pooled two-proportion test was as safe as my bootstrap and
+  caught more, on every suite.
+
+The bootstrap resamples tasks, which makes it answer a more conservative
+question than a fixed-suite gate needs. I didn't swap rules after seeing
+the data. The published verdicts keep the pre-registered gate (they
+wouldn't change anyway), and a v2 is recommended for future comparisons.
+
+Then the two runs the cold read asked for, both pre-registered:
+- A second A/A pair: not flagged, +0.0 points.
+- A moderate degradation, the message cap cut from 20 to 12: flagged at
+  −20 points.
+
+I'd predicted about −12 from the baseline's message counts. The miss was
+my predictor, not the gate: Inspect's limit binds about a message earlier
+than I counted.

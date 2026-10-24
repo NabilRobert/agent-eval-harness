@@ -219,3 +219,25 @@ verdicts wouldn't change anyway: mini vs nano on Pagila gives z = 1.79,
 below the 1.96 needed to flag. **Recommended for future comparisons
 (Arthur's call):** a gate v2 that uses the pooled z-test plus the task
 rule, written down before any comparison uses it.
+
+## Follow-up live evidence (2026-10-24, pre-registered)
+
+| Comparison | Expected | Result |
+|---|---|---|
+| `fs-mini-base` vs `fs-mini-base2` (same agent twice) | not flagged | **no regression**, +0.0 points (interval −3.5 to +3.5), exit 0 |
+| `fs-mini-base` vs `fs-mini-cap12` (message cap 20 → 12) | flagged | **regression**, −20.0 points (interval −34.1 to −7.1), exit 1 |
+
+Both came out as pre-registered. Every one of the cap run's 18 fails is a
+message-cap hit, with no errors and no writes. Both runs are clean in the
+secret scan. Cost: $0.43 in total.
+
+**The size prediction was wrong, and why.** The cap was chosen so that 12%
+of the baseline's trials needed more than 12 messages, predicting about a
+12-point drop. Both baseline runs showed 12–13% of trials above 12
+messages, yet 21% of trials hit the cap. Inspect's message limit binds
+about one message earlier than my count of the saved transcripts, so the
+predictor was miscalibrated. The −20-point result stands.
+
+This closes two of the cold read's open requests: a second live A/A pair,
+and a live moderate degradation caught. Still open, and needing more
+spend: a second model family.

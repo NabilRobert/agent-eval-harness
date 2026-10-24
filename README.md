@@ -38,6 +38,7 @@ Two suites, run against two targets:
 | Pagila, gpt-5-nano | 182/200 (91.0%) | 30/40 | $0.276 | 27.4 s |
 | Filesystem, gpt-5-mini | 84/85 (98.8%) | 16/17 | $0.205 | 8.9 s |
 | Filesystem, gpt-5-nano | 67/85 (78.8%) | 10/17 | $0.076 | 12.6 s |
+| Filesystem, gpt-5-mini, run 2 | 84/85 (98.8%) | 16/17 | $0.217 | 10.1 s |
 
 | Regression check | Expected | Gate said |
 |---|---|---|
@@ -46,6 +47,8 @@ Two suites, run against two targets:
 | Pagila: gpt-5-mini → gpt-5-nano | flagged | no regression, -4.5 pts (-10.0 pts to +0.5 pts) (not as expected) |
 | Pagila: final-query line removed from the prompt | flagged | no regression, -2.5 pts (-7.5 pts to +2.0 pts) (not as expected) |
 | Filesystem: discovery tools removed | flagged | regression, -61.2 pts (-82.4 pts to -37.6 pts) |
+| Filesystem: same agent twice (A/A) | not flagged | no regression, +0.0 pts (-3.5 pts to +3.5 pts) |
+| Filesystem: message cap 20 → 12 | flagged | regression, -20.0 pts (-34.1 pts to -7.1 pts) |
 | Filesystem: gpt-5-mini → gpt-5-nano | – | regression, -20.0 pts (-35.3 pts to -7.1 pts) |
 | Confirmation: proof-nano vs proof-mini-b, fresh trials | flagged if real | regression, -18.8 pts on 8 tasks |
 
@@ -57,13 +60,19 @@ and CI fails if it drifts from them.
 
 **What the results show, and how strongly:**
 
-- **No false alarm in the one live check.** The same agent run twice on
-  Pagila wasn't flagged. That's a single A/A pair; the simulated false-alarm
-  rate is below.
-- **A large degradation was caught.** On the filesystem suite, withholding
-  the four discovery tools dropped the agent from 98.8% to 37.6%, and the
-  gate flagged it on both rules. That's the one degradation big enough for
-  the gate's power, out of four tried.
+- **No false alarm in either live check.** The same agent run twice wasn't
+  flagged, on Pagila (+0.5 points) or on the filesystem suite (+0.0). That's
+  two A/A pairs; the simulated false-alarm rates are below.
+- **Two degradations were caught, a large one and a moderate one.** On the
+  filesystem suite:
+  - withholding the four discovery tools: 98.8% → 37.6%, flagged on both
+    rules;
+  - lowering the message cap from 20 to 12, a realistic "save money"
+    change: 98.8% → 78.8% (−20 points), flagged.
+
+  The cap was pre-registered to cause a drop of about 12 points. It caused
+  20, because Inspect's limit binds a message earlier than my count of the
+  transcripts.
 - **Smaller degradations were missed, and are published as failed proofs.**
   On Pagila, three degradations were pre-registered as "should be flagged":
   - no schema tools;
@@ -176,9 +185,11 @@ its interval, so a flag can be judged rather than obeyed.
 
 ## Limitations
 
-- **Statistical power:** see the sensitivity table. Only one A/A pair was
-  run live, and only one degradation was caught live: a large one. There's
-  no live example yet of a moderate (8–15 point) drop being caught.
+- **Statistical power:** see the sensitivity table. Live evidence is two A/A
+  pairs (not flagged), and two caught degradations: −61 and −20 points.
+  The gate is conservative: in simulation, a pooled two-proportion test was
+  just as safe and caught more
+  ([evaluation](docs/planning/evaluation.md#the-gate-against-simpler-rules-follow-up-2026-10-24)).
 - **One model family, through one provider:** OpenAI models via Sumopod, an
   OpenAI-compatible LiteLLM proxy.
   - Model names like `gpt-5-mini` are aliases, so a silent upstream update
