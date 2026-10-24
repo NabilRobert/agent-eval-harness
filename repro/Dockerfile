@@ -1,7 +1,7 @@
 # MCP-backbone at a pinned commit, built from its own lockfile, plus psql
 # for loading Pagila. Every version here is exact, so a rebuild months
 # from now is the same server (ADR-010).
-FROM python:3.12.12-slim-bookworm
+FROM python:3.12.12-slim-bookworm@sha256:593bd06efe90efa80dc4eee3948be7c0fde4134606dd40d8dd8dbcade98e669c
 
 RUN apt-get update \
  && apt-get install -y --no-install-recommends postgresql-client git ca-certificates \

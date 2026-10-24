@@ -9,7 +9,7 @@ name: agent-eval-repro
 
 services:
   db:
-    image: postgres:16.10-alpine
+    image: postgres:16.10-alpine@sha256:029660641a0cfc575b14f336ba448fb8a75fd595d42e1fa316b9fb4378742297
     # The live server's database session is at UTC+8 (Asia/Shanghai, no
     # DST), and answers to date questions that ignore "UTC" depend on it.
     # The harness checks the offset on every run (session_utc_offset).

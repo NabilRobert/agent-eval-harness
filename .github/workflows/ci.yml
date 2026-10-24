@@ -39,3 +39,30 @@ jobs:
 
       - name: Compare committed runs
         run: uv run --frozen agent-eval compare runs/smoke-b1 runs/smoke-b1
+
+  # The VPS image. Built from a checkout where every file is mode 600 (the
+  # VPS once had that, and COPY keeps modes), then imported as the
+  # non-root run user, so that bug can't come back.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make every tracked file mode 600
+        run: git ls-files -z | xargs -0 chmod 600
+
+      - name: Build the harness image
+        run: docker build --build-arg HARNESS_GIT="${GITHUB_SHA::12}" -t agent-eval-harness:ci .
+
+      - name: The run user can import the harness and read the suites
+        run: |
+          docker run --rm --entrypoint python agent-eval-harness:ci -c "
+          import os, agent_eval.cli, agent_eval.fs_server
+          from pathlib import Path
+          assert os.getuid() != 0
+          assert Path('/app/suites/filesystem.yaml').read_text()
+          assert Path('/app/tools/fs-server/node_modules/@modelcontextprotocol/server-filesystem/dist/index.js').is_file()
+          print('ok as uid', os.getuid())"
+
+      - name: The CLI runs (plan only, no keys, no spend)
+        run: docker run --rm agent-eval-harness:ci run --suite suites/filesystem.yaml --tasks f01 --epochs 1 --model openai/gpt-5-mini --env-file /dev/null --plan-only
