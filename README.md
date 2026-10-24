@@ -223,13 +223,9 @@ published runs: no network hop to the server.
 The harness also runs on demand in a locked-down container on the same
 VPS as MCP-backbone: 1 CPU, 1 GB, non-root, a read-only root filesystem,
 and keys from an env file outside the repo. See
-[deploy/RUNBOOK.md](deploy/RUNBOOK.md). It's tested locally, including
-the filesystem server's confinement and clean-up.
-
-## Not done yet
-
-- **Running the container on the VPS itself:** the first build and a
-  smoke run there.
+[deploy/RUNBOOK.md](deploy/RUNBOOK.md). It's verified on the VPS: smoke
+runs on both suites (`runs/vps-smoke-*`) completed there, recording the
+server build they ran against.
 
 ## Records
 

@@ -16,13 +16,19 @@ ARG HARNESS_UID=1000
 RUN pip install --no-cache-dir uv==0.13.1 \
  && useradd --create-home --uid "$HARNESS_UID" harness
 WORKDIR /app
+# Dependencies first, in their own layer: a code change doesn't re-download them.
 COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --no-install-project
 COPY agent_eval/ agent_eval/
 RUN uv sync --frozen --no-dev
 COPY suites/ suites/
 COPY prices.yaml results.yaml ./
 COPY --from=fs-server /fs/node_modules tools/fs-server/node_modules
-RUN mkdir -p runs .inspect-logs && chown harness runs .inspect-logs
+# COPY keeps the host's file modes. A checkout where files are 600 (the
+# VPS had some) would leave them unreadable to the non-root run user, so
+# everything is made readable here, whatever the host had.
+RUN chmod -R a+rX /app \
+ && mkdir -p runs .inspect-logs && chown harness runs .inspect-logs
 
 # No .git in the image, so the commit it was built from is stamped in at
 # build time: full runs refuse an unknown or dirty one (clean-tree guard).
