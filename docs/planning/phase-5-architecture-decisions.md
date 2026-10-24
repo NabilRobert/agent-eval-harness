@@ -81,6 +81,16 @@ points weren't flagged (below the gate's power, published as failed
 proofs); the filesystem degradation (−61.2 points) was flagged on both
 rules; `confirm` resolved an inconclusive −5-point model swap into a
 confirmed regression.
+**Compared with simpler rules (2026-10-24, `scripts/compare_rules.py`):**
+- A fixed 5-point threshold raises 12% false alarms on a flakier suite, and
+  per-task Fisher tests are useless at 5 attempts, so those rejections hold.
+- But the pooled two-proportion z-test had lower or equal false alarms
+  (0–0.5%) and more detection than this gate on all three suites tested.
+  Resampling tasks makes the gate conservative for a fixed-suite CI
+  question.
+- Published verdicts keep this pre-registered gate. A gate v2 (pooled
+  z-test + task rule) is recommended for future comparisons, with the
+  numbers in docs/planning/evaluation.md.
 **Revisit if:** suites grow past ~100 tasks (consider a clustered standard
 error instead), or repeats change.
 **Amendments (2026-10-23, senior review):**

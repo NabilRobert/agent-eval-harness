@@ -151,3 +151,71 @@ fingerprint covered the data, not the session. Fixed:
   a run refuses a target at any other offset.
 - `repro/` sets its database to Asia/Shanghai (+08, no DST). Locally, the
   same UTC-ignoring query now gives 9,098, as live does.
+
+## The gate against simpler rules (follow-up, 2026-10-24)
+
+A reviewer would ask why a bootstrap and not something simpler, so every
+candidate rule was run on the same simulated pairs
+([`scripts/compare_rules.py`](../../scripts/compare_rules.py); 200 pairs
+per case, rates measured from the real runs, plus ADR-001's flakier
+assumed suite). No API calls.
+
+```
+40 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/proof-mini-a', '../runs/proof-mini-b']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (4.8%) |
+|---|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 0.0% | 12.0% | 34.5% | 88.0% | 100.0% | 21.5% |
+| within-task bootstrap (fixed suite) + task rule | 4.5% | 35.0% | 70.5% | 96.5% | 100.0% | 68.5% |
+| fixed threshold: drop >= 5 pts | 0.0% | 14.0% | 49.0% | 95.0% | 100.0% | 45.5% |
+| fixed threshold: drop >= 10 pts | 0.0% | 0.0% | 2.0% | 51.0% | 95.5% | 1.0% |
+| pooled two-proportion z-test | 0.5% | 18.0% | 51.5% | 94.0% | 100.0% | 44.0% |
+| per-task Fisher, any task p<0.05 | 2.0% | 3.0% | 5.0% | 9.0% | 14.0% | 29.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+
+17 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs-mini-base']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (20.0%) |
+|---|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 0.0% | 5.5% | 23.5% | 70.0% | 92.0% | 99.0% |
+| within-task bootstrap (fixed suite) + task rule | 2.5% | 23.5% | 43.0% | 88.0% | 97.0% | 100.0% |
+| fixed threshold: drop >= 5 pts | 0.0% | 14.5% | 43.0% | 90.0% | 99.0% | 100.0% |
+| fixed threshold: drop >= 10 pts | 0.0% | 0.0% | 5.5% | 52.5% | 87.0% | 99.0% |
+| pooled two-proportion z-test | 0.5% | 20.5% | 37.5% | 81.5% | 96.5% | 100.0% |
+| per-task Fisher, any task p<0.05 | 0.5% | 0.0% | 1.0% | 0.5% | 5.5% | 98.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+
+30 tasks x 5 attempts, 200 simulated pairs per case, base ['mixed']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 1.0% | 5.0% | 8.5% | 28.0% | 66.0% |
+| within-task bootstrap (fixed suite) + task rule | 5.5% | 12.5% | 28.5% | 56.5% | 89.5% |
+| fixed threshold: drop >= 5 pts | 12.0% | 32.0% | 51.0% | 80.0% | 99.5% |
+| fixed threshold: drop >= 10 pts | 2.0% | 9.5% | 20.5% | 50.0% | 86.5% |
+| pooled two-proportion z-test | 0.0% | 6.0% | 12.5% | 39.5% | 80.5% |
+| per-task Fisher, any task p<0.05 | 17.0% | 24.0% | 26.5% | 32.5% | 53.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+```
+
+**What it shows:**
+- **A fixed threshold isn't calibrated.** "Drop ≥ 5 points" looks good on
+  the near-saturated real suites, but raises **12% false alarms** on the
+  flakier suite. ADR-001's reason for rejecting it holds.
+- **Per-task Fisher tests don't work at 5 attempts.** Uncorrected, they
+  raise 17% false alarms on the flaky suite; with Bonferroni, they catch
+  nothing.
+- **A fixed-suite bootstrap** (resampling attempts only, not tasks) catches
+  much more, but runs at **2.5–5.5% false alarms**. With 5 attempts, a task
+  that went 5/5 looks noise-free when it isn't.
+- **The pooled two-proportion z-test beats the shipped gate on every
+  suite**: false alarms of 0–0.5%, and higher detection everywhere. For
+  example, a 10-point drop is caught 94% / 81.5% / 39.5% of the time,
+  against the gate's 88% / 70% / 28%. Resampling tasks makes the shipped
+  gate answer "would this hold on tasks like these?", which is a more
+  conservative question than a CI gate on a fixed suite needs.
+
+**Decision: the published verdicts stay as they are.** They were made with
+the pre-registered gate, and switching rules after seeing the data is what
+pre-registration exists to prevent. Under the pooled test the published
+verdicts wouldn't change anyway: mini vs nano on Pagila gives z = 1.79,
+below the 1.96 needed to flag. **Recommended for future comparisons
+(Arthur's call):** a gate v2 that uses the pooled z-test plus the task
+rule, written down before any comparison uses it.
