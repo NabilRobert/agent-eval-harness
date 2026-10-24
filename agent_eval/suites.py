@@ -98,15 +98,24 @@ def suite_hash(suite: dict[str, Any]) -> str:
     return sha256_hex(ordered_json([[t["id"], task_hash(t)] for t in suite["tasks"]]))
 
 
-def data_mismatch(suite: dict[str, Any], target_fingerprint: str | None) -> str | None:
+def data_mismatch(
+    suite: dict[str, Any], target_fingerprint: str | None, target_utc_offset: int | None = None
+) -> str | None:
     """Why a run must not start, or None. A suite records the fingerprint
-    of the data its expected answers were generated against; a target
-    serving any other data would score right answers as wrong."""
+    of the data its expected answers were generated against, and the
+    database session's UTC offset; a target differing in either would score
+    the same answer differently."""
     generated: dict[str, Any] = suite.get("generated") or {}
     expected: str | None = generated.get("data_fingerprint")
     if expected and target_fingerprint != expected:
         return (f"target data fingerprint {str(target_fingerprint)[:12]} doesn't match the "
                 f"{expected[:12]} this suite's answers were generated against")
+    expected_offset: int | None = generated.get("session_utc_offset")
+    if expected_offset is not None and target_utc_offset != expected_offset:
+        actual = "unknown" if target_utc_offset is None else f"{target_utc_offset}s"
+        return (f"target database session is at UTC offset {actual}, but this suite "
+                f"was generated and published at {expected_offset}s; answers to questions about "
+                "dates would be graded differently")
     return None
 
 

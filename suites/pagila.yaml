@@ -6,12 +6,13 @@ description: MCP-backbone's 30 Pagila questions (verbatim, same prompts as its p
   10 expert ones added by the agent-eval-harness. Expected answers are generated through the live endpoint
   by `agent-eval generate-expected`.
 generated:
-  at: '2026-10-23T09:52:20+00:00'
+  at: '2026-10-24T08:37:48+00:00'
   from: pagila.source.yaml
   source_sha256: 708ef6d30cfac3c791cc3037d94079bca9a50d12ffa025cd3f92159305a8a055
   server_name: database-mcp
-  server_version: null
+  server_version: d2d19f8b4aec
   data_fingerprint: fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96
+  session_utc_offset: 28800
 tasks:
 - id: e01
   tags:

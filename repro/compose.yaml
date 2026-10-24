@@ -10,6 +10,10 @@ name: agent-eval-repro
 services:
   db:
     image: postgres:16.10-alpine
+    # The live server's database session is at UTC+8 (Asia/Shanghai, no
+    # DST), and answers to date questions that ignore "UTC" depend on it.
+    # The harness checks the offset on every run (session_utc_offset).
+    command: ["postgres", "-c", "timezone=Asia/Shanghai"]
     environment:
       POSTGRES_PASSWORD: repro  # a throwaway local database, never exposed
     healthcheck:

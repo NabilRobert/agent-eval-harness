@@ -365,3 +365,20 @@ the power analysis it was missing (weaker than Pagila: 65.5% detection at
 evidence the reviewer wanted but this project didn't buy (more A/A pairs, a
 moderate live degradation, a second model family) is listed as such, not
 glossed over.
+
+## 2026-10-24 — Auditing the graders, and the time zone hiding in the data
+
+I read all 136 non-passing trials in the published runs, one by one. The
+graders held up: one clear false fail ("March 14, 2026" for `2026-03-14`).
+But 35 of Pagila's 64 fails came from just 5 tasks, the ones that say
+"(UTC)". The agents compared bare dates, and Postgres read those in the
+session's time zone: +08 on the VPS. On a UTC database the same queries
+would have been right.
+
+That broke a claim I'd made the day before: the local reproduction
+"matches exactly". It matched on data and tools, but its database ran at
+UTC, so it would have passed answers the published runs failed. The data
+fingerprint couldn't see this, because it isn't about the data. Now every
+run records the session's UTC offset, the suite records the one it was
+published at, a mismatch refuses to run, and the local database runs at
++08. The lesson: a fingerprint only vouches for what it hashes.

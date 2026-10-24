@@ -44,6 +44,7 @@ _PROVENANCE_FIELDS = [
     "tool_list_sha256",
     "models_reported",
     "data_fingerprint",
+    "session_utc_offset",
     "harness_git",
     "inspect_ai_version",
 ]

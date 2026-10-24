@@ -96,6 +96,12 @@ async def preflight(
                     f"target has no tool(s) {sorted(missing)}; it has {sorted(names)}"
                 )
             data = await fingerprint(session, target) if target.get("fingerprint_queries") else None
+            utc_offset: int | None = None
+            if target.get("utc_offset_query"):
+                result = await call_json(session, target["query_tool"], {"sql": target["utc_offset_query"]})
+                if result.get("status") != "succeeded":
+                    raise PreflightError(f"UTC offset query refused: {result.get('error')}")
+                utc_offset = int(float(result["rows"][0]["utc_offset_seconds"]))
     except PreflightError:
         raise
     except Exception as exc:  # any other failure to reach the server is a preflight failure
@@ -118,4 +124,5 @@ async def preflight(
         "tool_list_sha256": sha256_hex(stable_json(tools)),
         "data_fingerprint": data["sha256"] if data else None,
         "data_fingerprint_parts": data["parts"] if data else None,
+        "session_utc_offset": utc_offset,
     }

@@ -180,7 +180,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         return EXIT_UNDECIDED
     # The suite's expected answers were generated against one specific
     # dataset; grading against any other would score right answers wrong.
-    mismatch = data_mismatch(suite, info["data_fingerprint"])
+    mismatch = data_mismatch(suite, info["data_fingerprint"], info.get("session_utc_offset"))
     if mismatch:
         print(f"error: {mismatch}", file=sys.stderr)
         return EXIT_UNDECIDED

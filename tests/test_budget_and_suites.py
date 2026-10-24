@@ -159,7 +159,24 @@ def test_a_run_refuses_data_its_suite_wasnt_generated_against() -> None:
 
     pagila = load_suite(REPO / "suites" / "pagila.yaml")
     fs = load_suite(REPO / "suites" / "filesystem.yaml")
-    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"]) is None
+    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"], 28800) is None
     assert data_mismatch(fs, fs["generated"]["data_fingerprint"]) is None
-    assert "doesn't match" in (data_mismatch(pagila, "0" * 64) or "")
+    assert "doesn't match" in (data_mismatch(pagila, "0" * 64, 28800) or "")
     assert data_mismatch({"tasks": []}, "anything") is None  # suites without a record: no check
+
+
+def test_a_run_refuses_a_database_session_in_another_time_zone() -> None:
+    """The grader audit: 35 of Pagila's 64 non-passing trials ignored "UTC"
+    in the question, and whether that's wrong depends on the session's
+    offset. The suite records the offset it was published at."""
+    from agent_eval.suites import data_mismatch
+
+    pagila = load_suite(REPO / "suites" / "pagila.yaml")
+    fp = pagila["generated"]["data_fingerprint"]
+    assert pagila["generated"]["session_utc_offset"] == 28800
+    assert data_mismatch(pagila, fp, 28800) is None
+    assert "UTC offset 0s" in (data_mismatch(pagila, fp, 0) or "")
+    assert "UTC offset unknown" in (data_mismatch(pagila, fp, None) or "")
+    # A suite that records no offset (the filesystem one) isn't checked for it.
+    fs = load_suite(REPO / "suites" / "filesystem.yaml")
+    assert data_mismatch(fs, fs["generated"]["data_fingerprint"], None) is None

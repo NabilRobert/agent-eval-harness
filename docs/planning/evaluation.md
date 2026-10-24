@@ -116,3 +116,38 @@ These would be the next evidence to buy if the project continues.
 About $3.50 of model calls in total, across all smoke, proof, confirmation
 and VPS runs. The cold-read test and every simulation used no model calls
 through the Sumopod key.
+
+## Grader audit (follow-up, 2026-10-24)
+
+Every non-passing trial in the 8 published runs (136) was read and
+classified: what was expected, what the agent produced, and its last query
+or final answer.
+
+| Cause | Trials | Verdict |
+|---|---|---|
+| Message or cost cap hit (49 of them the filesystem degraded agent, 12 nano on the filesystem) | 64 | genuine fails |
+| "(UTC)" in the question not handled: bare dates compared in the session's time zone, or converted back through it | 35 | genuine, but environment-dependent (below) |
+| Strict only: right values, extra or reordered columns | 22 | by design; lenient counts them |
+| Wrong answer, other (e.g. an invented "UNRATED" rating row, a different late-return definition) | 12 | genuine |
+| Borderline: right in substance, wrong form (`src/acme/pricing/ discounts.py` with a space; 23.92 vs 23.93 days from averaging whole days) | 2 | ambiguous |
+| **Grader false fail:** "March 14, 2026" for `2026-03-14` | 1 | grader limitation |
+
+**The graders are sound.** One clear false fail in 136, and counting it
+(and both borderline cases) as passes would move `fs-nano` from 67/85 to at
+most 69/85. Its comparison with mini stays a regression (about −18
+points). Fixing date formats would mean a new filesystem suite version and
+new published runs, so it's recorded here rather than patched in.
+
+**What the audit really found: a time-zone dependence.** 35 of Pagila's 64
+non-passing trials come from 5 "(UTC)" tasks. A query that ignores "UTC"
+reads a bare date in the database session's time zone, which is +08 on the
+live server. The same query gives 9,098 rentals for 2025 there, but 9,092,
+the right answer, on a UTC database. The local reproduction
+(`postgres:16.10-alpine`, UTC by default) would have graded those answers
+as correct, even though its data fingerprint matched exactly. The
+fingerprint covered the data, not the session. Fixed:
+- Every run records the session's UTC offset, through the endpoint.
+- The Pagila suite records the offset it was published at (+28,800 s), and
+  a run refuses a target at any other offset.
+- `repro/` sets its database to Asia/Shanghai (+08, no DST). Locally, the
+  same UTC-ignoring query now gives 9,098, as live does.

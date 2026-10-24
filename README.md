@@ -190,10 +190,13 @@ its interval, so a flag can be judged rather than obeyed.
 - **Pagila is public, and likely in models' training data** (the
   contamination hypothesis above). The filesystem suite is synthetic for
   exactly that reason. Results are dated.
-- **Graders haven't been audited for false passes or false fails.** The
-  gap between strict and lenient (e.g. 191 vs 194 of 200) shows how often
-  the stricter reading changes a result. Each run's report lists why every
-  non-passing trial failed.
+- **Grader audit:** all 136 non-passing trials in the published runs were
+  read and classified ([evaluation](docs/planning/evaluation.md#grader-audit-follow-up-2026-10-24)).
+  There was one clear grader false fail ("March 14, 2026" for
+  `2026-03-14`), which changes no conclusion. More than half of Pagila's
+  wrong answers come from 5 "(UTC)" tasks, where ignoring UTC is wrong *on
+  this server's +08 database session*. So runs now record that offset, and
+  refuse a target at any other.
 - **Pagila runs use a dedicated `eval` workspace** on MCP-backbone, with a
   raised hourly query limit. Its public demo allows 5 queries an hour.
 - **The published Pagila runs don't record MCP-backbone's build.** The
@@ -232,7 +235,9 @@ uv run agent-eval run --target mcp-backbone-local                               
 ```
 
 The local copy matches the published runs on **data** (identical
-fingerprint, `fa70dca8…`) and **tools** (identical tool-list hash). Outputs
+fingerprint, `fa70dca8…`), **tools** (identical tool-list hash) and the
+**database session's UTC offset** (+08, which decides how "UTC" questions
+are graded). Outputs
 will differ run to run. Each run refuses to start if the data fingerprint
 doesn't match. Latency isn't comparable with the published runs: there's no
 network hop to the server.
