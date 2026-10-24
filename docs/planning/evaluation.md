@@ -266,3 +266,34 @@ Re-simulated through the shipped code:
 | gate v1 (bootstrap + task rule) | 1.0% | 5.0% | 8.5% | 28.0% | 66.0% |
 | gate v2 (pooled z + task rule), as shipped | 1.0% | 7.5% | 15.5% | 40.5% | 80.5% |
 ```
+
+## Filesystem suite v2: baseline and power (2026-10-24)
+
+`fs2-mini-base` (`gpt-5-mini`, 34 tasks × 5): **156/170 strict (91.8%)**,
+0 errors, no writes, $0.57.
+- **n13 failed all 5 attempts:** summing 599 CSV amounts with no way to
+  calculate, only to read files. A task that always fails can't show a
+  drop, so it adds nothing to the gate's power. It's frozen in v2 and the
+  first candidate to drop from a v3.
+- The other fails are message, time and token caps, plus n04 answering 57
+  instead of 58 twice.
+
+Power on its measured rates (`scripts/compare_rules.py`, 200 pairs per
+cell):
+
+```
+34 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs2-mini-base']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 10.0% | 28.5% | 79.0% | 99.0% |
+| gate v2 (pooled z + task rule), as shipped | 0.0% | 7.0% | 27.5% | 84.0% | 99.5% |
+```
+
+**v2 helped less than hoped.** Under gate v2 it catches 84% of 10-point
+drops (v1 suite: 81.5%) and 99.5% of 15-point drops (96.5%), with 0% false
+alarms. But it's slightly worse at 5 points: 27.5% against 37.5%. The new
+tasks are harder, the baseline is 91.8% against v1's 98.8%, so there's more
+run-to-run noise, and n13 contributes nothing. Doubling the tasks didn't
+double the power, because the added tasks are noisier. For more
+sensitivity, the next lever is **more attempts per task** on the flaky
+tasks, not more tasks.

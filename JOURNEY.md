@@ -437,3 +437,10 @@ problems before anything ran:
 - a check of my own on a field no task used (removed).
 
 A 3-task smoke run passed 3/3, including the join.
+
+Suite v2's baseline: 156/170. Its power answered a question I'd assumed
+the answer to: doubling the tasks did *not* double the sensitivity. It's
+better at 10–15 points, worse at 5, because the new tasks are harder and so
+noisier, and one (summing 599 rows with no calculator) always fails, so it
+can never show a drop. More attempts on the flaky tasks would do more than
+more tasks.

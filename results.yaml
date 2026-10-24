@@ -13,6 +13,7 @@ runs:
   - {run: fs-mini-degraded, label: "Filesystem, gpt-5-mini, no discovery tools"}
   - {run: fs-mini-base2, label: "Filesystem, gpt-5-mini, run 2"}
   - {run: fs-mini-cap12, label: "Filesystem, gpt-5-mini, message cap 12"}
+  - {run: fs2-mini-base, label: "Filesystem v2 (34 tasks), gpt-5-mini"}
 
 # gate: the decision rule each comparison was pre-registered with
 # (ADR-001). Everything here predates gate v2, so all are v1.

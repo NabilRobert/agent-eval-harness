@@ -25,7 +25,9 @@ Two suites, run against two targets:
   [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s live
   endpoint.
 - **Filesystem:** 17 tasks against the reference MCP filesystem server, on a
-  synthetic project the model can't have seen.
+  synthetic project the model can't have seen. **Filesystem v2** extends it
+  to 34 tasks, with joins across files; v1 is unchanged, and every
+  published filesystem comparison uses v1.
 
 ## Results
 
