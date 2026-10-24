@@ -301,8 +301,20 @@ parallel a little at a time.
   stamped via HARNESS_GIT), `.dockerignore`, `deploy/compose.yaml` (1 CPU,
   1 GB, read-only root, cap_drop ALL, env file
   ~/.config/agent-eval/env), `deploy/RUNBOOK.md`. Spike 3 passed in the
-  container. **Remaining: first build + smoke on the VPS (Arthur / VPS
-  session).** Also: open a PR feat/slice-d-proofs → main so CI runs.
+  container. **Verified on the VPS (2026-10-24):** after a Dockerfile fix
+  (40915c7, files at 600 on the VPS were unreadable to the non-root user),
+  `vps-smoke-fs` 2/2 and `vps-smoke-pagila` 1/1, server build d2d19f8b4aec
+  recorded, harness 40915c776cfc. **All 8 slices done.**
+- **VPS state:** harness at ~/agent-eval-harness (feat/slice-d-proofs),
+  keys in ~/.config/agent-eval/env (600); the earlier container draft is in
+  ~/agent-eval-harness-draft-2026-10-23/ (has digest-pinned base images,
+  worth carrying over). MCP-backbone deployed at d2d19f8 (version reported).
+  The VPS session working on this is "Harness container smoke tests".
+- **Open (Arthur):** PR feat/slice-d-proofs → main so CI runs on GitHub;
+  remove MCP_BACKBONE_EVAL_KEY from ~/MCP-backbone/.env; the other
+  workspace's key in ~/.bash_history.
+- **Follow-ups:** pin base images by digest (from the draft); MCP-backbone
+  strict-schema api_key fix; MCP-backbone CI publishing an image.
   Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
   `feat/server-version`; the strict-schema fix proposal.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

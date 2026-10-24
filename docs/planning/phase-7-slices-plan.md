@@ -262,3 +262,20 @@ the same tool-list hash. A smoke run (`runs/smoke-h1`, 3 tasks) completed
 end to end, 2/3 strict; the one fail is h03, which mini passes 60–80% of
 the time. Every run now refuses to start if the target's data fingerprint
 differs from the one its suite was generated against.
+
+## Slice F results (2026-10-24): running on the VPS
+
+Built and run on the VPS at harness `40915c7`. The first VPS run crashed:
+files in that checkout were mode 600, which the non-root user couldn't
+read. That was fixed in the Dockerfile, after reproducing it locally.
+
+| Run | Result | Server build | Harness |
+|---|---|---|---|
+| `vps-smoke-fs` | 2/2 strict, 0 errors, $0.0036 | filesystem server 0.2.0 | `40915c776cfc` |
+| `vps-smoke-pagila` | 1/1 strict, 0 errors, $0.0021 | MCP-backbone `d2d19f8b4aec` (handshake and `/healthz`) | `40915c776cfc` |
+
+The container reached `https://mcp.my.id` through Caddy on the same
+machine. Both runs' data fingerprints match their suites, and their
+reports render identically on the laptop. Secret scan: clean. These are
+the first runs that record which MCP-backbone build they were graded
+against. **All 8 slices are now done.**

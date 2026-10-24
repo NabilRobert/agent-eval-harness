@@ -331,3 +331,9 @@ readable during the build, whatever the host had. I reproduced the failure
 locally first (a fresh clone with every file set to 600: old Dockerfile
 crashes, new one reads fine). Dependencies now also install in their own
 cached layer, so a code change rebuilds in seconds.
+
+The fixed image then built and ran on the VPS: the filesystem smoke run
+passed 2/2, and the Pagila one 1/1, reaching `mcp.my.id` from a container on
+the same machine through Caddy. Both runs record the server build
+(`d2d19f8b4aec`) and the harness commit stamped into the image. With that,
+all eight slices of the plan are done.
