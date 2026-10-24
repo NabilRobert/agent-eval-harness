@@ -319,3 +319,15 @@ The Spike 3 checks deferred from planning all passed inside the container:
 One more filter slip of mine: I'd hidden the server's "allowed directories"
 log lines, which also hid the confinement result, since the refusal
 message uses those words. It was rerun unfiltered.
+
+## 2026-10-24 — The first VPS build: file modes
+
+The image built on the VPS, but the first run crashed: `PermissionError`
+reading `agent_eval/__init__.py`. Some files in the VPS checkout were mode
+600, `COPY` keeps host modes, and the container runs as a non-root user,
+so it couldn't read its own code. My laptop's 644 files hid this. The fix
+belongs in the image, not on the server: everything under `/app` is made
+readable during the build, whatever the host had. I reproduced the failure
+locally first (a fresh clone with every file set to 600: old Dockerfile
+crashes, new one reads fine). Dependencies now also install in their own
+cached layer, so a code change rebuilds in seconds.
