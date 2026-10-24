@@ -290,3 +290,32 @@ the script's input, so the scan never ran. "No output" isn't "clean", so it
 was rerun properly (clean). And the fingerprint check that ADR-010 asked
 for is now a general rule rather than a local-mode one: every run refuses
 data its suite wasn't generated against, including the live endpoint.
+
+## 2026-10-24 — Slice F: the container
+
+The harness now has its own image, for on-demand runs on the VPS:
+- **The pinned filesystem server** is built in a Node stage from its
+  lockfile. Only the node binary and its modules are copied into the
+  Python image.
+- **Locked down at run time:** a non-root user, a read-only root
+  filesystem, no capabilities, 1 CPU and 1 GB, so a run can't starve
+  MCP-backbone on the shared box.
+- **Keys come from an env file** kept outside the repo, never from the
+  image.
+
+Two details that would have broken it:
+- **No `.git` in the image.** The clean-tree guard would have refused
+  every full run as "unknown", so the build stamps in the commit it was
+  built from.
+- **File ownership.** The container user's uid has to match whoever owns
+  the mounted `runs/` folder on the host, or run records can't be written.
+
+The Spike 3 checks deferred from planning all passed inside the container:
+- the server starts in 0.12–0.20 s;
+- it refuses to read `/etc/passwd`;
+- no server processes or fixture copies are left behind;
+- a 2-trial smoke run peaked at about 232 MiB of the 1 GiB cap.
+
+One more filter slip of mine: I'd hidden the server's "allowed directories"
+log lines, which also hid the confinement result, since the refusal
+message uses those words. It was rerun unfiltered.

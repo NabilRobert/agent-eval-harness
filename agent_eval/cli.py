@@ -34,6 +34,11 @@ RAW_LOG_DIR = REPO_ROOT / ".inspect-logs"
 
 
 def _harness_git() -> str:
+    """The exact harness commit, `-dirty` if the checkout has edits. In the
+    container (no .git) it's the commit stamped in at build time."""
+    stamped = os.environ.get("AGENT_EVAL_HARNESS_GIT")
+    if stamped:
+        return stamped
     try:
         out = subprocess.run(
             ["git", "describe", "--always", "--dirty", "--abbrev=12"],

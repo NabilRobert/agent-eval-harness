@@ -1,0 +1,13 @@
+# Never in the build context: keys, local envs, logs, run records.
+.env
+.env.*
+.venv/
+.git/
+.inspect-logs/
+runs/
+confirmations/
+repro/
+tools/fs-server/node_modules/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/

@@ -218,9 +218,18 @@ local copy matches the published runs exactly: the same data fingerprint
 (`fa70dca8…`) and the same tool list. Latency isn't comparable with the
 published runs: no network hop to the server.
 
+## Running on the VPS
+
+The harness also runs on demand in a locked-down container on the same
+VPS as MCP-backbone: 1 CPU, 1 GB, non-root, a read-only root filesystem,
+and keys from an env file outside the repo. See
+[deploy/RUNBOOK.md](deploy/RUNBOOK.md). It's tested locally, including
+the filesystem server's confinement and clean-up.
+
 ## Not done yet
 
-- **The container on the VPS** (slice F).
+- **Running the container on the VPS itself:** the first build and a
+  smoke run there.
 
 ## Records
 

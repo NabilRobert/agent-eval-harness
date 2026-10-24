@@ -231,6 +231,14 @@ latency excludes real network time, and the methodology says so. CI is
 unaffected: it only compares committed runs.
 **Revisit if:** scheduled regression runs become worth the cost (then
 (b), with a smaller suite).
+**Built (slice F, 2026-10-24):**
+- `Dockerfile` and `deploy/compose.yaml`, with `deploy/RUNBOOK.md`.
+- Locked down: a non-root user whose uid matches the host's `runs/`
+  owner, a read-only root filesystem, no capabilities, 1 CPU, 1 GB.
+- The keys come from an env file outside the repo, and never from the
+  image (`.dockerignore` excludes `.env`).
+- The image has no `.git`, so the build commit is stamped in, and full
+  runs still refuse a dirty or unknown one.
 
 ### ADR-009: Run trials on Inspect AI; build the regression gate on its logs
 **Context:** the first question a senior reviewer would ask is "why not

@@ -296,7 +296,13 @@ parallel a little at a time.
   (`data_mismatch`). Smoke `runs/smoke-h1` 2/3. 91 tests.
 - **Follow-ups:** MCP-backbone CI publishing a prebuilt image (slow builds);
   strict-schema `api_key` fix; server-version deploy.
-- **Next:** F (container on VPS, with Arthur).
+- **Slice F built + tested locally (2026-10-24):** `Dockerfile` (node stage
+  for fs-server, python image, non-root uid=1000 build arg, build commit
+  stamped via HARNESS_GIT), `.dockerignore`, `deploy/compose.yaml` (1 CPU,
+  1 GB, read-only root, cap_drop ALL, env file
+  ~/.config/agent-eval/env), `deploy/RUNBOOK.md`. Spike 3 passed in the
+  container. **Remaining: first build + smoke on the VPS (Arthur / VPS
+  session).** Also: open a PR feat/slice-d-proofs → main so CI runs.
   Arthur: push + merge `feat/slice-d-proofs`; deploy MCP-backbone
   `feat/server-version`; the strict-schema fix proposal.
 - **Convention:** conventional commits (`feat(scope):`, `fix:`, `docs:`).

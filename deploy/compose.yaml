@@ -1,0 +1,31 @@
+# On-demand harness runs on the VPS (ADR-008). Started per run, exits after:
+#   HARNESS_GIT=$(git describe --always --dirty --abbrev=12) \
+#     docker compose -f deploy/compose.yaml build
+#   docker compose -f deploy/compose.yaml run --rm harness run --suite suites/filesystem.yaml ...
+name: agent-eval
+
+services:
+  harness:
+    build:
+      context: ..
+      args:
+        HARNESS_GIT: ${HARNESS_GIT:-unknown}
+        HARNESS_UID: ${HARNESS_UID:-1000}
+    # Keys live outside the repo and outside any editor-tracked folder,
+    # mode 600 (see deploy/RUNBOOK.md).
+    env_file: ${AGENT_EVAL_ENV_FILE:-/home/ubuntu/.config/agent-eval/env}
+    # Never starve MCP-backbone, which shares this 2 vCPU / 8 GB box.
+    cpus: "1.0"
+    mem_limit: 1g
+    pids_limit: 256
+    read_only: true
+    tmpfs: ["/tmp:size=512m"]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    volumes:
+      - ../runs:/app/runs
+      - inspect-logs:/app/.inspect-logs
+    working_dir: /app
+
+volumes:
+  inspect-logs:
