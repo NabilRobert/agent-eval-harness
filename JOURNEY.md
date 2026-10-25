@@ -455,3 +455,15 @@ uneven drop. The strongest signal of a regression is a reliable task
 starting to fail, and targeting adds nothing there. Ten attempts on every
 task is what works, at twice the cost. The entry above is left as I wrote
 it. The evaluation is corrected and says so.
+
+## 2026-10-25 — The server got fixed; the workaround stays
+
+MCP-backbone now publishes strict-mode-valid tool schemas (its PR #3,
+live as `107b079`), so the harness could turn strict mode back on. It
+doesn't. Strict mode constrains how the model writes tool calls, every
+published run had it off, and turning it on would make the next run
+differ from every baseline in a way that has nothing to do with the
+agent. The reproduction stack also pins the server from before the fix,
+which strict mode would reject. `compare` would name the change
+(`agent.model_args`), but a difference you can see is still a
+difference. The fix was for MCP-backbone's other clients.

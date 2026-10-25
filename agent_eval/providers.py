@@ -13,9 +13,15 @@ SUMOPOD_PREFIX = "openai-api/sumopod/"
 def model_args_for(model: str) -> dict[str, Any]:
     """Inspect model arguments for this model. The OpenAI-compatible route
     sends tools in OpenAI strict mode by default, which MCP-backbone's
-    optional `api_key` tool parameter breaks (a 400 before any tokens are
+    optional `api_key` tool parameter broke (a 400 before any tokens were
     spent); the native OpenAI provider doesn't set strict mode at all, so
-    it needs nothing."""
+    it needs nothing.
+
+    MCP-backbone fixed its schemas in 107b079, but strict mode stays off:
+    every published run had it off, and strict mode constrains how the
+    model writes tool calls, so turning it on would change the agent
+    under test. The reproduction stack also pins a server from before
+    the fix, which strict mode would reject."""
     return {"strict_tools": False} if model.startswith("openai-api/") else {}
 
 

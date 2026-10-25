@@ -156,7 +156,7 @@ def cmd_run(args: argparse.Namespace) -> int:
     agent: dict[str, Any] = {
         "model": args.model,
         # Per provider: strict tool schemas off on the OpenAI-compatible
-        # route, where MCP-backbone's optional api_key parameter breaks them.
+        # route, as in every published run (see model_args_for).
         "model_args": model_args_for(args.model),
         "system_prompt": (
             args.system_prompt if args.system_prompt

@@ -207,6 +207,10 @@ parallel a little at a time.
   --dirty`); 138 tests pass. Needs merge + deploy before slice F.
 - **MCP-backbone follow-up (proposed):** drop the optional `api_key` tool
   parameter from the HTTP-facing schema (strict-mode clients reject it).
+  → **Done 2026-10-25:** MCP-backbone PR #3, deployed as `107b079`. Every
+  schema is strict-valid, and `sample_rows.limit` is now required. The
+  harness keeps `strict_tools=False` on purpose, for comparability with the
+  published runs and because the repro stack pins the pre-fix server.
 - **Slice A done (2026-10-23, 4 commits `a51b046`..`19a8cb6`, not pushed):**
   package `agent_eval/` (grading, records, compare: pure; inspect_tasks,
   preflight, export, cli), Python 3.12 venv via uv, exact pins + `uv.lock`,
