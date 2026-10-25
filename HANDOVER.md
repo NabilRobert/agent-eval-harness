@@ -337,9 +337,15 @@ parallel a little at a time.
   comparisons, published ones pinned to v1 in results.yaml; filesystem-v2
   (34 tasks, answer alternatives), baseline fs2-mini-base 156/170, power
   better at 10–15 pts but not at 5 (noisier tasks; n13 always fails).
-- **Second model family: waiting on Arthur for Sumopod's
-  gemini/gemini-3.5-flash price.** NOT Claude Haiku (Arthur). Gemini passed
-  tool checks on both suites (4/4).
+- **Second model family: priced, not run.** Sumopod's
+  gemini/gemini-3.5-flash is $1.50 in / $0.15 cached / $9.00 out per M
+  tokens (in `prices.yaml`, 2026-10-25), about 5x gpt-5-mini. At mini's
+  measured token counts, a full run would be about $2.67 on Pagila, $1.05 on
+  filesystem v1 and $2.82 on filesystem v2 (Gemini's own token use may
+  differ). NOT Claude Haiku (Arthur). Gemini passed tool checks on both
+  suites (4/4). **Sumopod balance was $0 on 2026-10-25: no paid runs of any
+  kind until Arthur says it's topped up**, and then only with his OK for
+  each run.
 - **Next big piece:** Project 3, the Beobot case study (not started).
 - **Follow-ups:** pin base images by digest (from the draft); MCP-backbone
   strict-schema api_key fix; MCP-backbone CI publishing an image.
