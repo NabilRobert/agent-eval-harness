@@ -23,3 +23,9 @@ models:
     output: 0.40
     source: Sumopod model pricing table (screenshot supplied by Arthur)
     checked: 2026-10-23
+  openai-api/sumopod/gemini/gemini-3.5-flash:
+    input: 1.50
+    cache_read: 0.15
+    output: 9.00
+    source: Sumopod model pricing table (screenshot supplied by Arthur)
+    checked: 2026-10-25
