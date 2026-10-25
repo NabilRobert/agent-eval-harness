@@ -444,3 +444,14 @@ better at 10–15 points, worse at 5, because the new tasks are harder and so
 noisier, and one (summing 599 rows with no calculator) always fails, so it
 can never show a drop. More attempts on the flaky tasks would do more than
 more tasks.
+
+## 2026-10-25 — I was wrong about where to spend attempts
+
+Yesterday I wrote that "more attempts on the flaky tasks would do more than
+more tasks." The simulation says otherwise. Putting extra attempts only on
+the tasks the baseline didn't always pass *lowers* detection (45% against
+52% for a 5-point drop on Pagila), and it's lower again on nano's real,
+uneven drop. The strongest signal of a regression is a reliable task
+starting to fail, and targeting adds nothing there. Ten attempts on every
+task is what works, at twice the cost. The entry above is left as I wrote
+it. The evaluation is corrected and says so.

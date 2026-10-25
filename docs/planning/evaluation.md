@@ -295,5 +295,60 @@ alarms. But it's slightly worse at 5 points: 27.5% against 37.5%. The new
 tasks are harder, the baseline is 91.8% against v1's 98.8%, so there's more
 run-to-run noise, and n13 contributes nothing. Doubling the tasks didn't
 double the power, because the added tasks are noisier. For more
-sensitivity, the next lever is **more attempts per task** on the flaky
-tasks, not more tasks.
+sensitivity, the next lever is **more attempts per task, on every task**.
+*(Corrected 2026-10-25: this first said "on the flaky tasks". The
+simulation below shows that targeting the flaky tasks is worse than
+spreading attempts evenly.)*
+
+## What more attempts would buy (simulation, 2026-10-25)
+
+`scripts/simulate_attempts.py`, gate v2, rates measured in the real
+baselines, 1,000 simulated pairs per cell. Cost is trials per run.
+
+```
+['../runs/proof-mini-a', '../runs/proof-mini-b']: 40 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 200 (1.00x) | 1.8% | 22.0% | 51.8% | 96.7% |
+| 10 everywhere | 400 (2.00x) | 1.3% | 42.3% | 84.6% | 100.0% |
+| targeted (10 on the 7 flaky tasks) | 235 (1.18x) | 0.7% | 19.4% | 45.5% | 94.6% |
+
+['../runs/fs-mini-base', '../runs/fs-mini-base2']: 17 tasks, 1 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 85 (1.00x) | 0.3% | 20.8% | 39.0% | 83.6% |
+| 10 everywhere | 170 (2.00x) | 0.8% | 35.8% | 73.3% | 99.7% |
+| targeted (10 on the 1 flaky tasks) | 90 (1.06x) | 1.4% | 14.0% | 30.0% | 79.1% |
+
+['../runs/fs2-mini-base']: 34 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 170 (1.00x) | 0.5% | 7.1% | 25.5% | 82.4% |
+| 10 everywhere | 340 (2.00x) | 0.0% | 18.1% | 53.9% | 99.2% |
+| targeted (10 on the 7 flaky tasks) | 205 (1.21x) | 0.1% | 6.2% | 16.0% | 76.5% |
+
+['../runs/proof-mini-a', '../runs/proof-mini-b']: 40 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts | measured uneven drop |
+|---|---|---|---|---|---|---|
+| 5 everywhere | 200 (1.00x) | 1.8% | 22.0% | 51.8% | 96.7% | 48.1% |
+| 10 everywhere | 400 (2.00x) | 0.6% | 41.4% | 83.8% | 100.0% | 83.3% |
+| targeted (10 on the 7 flaky tasks) | 235 (1.18x) | 1.1% | 19.3% | 44.5% | 94.5% | 42.3% |
+```
+
+**Spreading extra attempts across every task works; targeting the flaky
+ones doesn't.**
+- 10 attempts everywhere, at twice the cost, lifts 5-point detection from
+  52% to 85% (Pagila), 39% to 73% (filesystem v1) and 26% to 54%
+  (filesystem v2). On Pagila it would have caught nano's real drop 83% of
+  the time, against 48% at 5 attempts.
+- Putting extra attempts only on the tasks the baseline didn't always pass
+  is **worse than 5 everywhere** (45% against 52% at −5 points on Pagila;
+  42% against 48% on nano's real drop). The clearest signal of a drop is a
+  *reliable* task starting to fail, and targeting adds no attempts there,
+  while weighting the noisiest tasks more heavily.
+- My intuition, the obvious "spend attempts where the uncertainty is",
+  was wrong for this question.
+
+**Recommendation:** when sensitivity matters, raise `--epochs` to 10 for
+both runs of a comparison, at twice the cost. A full Pagila run at 10
+attempts is about $1.10 on `gpt-5-mini`.

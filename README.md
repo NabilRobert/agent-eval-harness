@@ -154,7 +154,11 @@ around 50%, and ±1–4 points near 0% or 100%). Each cell is v1 → v2:
 | A real uneven drop (nano) | 21.5% → 44% | 99% → 100% | – |
 
 So at 5 attempts per task, even v2 usually misses a drop under about 5
-points, and on a flaky suite under about 10. If every change is gated,
+points, and on a flaky suite under about 10. **The lever is more attempts on
+every task:** 10 attempts, at twice the cost, lift 5-point detection to
+85% (Pagila) and 73% (filesystem). Adding attempts only on the flaky tasks
+makes detection worse
+([simulation](docs/planning/evaluation.md#what-more-attempts-would-buy-simulation-2026-10-25)). If every change is gated,
 expect an occasional false alarm: 0.5–1% per comparison in these
 simulations, higher on suites with more flaky tasks. The report always shows the change and
 its interval, so a flag can be judged rather than obeyed.
