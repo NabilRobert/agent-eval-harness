@@ -1,6 +1,8 @@
-"""The regression gate (ADR-001) on synthetic runs, where the right answer
-is known. The live proofs (an A/A pair not flagged, a degraded agent
-flagged) come from real runs; these pin the rule's behaviour exactly."""
+"""The regression gates (ADR-001) on synthetic runs, where the right answer
+is known. The live proofs (A/A pairs not flagged, degraded agents
+flagged) come from real runs; these pin each rule's behaviour exactly.
+Most tests pin gate v1 (the rule every published comparison used); the v2
+tests are at the end."""
 
 from collections.abc import Callable
 from pathlib import Path
@@ -49,9 +51,9 @@ def _suite() -> dict[str, Any]:
     return {"name": "synthetic", "task_hashes": {t["id"]: task_hash(t) for t in TASKS}}
 
 
-def _compare(run_factory: RunFactory, base: list[int], cand: list[int]):  # pyright: ignore[reportUnknownParameterType]
+def _compare(run_factory: RunFactory, base: list[int], cand: list[int], gate: str = "v1"):  # pyright: ignore[reportUnknownParameterType]
     return compare_runs(run_factory(_trials(base), suite=_suite()),
-                        run_factory(_trials(cand), suite=_suite()))
+                        run_factory(_trials(cand), suite=_suite()), gate)
 
 
 MOSTLY_EASY = [5] * 24 + [4, 4, 3, 3, 2, 2]
@@ -123,6 +125,51 @@ def test_cost_increase_is_a_warning_not_a_regression(run_factory: RunFactory) ->
     for t in pricier:
         t["cost_usd"] = 0.006
     result = compare_runs(run_factory(_trials(MOSTLY_EASY), suite=_suite()),
-                          run_factory(pricier, suite=_suite()))
+                          run_factory(pricier, suite=_suite()), "v1")
     assert result.exit_code == EXIT_OK
     assert any("median cost per trial up 100%" in w for w in result.warnings)
+
+
+# --- gate v2: pooled two-proportion z-test + the same task rule ---
+
+SIX_LOSE_TWO = [max(0, p - 2) if i < 6 else p for i, p in enumerate(MOSTLY_EASY)]
+
+
+def test_v2_same_results_are_not_a_regression(run_factory: RunFactory) -> None:
+    result = _compare(run_factory, MOSTLY_EASY, MOSTLY_EASY, "v2")
+    assert (result.exit_code, result.verdict) == (EXIT_OK, "no regression")
+
+
+def test_v2_flags_a_drop_v1_misses(run_factory: RunFactory) -> None:
+    """Six tasks each lose 2 of 5 passes (-8 points): v1's task-resampling
+    interval just reaches 0, v2's pooled test flags it (z = 2.13). The
+    sensitivity difference simulation showed, pinned on one case."""
+    v1 = _compare(run_factory, MOSTLY_EASY, SIX_LOSE_TWO, "v1")
+    v2 = _compare(run_factory, MOSTLY_EASY, SIX_LOSE_TWO, "v2")
+    assert v1.exit_code == EXIT_OK
+    assert (v2.exit_code, v2.verdict) == (EXIT_REGRESSION, "regression")
+    assert any("pooled z = 2.13" in r for r in v2.reasons)
+    assert v2.gate_verdicts == {"v1": v1.verdict, "v2": "regression"}
+
+
+def test_v2_keeps_the_task_rule(run_factory: RunFactory) -> None:
+    worse = list(MOSTLY_EASY)
+    worse[0] = 0
+    result = _compare(run_factory, MOSTLY_EASY, worse, "v2")
+    assert result.exit_code == EXIT_REGRESSION and result.broken == ["t00"]
+
+
+def test_v2_improvement_is_not_a_regression(run_factory: RunFactory) -> None:
+    result = _compare(run_factory, [3] * N_TASKS, [5] * N_TASKS, "v2")
+    assert result.verdict == "no regression"
+
+
+def test_v2_is_a_formula_not_a_simulation() -> None:
+    """No resampling, so no seed: the same counts give the same z."""
+    from agent_eval.compare import pooled_test
+
+    base = {"a": (5, 5), "b": (4, 5)}
+    cand = {"a": (3, 5), "b": (2, 5)}
+    z, low, high = pooled_test(base, cand, ["a", "b"])
+    assert round(z, 4) == round(pooled_test(base, cand, ["a", "b"])[0], 4)
+    assert z > 0 and low < (5 / 10 - 9 / 10) < high

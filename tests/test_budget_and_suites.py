@@ -89,6 +89,8 @@ def test_suite_hash_changes_when_any_expected_answer_changes() -> None:
 
 
 UNGRADABLE: list[dict[str, object]] = [
+    {"id": "a", "prompt": "q", "graders": [{"answer_match": {"contains": [[]]}}]},
+    {"id": "a", "prompt": "q", "graders": [{"answer_match": {"contains": [["x", 3]]}}]},
     {"id": "a"},
     {"id": "a", "prompt": "q"},
     {"id": "a", "prompt": "q", "graders": [{"llm_judge": {}}]},
@@ -159,7 +161,44 @@ def test_a_run_refuses_data_its_suite_wasnt_generated_against() -> None:
 
     pagila = load_suite(REPO / "suites" / "pagila.yaml")
     fs = load_suite(REPO / "suites" / "filesystem.yaml")
-    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"]) is None
+    assert data_mismatch(pagila, pagila["generated"]["data_fingerprint"], 28800) is None
     assert data_mismatch(fs, fs["generated"]["data_fingerprint"]) is None
-    assert "doesn't match" in (data_mismatch(pagila, "0" * 64) or "")
+    assert "doesn't match" in (data_mismatch(pagila, "0" * 64, 28800) or "")
     assert data_mismatch({"tasks": []}, "anything") is None  # suites without a record: no check
+
+
+def test_a_run_refuses_a_database_session_in_another_time_zone() -> None:
+    """The grader audit: 35 of Pagila's 64 non-passing trials ignored "UTC"
+    in the question, and whether that's wrong depends on the session's
+    offset. The suite records the offset it was published at."""
+    from agent_eval.suites import data_mismatch
+
+    pagila = load_suite(REPO / "suites" / "pagila.yaml")
+    fp = pagila["generated"]["data_fingerprint"]
+    assert pagila["generated"]["session_utc_offset"] == 28800
+    assert data_mismatch(pagila, fp, 28800) is None
+    assert "UTC offset 0s" in (data_mismatch(pagila, fp, 0) or "")
+    assert "UTC offset unknown" in (data_mismatch(pagila, fp, None) or "")
+    # A suite that records no offset (the filesystem one) isn't checked for it.
+    fs = load_suite(REPO / "suites" / "filesystem.yaml")
+    assert data_mismatch(fs, fs["generated"]["data_fingerprint"], None) is None
+
+
+def test_filesystem_v2_is_frozen_and_keeps_v1_intact() -> None:
+    """v2 adds tasks and data without touching v1: v1's suite, fixture and
+    published runs stay valid."""
+    from agent_eval.preflight import fixture_fingerprint
+    from agent_eval.suites import FROZEN_SUITES
+
+    v1 = load_suite(REPO / "suites" / "filesystem.yaml")
+    v2 = load_suite(REPO / "suites" / "filesystem-v2.yaml")
+    assert suite_hash(v2) == FROZEN_SUITES["filesystem-v2"]
+    assert len(v2["tasks"]) == 34 and v2["target"] == "filesystem-v2"
+    assert all([next(iter(g)) for g in t["graders"]] == ["answer_match", "forbidden_tools"]
+               for t in v2["tasks"])
+    v2_fp = fixture_fingerprint(REPO / "suites" / "fixtures" / "acme-shop-v2")["sha256"]
+    assert v2_fp == v2["generated"]["data_fingerprint"] != v1["generated"]["data_fingerprint"]
+    # v1's 16 other tasks are byte-identical in v2; only f09 gained alternatives.
+    v1_tasks = {t["id"]: t for t in v1["tasks"]}
+    changed = [t["id"] for t in v2["tasks"] if t["id"] in v1_tasks and t != v1_tasks[t["id"]]]
+    assert changed == ["f09"]

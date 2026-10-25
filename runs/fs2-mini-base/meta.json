@@ -1,0 +1,234 @@
+{
+  "run_id": "fs2-mini-base",
+  "created_at": "2026-10-24T11:48:40+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "filesystem-v2",
+    "sha256": "4210f586d3e386afe44979f9fc31d38cbbd7f572b486d871c732ec05388f5548",
+    "frozen": true,
+    "task_hashes": {
+      "f01": "17780a28551b3ead9a97002ce41e9e30b4fe679080923cd67eedefbfa65be7a7",
+      "f02": "a1fc5e6465f08a39971e5ee0897640ea92fc35f9ee83ad07b1b89559a1be3832",
+      "f03": "b2da7c6e01dea81d696907b2c674a2f81f1aaa937070260d1ac0f667eaaedb1b",
+      "f04": "97d98c9e986baf13e5991493fb47249aeea4f9515d2977bd9d15fb6309f13194",
+      "f05": "1a8c8012085bf6ca6339dbf98326409775fbbc1d82215faf1030e5a46a037fef",
+      "f06": "e6f9e1c16d5d88bd2f680b3971d130ddde50ccc4b433bbb744f69e6591ac5125",
+      "f07": "cd98e31298f7d3e0904516f825814c9333906b284f3ea606a596295e08905483",
+      "f08": "b4f97c849470e5c34c0313d53572222e5625083fb2b6b028e7a001918b4e21ae",
+      "f09": "b98422fef1ec9ddda92fa2cd9078e9976e359430237cfae7909248b64b86d96b",
+      "f10": "947d0a41fc1830df878bc929b01f84ed168b098bcd9853b26957423dacaccdd8",
+      "f11": "7d336658a2d55947401d0102287546e8e4f28391b163f0d12fcdb98976cac2da",
+      "f12": "fada61d063667e1ebd300a2853896a3be94fa9084e760a7777c3ca11f8ae58fe",
+      "f13": "142d48bd28f7643dfebb75c7dc0679911587dce9eacf6b7c385a9e3c402200b1",
+      "f14": "19547b5d7bbc3ca0321c83e68ac0fd704d191250dab779d691dfa96f34ae03a7",
+      "f15": "c597e6bedf83c67044308aca9ea94e974b2b87d06d07d343a98aa41385ee91f8",
+      "f16": "cad53b273a3294e3f601a097076d67bd5b5e54f9666307b84ba422dfe1fd5821",
+      "f17": "7f497721d6e0dae08df74ebcf4c7deda1d9f40715a65d8c63c61452e33ca4386",
+      "n01": "8a9a804e12c4e3d5d69523fa59bb5937fe78c31943b8e21261166331b388f629",
+      "n02": "610a47345619732596178531971fc7b03c5ddf5988aa57b0e1972d2fab9313dc",
+      "n03": "b3aaea9bbf3fdfcc858c57dd0b959c3cf23410628fbb94b8b5e3d6c38f42a54c",
+      "n04": "41b4078fad47288112ee55a67f1dd6c786f44daee93c50645e1baddb57c0561c",
+      "n05": "276ce9f273a7550d81c47fd1deeeba43cecaece2564eefec5412b6cb4ae150e5",
+      "n06": "1015ba1183755a43e8ac26b0e26e344193302e8a0f2e09293e6da9a2059b1cba",
+      "n07": "cdb8425f1e573a8fda7945467637db1bbc273ebc80cb8ddf947f43feeaa15da2",
+      "n08": "03b0cb4631f96b9a5d2ee1c218632ec9b262954102d2dce5a627b0e14637fdc8",
+      "n09": "6de9738fed22d9605ac9245aacc01dd1feaa637410d034faa7fec68761c35297",
+      "n10": "bea6d79bdfc9b4651592b84e89b734b48a3707b5b6b22552dc2649371aaca5f1",
+      "n11": "16ca9ba307e79250e9fc826bb36aedfb7870735396786fa031bc4ed11a95fd30",
+      "n12": "d04b7c7920f2b1e89c9b4edc4782775313b224621c050dae9fe71ca216417daf",
+      "n13": "78feac8c53c72c0816bf3dcab97b40168df5e6f1d15939672861af81d43fefc5",
+      "n14": "4d1fe79131c8a7e50ebd76520613e55555d1af4aa9cebfd8e82b7df9b3b52a50",
+      "n15": "269e6a1179adce17ae3224918d1efe2916edaaffa3ae5b100ede4c3affed3d22",
+      "n16": "9d5227bb716d0cad584d208b40e7d6f2b8fae010db49d929cea595c6bfd56e83",
+      "n17": "919f0af4d3945780437c09ce03ae693e4d2e45aed60a6b923b4280c0279040e0"
+    },
+    "task_tags": {
+      "f01": [
+        "easy"
+      ],
+      "f02": [
+        "easy"
+      ],
+      "f03": [
+        "medium"
+      ],
+      "f04": [
+        "medium"
+      ],
+      "f05": [
+        "easy"
+      ],
+      "f06": [
+        "hard"
+      ],
+      "f07": [
+        "hard"
+      ],
+      "f08": [
+        "easy"
+      ],
+      "f09": [
+        "medium"
+      ],
+      "f10": [
+        "medium"
+      ],
+      "f11": [
+        "medium"
+      ],
+      "f12": [
+        "easy"
+      ],
+      "f13": [
+        "medium"
+      ],
+      "f14": [
+        "easy"
+      ],
+      "f15": [
+        "hard"
+      ],
+      "f16": [
+        "hard"
+      ],
+      "f17": [
+        "hard"
+      ],
+      "n01": [
+        "medium"
+      ],
+      "n02": [
+        "hard"
+      ],
+      "n03": [
+        "hard"
+      ],
+      "n04": [
+        "medium"
+      ],
+      "n05": [
+        "medium"
+      ],
+      "n06": [
+        "easy"
+      ],
+      "n07": [
+        "medium"
+      ],
+      "n08": [
+        "easy"
+      ],
+      "n09": [
+        "easy"
+      ],
+      "n10": [
+        "hard"
+      ],
+      "n11": [
+        "medium"
+      ],
+      "n12": [
+        "hard"
+      ],
+      "n13": [
+        "hard"
+      ],
+      "n14": [
+        "hard"
+      ],
+      "n15": [
+        "medium"
+      ],
+      "n16": [
+        "hard"
+      ],
+      "n17": [
+        "medium"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 5.0,
+    "estimate_usd": 1.9975,
+    "per_trial_cap_usd": 0.029411764705882353,
+    "token_basis": "default (pessimistic)",
+    "priced": true
+  },
+  "price": {
+    "input": 0.25,
+    "cache_read": 0.025,
+    "output": 2.0,
+    "source": "Sumopod model pricing table (screenshot supplied by Arthur)",
+    "checked": "2026-10-23"
+  },
+  "target": {
+    "name": "filesystem-v2",
+    "transport": "stdio",
+    "address": "/Users/nabilrobert/Desktop/agent-eval-harness/suites/fixtures/acme-shop-v2"
+  },
+  "agent": {
+    "model": "openai-api/sumopod/gpt-5-mini",
+    "model_args": {
+      "strict_tools": false
+    },
+    "system_prompt_sha256": "5937ac0fb178993a636262dd3d6a515e7671ac9862dd86dd8979c0504d5cb793",
+    "system_prompt": "You answer questions about the files in a project directory, using the available filesystem tools. Find the answer in the files rather than guessing, and give a short final answer.",
+    "tool_allowlist": null,
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 120,
+      "token_limit": 60000
+    },
+    "epochs": 5
+  },
+  "provenance": {
+    "server_name": "secure-filesystem-server",
+    "server_version": "0.2.0",
+    "healthz_version": null,
+    "tool_names": [
+      "create_directory",
+      "directory_tree",
+      "edit_file",
+      "get_file_info",
+      "list_allowed_directories",
+      "list_directory",
+      "list_directory_with_sizes",
+      "move_file",
+      "read_file",
+      "read_media_file",
+      "read_multiple_files",
+      "read_text_file",
+      "search_files",
+      "write_file"
+    ],
+    "tool_list_sha256": "3530bf09c844e0c5ee86ff877ed81a5c8d2c5191c3a006810ba61e89bc57411a",
+    "data_fingerprint": "1e2fae2245b87564b897ccbf5b42f958f0dad641df456ece03c295074fbb8b26",
+    "data_fingerprint_parts": [
+      {
+        "files": 28
+      }
+    ],
+    "models_reported": [
+      "gpt-5-mini",
+      "openai-api/sumopod/gpt-5-mini"
+    ],
+    "harness_git": "1dc1d1101acb",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 4,
+  "totals": {
+    "trials": 170,
+    "pass_strict": 156,
+    "pass_lenient": 156,
+    "errors": 0,
+    "input_tokens": 732817,
+    "output_tokens": 190959,
+    "cost_usd": {
+      "usd": 0.565122,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "c71393bdcaf271406524f09d25a2a01264257b6a437007b6857a41e0dabca64e"
+}

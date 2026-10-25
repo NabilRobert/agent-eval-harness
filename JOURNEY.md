@@ -365,3 +365,93 @@ the power analysis it was missing (weaker than Pagila: 65.5% detection at
 evidence the reviewer wanted but this project didn't buy (more A/A pairs, a
 moderate live degradation, a second model family) is listed as such, not
 glossed over.
+
+## 2026-10-24 — Auditing the graders, and the time zone hiding in the data
+
+I read all 136 non-passing trials in the published runs, one by one. The
+graders held up: one clear false fail ("March 14, 2026" for `2026-03-14`).
+But 35 of Pagila's 64 fails came from just 5 tasks, the ones that say
+"(UTC)". The agents compared bare dates, and Postgres read those in the
+session's time zone: +08 on the VPS. On a UTC database the same queries
+would have been right.
+
+That broke a claim I'd made the day before: the local reproduction
+"matches exactly". It matched on data and tools, but its database ran at
+UTC, so it would have passed answers the published runs failed. The data
+fingerprint couldn't see this, because it isn't about the data. Now every
+run records the session's UTC offset, the suite records the one it was
+published at, a mismatch refuses to run, and the local database runs at
++08. The lesson: a fingerprint only vouches for what it hashes.
+
+## 2026-10-24 — The gate, measured against its alternatives, and two more proofs
+
+Comparing the gate with simpler rules on the same simulated pairs gave a
+mixed result:
+- The rules ADR-001 rejected failed exactly as it predicted. A fixed
+  threshold raised 12% false alarms on a flaky suite, and per-task tests
+  are useless at 5 attempts.
+- But a plain pooled two-proportion test was as safe as my bootstrap and
+  caught more, on every suite.
+
+The bootstrap resamples tasks, which makes it answer a more conservative
+question than a fixed-suite gate needs. I didn't swap rules after seeing
+the data. The published verdicts keep the pre-registered gate (they
+wouldn't change anyway), and a v2 is recommended for future comparisons.
+
+Then the two runs the cold read asked for, both pre-registered:
+- A second A/A pair: not flagged, +0.0 points.
+- A moderate degradation, the message cap cut from 20 to 12: flagged at
+  −20 points.
+
+I'd predicted about −12 from the baseline's message counts. The miss was
+my predictor, not the gate: Inspect's limit binds about a message earlier
+than I counted.
+
+## 2026-10-24 — Gate v2
+
+The pooled two-proportion test is now gate v2, the default for new
+comparisons, with the same task rule as before. Every comparison already
+published stays pinned to v1 in `results.yaml`, so no verdict was switched
+after seeing data. Simulated through the shipped code, v2 raises false
+alarms by at most half a point and catches noticeably more: nano's real
+Pagila drop, 44% of the time against 21.5%. One synthetic case pins the
+difference in a test: six tasks each losing two passes, which v1's interval
+just fails to flag and v2 flags at z = 2.13. It's also a formula rather
+than a resampling procedure, so a reviewer can check a verdict by hand.
+
+## 2026-10-24 — Filesystem suite v2
+
+The 17-task filesystem suite was the weaker one (65.5% detection at −10
+points under v1). v2 keeps v1's 17 tasks and adds 17 harder ones, on a copy
+of the fixture extended with returns and region settings. That includes
+joins across two files. f09 now accepts "March 14, 2026" as well as
+`2026-03-14`, through a new grader option for alternatives (the audit's
+false fail). v1 is untouched, byte for byte, so every published v1 run
+still stands.
+
+Every new answer is computed by parsing the fixture files, then checked
+again with plain shell tools. The builder's tie checks caught three
+problems before anything ran:
+- two workers tied on ERROR lines (the question became WARN lines);
+- several files tied on TODO comments (it became a count);
+- a check of my own on a field no task used (removed).
+
+A 3-task smoke run passed 3/3, including the join.
+
+Suite v2's baseline: 156/170. Its power answered a question I'd assumed
+the answer to: doubling the tasks did *not* double the sensitivity. It's
+better at 10–15 points, worse at 5, because the new tasks are harder and so
+noisier, and one (summing 599 rows with no calculator) always fails, so it
+can never show a drop. More attempts on the flaky tasks would do more than
+more tasks.
+
+## 2026-10-25 — I was wrong about where to spend attempts
+
+Yesterday I wrote that "more attempts on the flaky tasks would do more than
+more tasks." The simulation says otherwise. Putting extra attempts only on
+the tasks the baseline didn't always pass *lowers* detection (45% against
+52% for a 5-point drop on Pagila), and it's lower again on nano's real,
+uneven drop. The strongest signal of a regression is a reliable task
+starting to fail, and targeting adds nothing there. Ten attempts on every
+task is what works, at twice the cost. The entry above is left as I wrote
+it. The evaluation is corrected and says so.

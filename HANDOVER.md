@@ -321,6 +321,21 @@ parallel a little at a time.
   prices keyed by full model id). Cold-read review by a fresh agent: 10/10
   correct; over-claims in README fixed; filesystem power added; Limitations
   section; CI badge. 98 tests.
+- **Evidence follow-ups (2026-10-24, branch feat/evidence):** grader audit
+  (1 false fail in 136; found the +08 time-zone dependence → runs record
+  and enforce session_utc_offset; repro DB at Asia/Shanghai); the gate vs
+  simpler rules (pooled z-test as safe and more powerful → gate v2
+  recommended, Arthur to decide; published verdicts unchanged); base images
+  pinned by digest + CI docker job; fs A/A pair not flagged; message cap
+  20→12 flagged (−20 pts). Spend ≈ $0.43 more (total ≈ $3.95). 100 tests.
+- **Gate v2 + suite v2 (2026-10-24, branch feat/gate-v2-suite-v2, stacked
+  on feat/evidence):** gate v2 (pooled z + task rule) default for new
+  comparisons, published ones pinned to v1 in results.yaml; filesystem-v2
+  (34 tasks, answer alternatives), baseline fs2-mini-base 156/170, power
+  better at 10–15 pts but not at 5 (noisier tasks; n13 always fails).
+- **Second model family: waiting on Arthur for Sumopod's
+  gemini/gemini-3.5-flash price.** NOT Claude Haiku (Arthur). Gemini passed
+  tool checks on both suites (4/4).
 - **Next big piece:** Project 3, the Beobot case study (not started).
 - **Follow-ups:** pin base images by digest (from the draft); MCP-backbone
   strict-schema api_key fix; MCP-backbone CI publishing an image.

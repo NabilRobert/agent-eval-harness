@@ -1,6 +1,6 @@
 # What's published. Every number and verdict is recomputed from the
 # committed run records by `agent-eval publish`; nothing here is a result.
-headline: [proof-mini-a, proof-mini-b, proof-nano, fs-mini-base, fs-nano]
+headline: [proof-mini-a, proof-mini-b, proof-nano, fs-mini-base, fs-mini-base2, fs-nano]
 
 runs:
   - {run: proof-mini-a, label: "Pagila, gpt-5-mini, run 1"}
@@ -11,21 +11,30 @@ runs:
   - {run: fs-mini-base, label: "Filesystem, gpt-5-mini"}
   - {run: fs-nano, label: "Filesystem, gpt-5-nano"}
   - {run: fs-mini-degraded, label: "Filesystem, gpt-5-mini, no discovery tools"}
+  - {run: fs-mini-base2, label: "Filesystem, gpt-5-mini, run 2"}
+  - {run: fs-mini-cap12, label: "Filesystem, gpt-5-mini, message cap 12"}
+  - {run: fs2-mini-base, label: "Filesystem v2 (34 tasks), gpt-5-mini"}
 
+# gate: the decision rule each comparison was pre-registered with
+# (ADR-001). Everything here predates gate v2, so all are v1.
 # expected: "flagged" / "not flagged" for pre-registered proofs (see
 # docs/planning/phase-7-slices-plan.md); "–" for information only.
 comparisons:
-  - {baseline: proof-mini-a, candidate: proof-mini-b, expected: "not flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-b, gate: v1, expected: "not flagged",
      label: "Pagila: same agent twice (A/A)"}
-  - {baseline: proof-mini-a, candidate: proof-mini-degraded, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-degraded, gate: v1, expected: "flagged",
      label: "Pagila: schema tools removed"}
-  - {baseline: proof-mini-a, candidate: proof-nano, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-nano, gate: v1, expected: "flagged",
      label: "Pagila: gpt-5-mini → gpt-5-nano"}
-  - {baseline: proof-mini-a, candidate: proof-mini-prompt, expected: "flagged",
+  - {baseline: proof-mini-a, candidate: proof-mini-prompt, gate: v1, expected: "flagged",
      label: "Pagila: final-query line removed from the prompt"}
-  - {baseline: fs-mini-base, candidate: fs-mini-degraded, expected: "flagged",
+  - {baseline: fs-mini-base, candidate: fs-mini-degraded, gate: v1, expected: "flagged",
      label: "Filesystem: discovery tools removed"}
-  - {baseline: fs-mini-base, candidate: fs-nano, expected: "–",
+  - {baseline: fs-mini-base, candidate: fs-mini-base2, gate: v1, expected: "not flagged",
+     label: "Filesystem: same agent twice (A/A)"}
+  - {baseline: fs-mini-base, candidate: fs-mini-cap12, gate: v1, expected: "flagged",
+     label: "Filesystem: message cap 20 → 12"}
+  - {baseline: fs-mini-base, candidate: fs-nano, gate: v1, expected: "–",
      label: "Filesystem: gpt-5-mini → gpt-5-nano"}
 
 confirmations:

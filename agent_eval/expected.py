@@ -33,6 +33,8 @@ async def generate(source_path: Path, target: dict[str, Any], auth_token: str) -
     async with connect(target["url"], auth_token) as session:
         init = await session.initialize()
         data = await fingerprint(session, target)
+        offset_rows = (await call_json(session, target["query_tool"],
+                                       {"sql": target["utc_offset_query"]}))["rows"]
         for task in source["tasks"]:
             sql: str = task["reference_sql"]
             result = await call_json(session, target["query_tool"], {"sql": sql})
@@ -74,6 +76,7 @@ async def generate(source_path: Path, target: dict[str, Any], auth_token: str) -
             "server_name": init.server_info.name,
             "server_version": init.server_info.version or None,
             "data_fingerprint": data["sha256"],
+            "session_utc_offset": int(float(offset_rows[0]["utc_offset_seconds"])),
         },
         "tasks": tasks,
     }

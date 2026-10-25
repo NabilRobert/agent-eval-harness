@@ -82,3 +82,15 @@ def test_required_tools_must_all_be_called() -> None:
     assert grade_required_tools(["list_tables", "submit"], ["run_query"]) == (False, False)
     assert grade_required_tools(["run_query"], ["run_query", "describe_table"]) == (False, False)
     assert grade_one("required_tools", ["run_query"], {"tools_called": ["run_query"]}) == (True, True)
+
+
+def test_answer_match_alternatives_any_one_counts() -> None:
+    from agent_eval.grading import grade_answer_match
+
+    date = ["2026-03-14", "March 14, 2026", "14 March 2026"]
+    assert grade_answer_match("It was released on March 14, 2026.", [date]) == (True, True)
+    assert grade_answer_match("Released 2026-03-14.", [date]) == (True, True)
+    assert grade_answer_match("Released March 15, 2026.", [date]) == (False, False)
+    # Mixed: a plain item and an alternatives item must both be present.
+    assert grade_answer_match("shipping, 12 s", ["shipping", ["12", "twelve"]]) == (True, True)
+    assert grade_answer_match("shipping", ["shipping", ["12", "twelve"]]) == (False, False)

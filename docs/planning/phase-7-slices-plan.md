@@ -279,3 +279,22 @@ machine. Both runs' data fingerprints match their suites, and their
 reports render identically on the laptop. Secret scan: clean. These are
 the first runs that record which MCP-backbone build they were graded
 against. **All 8 slices are now done.**
+
+## Follow-up evidence runs, fixed before running (2026-10-24)
+
+Both are on the frozen filesystem suite with `gpt-5-mini`, compared
+against `fs-mini-base`. Whatever the gate says is published.
+
+1. **A second A/A pair:** `fs-mini-base2`, identical settings. Expected:
+   **not flagged.** Together with the Pagila pair, it's the second live
+   false-alarm check.
+2. **A moderate degradation:** `fs-mini-cap12`, the message cap lowered
+   from 20 to 12. That's a realistic "cut the cap to save money" change.
+   The cap was chosen from the baseline alone: 10 of its 85 trials (12%)
+   needed more than 12 messages, so the expected drop is about 12 points,
+   within the 8–15 point range the cold read asked for. Expected:
+   **flagged**, but this isn't certain. The filesystem gate catches a
+   10-point uniform drop 70% of the time and 15 points 92%. A miss would be
+   published as a miss.
+
+Estimated at about $0.20 per run, $0.40 in total.

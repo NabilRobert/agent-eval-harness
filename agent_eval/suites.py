@@ -21,6 +21,9 @@ FROZEN_SUITES: dict[str, str] = {
     # 2026-10-24: 17 tasks on the synthetic acme-shop fixture (fingerprint
     # 304f7418...), built by scripts/build_filesystem_suite.py.
     "filesystem": "94ad6a86e144c2d6c15428fee4913b5b5f762d612ac7522c055cf9d27ac0f1d4",
+    # 2026-10-24: v1's 17 tasks (f09 accepts other date formats) + 17 harder
+    # ones on the extended acme-shop-v2 fixture, for more statistical power.
+    "filesystem-v2": "4210f586d3e386afe44979f9fc31d38cbbd7f572b486d871c732ec05388f5548",
 }
 
 # The instructions MCP-backbone's own benchmark used, so results stay
@@ -34,6 +37,16 @@ PAGILA_SYSTEM_PROMPT = (
 
 class SuiteError(Exception):
     """A suite that can't be run as written. Exit 2, nothing spent."""
+
+
+def _contains_item_ok(item: Any) -> bool:
+    """A non-empty string, or a non-empty list of non-empty strings."""
+    if isinstance(item, str):
+        return bool(item)
+    if isinstance(item, list):
+        alts = cast(list[Any], item)
+        return bool(alts) and all(isinstance(a, str) and a for a in alts)
+    return False
 
 
 def validate_suite(suite: dict[str, Any]) -> None:
@@ -67,8 +80,10 @@ def validate_suite(suite: dict[str, Any]) -> None:
                     raise SuiteError(f"task {task_id!r}: result_match needs a tool and a list of rows")
             elif kind == "answer_match":
                 contains: Any = cast(dict[str, Any], spec).get("contains") if isinstance(spec, dict) else None
-                if not contains or not all(isinstance(c, str) and c for c in cast(list[Any], contains)):
-                    raise SuiteError(f"task {task_id!r}: answer_match needs non-empty 'contains'")
+                items: list[Any] = cast(list[Any], contains) if isinstance(contains, list) else []
+                if not items or not all(_contains_item_ok(c) for c in items):
+                    raise SuiteError(f"task {task_id!r}: answer_match needs non-empty 'contains' "
+                                     "(strings, or lists of alternative strings)")
             elif not spec or not all(isinstance(t, str) for t in cast(list[Any], spec)):
                 raise SuiteError(f"task {task_id!r}: {kind} needs a list of tool names")
 
@@ -98,15 +113,24 @@ def suite_hash(suite: dict[str, Any]) -> str:
     return sha256_hex(ordered_json([[t["id"], task_hash(t)] for t in suite["tasks"]]))
 
 
-def data_mismatch(suite: dict[str, Any], target_fingerprint: str | None) -> str | None:
+def data_mismatch(
+    suite: dict[str, Any], target_fingerprint: str | None, target_utc_offset: int | None = None
+) -> str | None:
     """Why a run must not start, or None. A suite records the fingerprint
-    of the data its expected answers were generated against; a target
-    serving any other data would score right answers as wrong."""
+    of the data its expected answers were generated against, and the
+    database session's UTC offset; a target differing in either would score
+    the same answer differently."""
     generated: dict[str, Any] = suite.get("generated") or {}
     expected: str | None = generated.get("data_fingerprint")
     if expected and target_fingerprint != expected:
         return (f"target data fingerprint {str(target_fingerprint)[:12]} doesn't match the "
                 f"{expected[:12]} this suite's answers were generated against")
+    expected_offset: int | None = generated.get("session_utc_offset")
+    if expected_offset is not None and target_utc_offset != expected_offset:
+        actual = "unknown" if target_utc_offset is None else f"{target_utc_offset}s"
+        return (f"target database session is at UTC offset {actual}, but this suite "
+                f"was generated and published at {expected_offset}s; answers to questions about "
+                "dates would be graded differently")
     return None
 
 

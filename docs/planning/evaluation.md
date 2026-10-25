@@ -116,3 +116,239 @@ These would be the next evidence to buy if the project continues.
 About $3.50 of model calls in total, across all smoke, proof, confirmation
 and VPS runs. The cold-read test and every simulation used no model calls
 through the Sumopod key.
+
+## Grader audit (follow-up, 2026-10-24)
+
+Every non-passing trial in the 8 published runs (136) was read and
+classified: what was expected, what the agent produced, and its last query
+or final answer.
+
+| Cause | Trials | Verdict |
+|---|---|---|
+| Message or cost cap hit (49 of them the filesystem degraded agent, 12 nano on the filesystem) | 64 | genuine fails |
+| "(UTC)" in the question not handled: bare dates compared in the session's time zone, or converted back through it | 35 | genuine, but environment-dependent (below) |
+| Strict only: right values, extra or reordered columns | 22 | by design; lenient counts them |
+| Wrong answer, other (e.g. an invented "UNRATED" rating row, a different late-return definition) | 12 | genuine |
+| Borderline: right in substance, wrong form (`src/acme/pricing/ discounts.py` with a space; 23.92 vs 23.93 days from averaging whole days) | 2 | ambiguous |
+| **Grader false fail:** "March 14, 2026" for `2026-03-14` | 1 | grader limitation |
+
+**The graders are sound.** One clear false fail in 136, and counting it
+(and both borderline cases) as passes would move `fs-nano` from 67/85 to at
+most 69/85. Its comparison with mini stays a regression (about −18
+points). Fixing date formats would mean a new filesystem suite version and
+new published runs, so it's recorded here rather than patched in.
+
+**What the audit really found: a time-zone dependence.** 35 of Pagila's 64
+non-passing trials come from 5 "(UTC)" tasks. A query that ignores "UTC"
+reads a bare date in the database session's time zone, which is +08 on the
+live server. The same query gives 9,098 rentals for 2025 there, but 9,092,
+the right answer, on a UTC database. The local reproduction
+(`postgres:16.10-alpine`, UTC by default) would have graded those answers
+as correct, even though its data fingerprint matched exactly. The
+fingerprint covered the data, not the session. Fixed:
+- Every run records the session's UTC offset, through the endpoint.
+- The Pagila suite records the offset it was published at (+28,800 s), and
+  a run refuses a target at any other offset.
+- `repro/` sets its database to Asia/Shanghai (+08, no DST). Locally, the
+  same UTC-ignoring query now gives 9,098, as live does.
+
+## The gate against simpler rules (follow-up, 2026-10-24)
+
+A reviewer would ask why a bootstrap and not something simpler, so every
+candidate rule was run on the same simulated pairs
+([`scripts/compare_rules.py`](../../scripts/compare_rules.py); 200 pairs
+per case, rates measured from the real runs, plus ADR-001's flakier
+assumed suite). No API calls.
+
+```
+40 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/proof-mini-a', '../runs/proof-mini-b']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (4.8%) |
+|---|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 0.0% | 12.0% | 34.5% | 88.0% | 100.0% | 21.5% |
+| within-task bootstrap (fixed suite) + task rule | 4.5% | 35.0% | 70.5% | 96.5% | 100.0% | 68.5% |
+| fixed threshold: drop >= 5 pts | 0.0% | 14.0% | 49.0% | 95.0% | 100.0% | 45.5% |
+| fixed threshold: drop >= 10 pts | 0.0% | 0.0% | 2.0% | 51.0% | 95.5% | 1.0% |
+| pooled two-proportion z-test | 0.5% | 18.0% | 51.5% | 94.0% | 100.0% | 44.0% |
+| per-task Fisher, any task p<0.05 | 2.0% | 3.0% | 5.0% | 9.0% | 14.0% | 29.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+
+17 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs-mini-base']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (20.0%) |
+|---|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 0.0% | 5.5% | 23.5% | 70.0% | 92.0% | 99.0% |
+| within-task bootstrap (fixed suite) + task rule | 2.5% | 23.5% | 43.0% | 88.0% | 97.0% | 100.0% |
+| fixed threshold: drop >= 5 pts | 0.0% | 14.5% | 43.0% | 90.0% | 99.0% | 100.0% |
+| fixed threshold: drop >= 10 pts | 0.0% | 0.0% | 5.5% | 52.5% | 87.0% | 99.0% |
+| pooled two-proportion z-test | 0.5% | 20.5% | 37.5% | 81.5% | 96.5% | 100.0% |
+| per-task Fisher, any task p<0.05 | 0.5% | 0.0% | 1.0% | 0.5% | 5.5% | 98.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+
+30 tasks x 5 attempts, 200 simulated pairs per case, base ['mixed']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| shipped gate (bootstrap + task rule) | 1.0% | 5.0% | 8.5% | 28.0% | 66.0% |
+| within-task bootstrap (fixed suite) + task rule | 5.5% | 12.5% | 28.5% | 56.5% | 89.5% |
+| fixed threshold: drop >= 5 pts | 12.0% | 32.0% | 51.0% | 80.0% | 99.5% |
+| fixed threshold: drop >= 10 pts | 2.0% | 9.5% | 20.5% | 50.0% | 86.5% |
+| pooled two-proportion z-test | 0.0% | 6.0% | 12.5% | 39.5% | 80.5% |
+| per-task Fisher, any task p<0.05 | 17.0% | 24.0% | 26.5% | 32.5% | 53.0% |
+| per-task Fisher, Bonferroni | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+```
+
+**What it shows:**
+- **A fixed threshold isn't calibrated.** "Drop ≥ 5 points" looks good on
+  the near-saturated real suites, but raises **12% false alarms** on the
+  flakier suite. ADR-001's reason for rejecting it holds.
+- **Per-task Fisher tests don't work at 5 attempts.** Uncorrected, they
+  raise 17% false alarms on the flaky suite; with Bonferroni, they catch
+  nothing.
+- **A fixed-suite bootstrap** (resampling attempts only, not tasks) catches
+  much more, but runs at **2.5–5.5% false alarms**. With 5 attempts, a task
+  that went 5/5 looks noise-free when it isn't.
+- **The pooled two-proportion z-test beats the shipped gate on every
+  suite**: false alarms of 0–0.5%, and higher detection everywhere. For
+  example, a 10-point drop is caught 94% / 81.5% / 39.5% of the time,
+  against the gate's 88% / 70% / 28%. Resampling tasks makes the shipped
+  gate answer "would this hold on tasks like these?", which is a more
+  conservative question than a CI gate on a fixed suite needs.
+
+**Decision: the published verdicts stay as they are.** They were made with
+the pre-registered gate, and switching rules after seeing the data is what
+pre-registration exists to prevent. Under the pooled test the published
+verdicts wouldn't change anyway: mini vs nano on Pagila gives z = 1.79,
+below the 1.96 needed to flag. **Recommended for future comparisons
+(Arthur's call):** a gate v2 that uses the pooled z-test plus the task
+rule, written down before any comparison uses it.
+
+## Follow-up live evidence (2026-10-24, pre-registered)
+
+| Comparison | Expected | Result |
+|---|---|---|
+| `fs-mini-base` vs `fs-mini-base2` (same agent twice) | not flagged | **no regression**, +0.0 points (interval −3.5 to +3.5), exit 0 |
+| `fs-mini-base` vs `fs-mini-cap12` (message cap 20 → 12) | flagged | **regression**, −20.0 points (interval −34.1 to −7.1), exit 1 |
+
+Both came out as pre-registered. Every one of the cap run's 18 fails is a
+message-cap hit, with no errors and no writes. Both runs are clean in the
+secret scan. Cost: $0.43 in total.
+
+**The size prediction was wrong, and why.** The cap was chosen so that 12%
+of the baseline's trials needed more than 12 messages, predicting about a
+12-point drop. Both baseline runs showed 12–13% of trials above 12
+messages, yet 21% of trials hit the cap. Inspect's message limit binds
+about one message earlier than my count of the saved transcripts, so the
+predictor was miscalibrated. The −20-point result stands.
+
+This closes two of the cold read's open requests: a second live A/A pair,
+and a live moderate degradation caught. Still open, and needing more
+spend: a second model family.
+
+### Gate v2, as shipped (2026-10-24)
+
+Adopted for future comparisons, with published comparisons pinned to v1.
+Re-simulated through the shipped code:
+
+```
+40 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/proof-mini-a', '../runs/proof-mini-b']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (4.8%) |
+|---|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 12.0% | 34.5% | 88.0% | 100.0% | 21.5% |
+| gate v2 (pooled z + task rule), as shipped | 0.5% | 18.0% | 51.5% | 94.0% | 100.0% | 44.0% |
+
+17 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs-mini-base', '../runs/fs-mini-base2']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% | measured uneven drop (20.0%) |
+|---|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 5.5% | 23.5% | 70.0% | 92.0% | 99.0% |
+| gate v2 (pooled z + task rule), as shipped | 0.5% | 20.5% | 37.5% | 81.5% | 96.5% | 100.0% |
+
+30 tasks x 5 attempts, 200 simulated pairs per case, base ['mixed']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 1.0% | 5.0% | 8.5% | 28.0% | 66.0% |
+| gate v2 (pooled z + task rule), as shipped | 1.0% | 7.5% | 15.5% | 40.5% | 80.5% |
+```
+
+## Filesystem suite v2: baseline and power (2026-10-24)
+
+`fs2-mini-base` (`gpt-5-mini`, 34 tasks × 5): **156/170 strict (91.8%)**,
+0 errors, no writes, $0.57.
+- **n13 failed all 5 attempts:** summing 599 CSV amounts with no way to
+  calculate, only to read files. A task that always fails can't show a
+  drop, so it adds nothing to the gate's power. It's frozen in v2 and the
+  first candidate to drop from a v3.
+- The other fails are message, time and token caps, plus n04 answering 57
+  instead of 58 twice.
+
+Power on its measured rates (`scripts/compare_rules.py`, 200 pairs per
+cell):
+
+```
+34 tasks x 5 attempts, 200 simulated pairs per case, base ['../runs/fs2-mini-base']
+| Rule | no change (false alarm) | uniform drop 3% | uniform drop 5% | uniform drop 10% | uniform drop 15% |
+|---|---|---|---|---|---|
+| gate v1 (bootstrap + task rule) | 0.0% | 10.0% | 28.5% | 79.0% | 99.0% |
+| gate v2 (pooled z + task rule), as shipped | 0.0% | 7.0% | 27.5% | 84.0% | 99.5% |
+```
+
+**v2 helped less than hoped.** Under gate v2 it catches 84% of 10-point
+drops (v1 suite: 81.5%) and 99.5% of 15-point drops (96.5%), with 0% false
+alarms. But it's slightly worse at 5 points: 27.5% against 37.5%. The new
+tasks are harder, the baseline is 91.8% against v1's 98.8%, so there's more
+run-to-run noise, and n13 contributes nothing. Doubling the tasks didn't
+double the power, because the added tasks are noisier. For more
+sensitivity, the next lever is **more attempts per task, on every task**.
+*(Corrected 2026-10-25: this first said "on the flaky tasks". The
+simulation below shows that targeting the flaky tasks is worse than
+spreading attempts evenly.)*
+
+## What more attempts would buy (simulation, 2026-10-25)
+
+`scripts/simulate_attempts.py`, gate v2, rates measured in the real
+baselines, 1,000 simulated pairs per cell. Cost is trials per run.
+
+```
+['../runs/proof-mini-a', '../runs/proof-mini-b']: 40 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 200 (1.00x) | 1.8% | 22.0% | 51.8% | 96.7% |
+| 10 everywhere | 400 (2.00x) | 1.3% | 42.3% | 84.6% | 100.0% |
+| targeted (10 on the 7 flaky tasks) | 235 (1.18x) | 0.7% | 19.4% | 45.5% | 94.6% |
+
+['../runs/fs-mini-base', '../runs/fs-mini-base2']: 17 tasks, 1 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 85 (1.00x) | 0.3% | 20.8% | 39.0% | 83.6% |
+| 10 everywhere | 170 (2.00x) | 0.8% | 35.8% | 73.3% | 99.7% |
+| targeted (10 on the 1 flaky tasks) | 90 (1.06x) | 1.4% | 14.0% | 30.0% | 79.1% |
+
+['../runs/fs2-mini-base']: 34 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts |
+|---|---|---|---|---|---|
+| 5 everywhere | 170 (1.00x) | 0.5% | 7.1% | 25.5% | 82.4% |
+| 10 everywhere | 340 (2.00x) | 0.0% | 18.1% | 53.9% | 99.2% |
+| targeted (10 on the 7 flaky tasks) | 205 (1.21x) | 0.1% | 6.2% | 16.0% | 76.5% |
+
+['../runs/proof-mini-a', '../runs/proof-mini-b']: 40 tasks, 7 below 100% in the baseline; 1000 pairs per cell
+| Attempts | Trials per run (cost) | no change | -3 pts | -5 pts | -10 pts | measured uneven drop |
+|---|---|---|---|---|---|---|
+| 5 everywhere | 200 (1.00x) | 1.8% | 22.0% | 51.8% | 96.7% | 48.1% |
+| 10 everywhere | 400 (2.00x) | 0.6% | 41.4% | 83.8% | 100.0% | 83.3% |
+| targeted (10 on the 7 flaky tasks) | 235 (1.18x) | 1.1% | 19.3% | 44.5% | 94.5% | 42.3% |
+```
+
+**Spreading extra attempts across every task works; targeting the flaky
+ones doesn't.**
+- 10 attempts everywhere, at twice the cost, lifts 5-point detection from
+  52% to 85% (Pagila), 39% to 73% (filesystem v1) and 26% to 54%
+  (filesystem v2). On Pagila it would have caught nano's real drop 83% of
+  the time, against 48% at 5 attempts.
+- Putting extra attempts only on the tasks the baseline didn't always pass
+  is **worse than 5 everywhere** (45% against 52% at −5 points on Pagila;
+  42% against 48% on nano's real drop). The clearest signal of a drop is a
+  *reliable* task starting to fail, and targeting adds no attempts there,
+  while weighting the noisiest tasks more heavily.
+- My intuition, the obvious "spend attempts where the uncertainty is",
+  was wrong for this question.
+
+**Recommendation:** when sensitivity matters, raise `--epochs` to 10 for
+both runs of a comparison, at twice the cost. A full Pagila run at 10
+attempts is about $1.10 on `gpt-5-mini`.

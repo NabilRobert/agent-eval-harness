@@ -47,7 +47,8 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
     if changed:
         raise ConfirmError(f"{run.meta['run_id']}: tasks changed since the run: {changed}")
     args = ["--suite", str(suite_path), "--tasks", ",".join(tasks), "--epochs", str(epochs),
-            "--model", agent["model"]]
+            "--model", agent["model"],
+            "--message-limit", str(agent.get("limits", {}).get("message_limit", 20))]
     allowlist = agent.get("tool_allowlist")
     if allowlist is not None:
         excluded = sorted(set(prov["tool_names"]) - set(allowlist))
@@ -63,8 +64,8 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
 
 
 def plan(baseline_dir: Path, candidate_dir: Path, suites_dir: Path,
-         epochs: int = CONFIRM_EPOCHS) -> dict[str, Any]:
-    result = compare_runs(baseline_dir, candidate_dir)
+         epochs: int = CONFIRM_EPOCHS, gate: str = "v2") -> dict[str, Any]:
+    result = compare_runs(baseline_dir, candidate_dir, gate)
     if result.verdict != "inconclusive":
         raise ConfirmError(
             f"the comparison is {result.verdict!r}; confirm only runs on an inconclusive one"
@@ -78,6 +79,7 @@ def plan(baseline_dir: Path, candidate_dir: Path, suites_dir: Path,
     return {
         "baseline": baseline.meta["run_id"],
         "candidate": candidate.meta["run_id"],
+        "gate": gate,
         "original": {"point": result.point, "interval": result.interval},
         "tasks": tasks,
         "epochs": epochs,

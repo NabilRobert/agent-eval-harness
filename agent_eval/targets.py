@@ -25,6 +25,15 @@ _PAGILA_FINGERPRINT = [
     " order by payment_id)) as payments_md5 from payment",
 ]
 
+# The database session's UTC offset, through the same endpoint. Not data,
+# but it changes answers: a query that ignores "UTC" in a question reads a
+# bare date in the session's time zone. The grader audit found 35 of
+# Pagila's 64 non-passing trials were exactly that, so the offset is part of
+# what a run must match (agent_eval.suites.data_mismatch).
+_SESSION_UTC_OFFSET = (
+    "select extract(timezone from timestamptz '2025-06-01 00:00:00+00') as utc_offset_seconds"
+)
+
 TARGETS: dict[str, dict[str, Any]] = {
     "mcp-backbone": {
         "name": "mcp-backbone",
@@ -38,6 +47,7 @@ TARGETS: dict[str, dict[str, Any]] = {
         "infra_error_patterns": ["rate limit of"],
         "query_tool": "run_query",
         "fingerprint_queries": _PAGILA_FINGERPRINT,
+        "utc_offset_query": _SESSION_UTC_OFFSET,
     },
     # The same server, run locally from repro/ (ADR-010): MCP-backbone at a
     # pinned commit with Pagila at a pinned upstream commit, so anyone can
@@ -56,6 +66,7 @@ TARGETS: dict[str, dict[str, Any]] = {
         "infra_error_patterns": ["rate limit of"],
         "query_tool": "run_query",
         "fingerprint_queries": _PAGILA_FINGERPRINT,
+        "utc_offset_query": _SESSION_UTC_OFFSET,
     },
     # The reference MCP filesystem server (pinned in tools/fs-server), on a
     # fresh copy of a synthetic fixture per trial (agent_eval/fs_server.py).
@@ -65,6 +76,17 @@ TARGETS: dict[str, dict[str, Any]] = {
         "name": "filesystem",
         "transport": "stdio",
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
+    # Suite v2's fixture: v1's files, unchanged, plus returns and regions.
+    "filesystem-v2": {
+        "name": "filesystem-v2",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-v2"),
         "auth_env": None,
         "infra_error_patterns": [],
         "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],

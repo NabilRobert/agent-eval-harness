@@ -54,12 +54,15 @@ def _run_row(repo: Path, entry: dict[str, Any]) -> dict[str, Any]:
 
 
 def _comparison_row(repo: Path, entry: dict[str, Any]) -> dict[str, Any]:
-    result = compare_runs(repo / "runs" / entry["baseline"], repo / "runs" / entry["candidate"])
+    # Each published comparison is decided by the gate it was pre-registered
+    # with (results.yaml), never re-decided by a later gate.
+    gate = entry.get("gate", "v1")
+    result = compare_runs(repo / "runs" / entry["baseline"], repo / "runs" / entry["candidate"], gate)
     flagged = result.exit_code == 1
     interval = (f"{_pts(result.interval[0])} to {_pts(result.interval[1])}"
                 if result.interval else "n/a")
     return {
-        "label": entry["label"], "expected": entry["expected"],
+        "label": entry["label"], "expected": entry["expected"], "gate": gate,
         "verdict": result.verdict, "exit": result.exit_code,
         "change": _pts(result.point) if result.point is not None else "n/a",
         "interval": interval, "broken": len(result.broken),
@@ -89,11 +92,11 @@ def render(repo: Path) -> tuple[str, str]:
                    f"{r['model']} | {r['strict']} | {r['lenient']} | {r['pass_k']} | {r['errors']} | "
                    f"{r['cost']} | {r['latency']} | {r['date']} |")
     out += ["", "## Comparisons (the regression gate)", "",
-            "| Comparison | Expected | Verdict (exit) | Change in strict pass rate | 95% interval | Broken tasks | Warnings |",
-            "|---|---|---|---|---|---|---|"]
+            "| Comparison | Gate | Expected | Verdict (exit) | Change in strict pass rate | 95% interval | Broken tasks | Warnings |",
+            "|---|---|---|---|---|---|---|---|"]
     for c in comps:
         mark = "" if c["as_expected"] else " **(not as expected)**"
-        out.append(f"| {c['label']} | {c['expected']} | {c['verdict']} ({c['exit']}){mark} | "
+        out.append(f"| {c['label']} | {c['gate']} | {c['expected']} | {c['verdict']} ({c['exit']}){mark} | "
                    f"{c['change']} | {c['interval']} | {c['broken']} | {c['warnings']} |")
     if confs:
         out += ["", "## Confirmations (fresh trials on the tasks that dropped)", "",
