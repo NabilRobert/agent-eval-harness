@@ -210,9 +210,10 @@ its interval, so a flag can be judged rather than obeyed.
   - Model names like `gpt-5-mini` are aliases, so a silent upstream update
     can't be seen in the name; the provider-reported name is recorded anyway.
   - Repeats were checked not to be served from a cache.
-  - Strict tool schemas are off on this route, because MCP-backbone's
-    optional `api_key` tool parameter breaks OpenAI's strict mode. That
-    applies to both models alike.
+  - Strict tool schemas are off on this route. MCP-backbone's optional
+    `api_key` tool parameter used to break OpenAI's strict mode. The server
+    is fixed now (2026-10-25), but strict mode stays off so that new runs
+    stay comparable with the published ones. It applies to both models alike.
 - **Pagila is public, and likely in models' training data** (the
   contamination hypothesis above). The filesystem suite is synthetic for
   exactly that reason. Results are dated.
