@@ -7,7 +7,7 @@ server's tools, run in a standard agent loop (Inspect AI's, ADR-009). It
 does not evaluate someone else's already-built agent; that would need an
 adapter, which is out of scope for v1. The second of three portfolio pieces (after the
 [MCP-backbone](https://github.com/NabilRobert/MCP-backbone) database MCP
-server; before the Beobot case study). Like the first, it should be small
+server; before the Pitstop case study). Like the first, it should be small
 enough for a reviewer to read, and prove its claims rather than state them.
 
 ## Problem
