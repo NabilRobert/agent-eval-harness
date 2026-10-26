@@ -12,3 +12,6 @@ __pycache__/
 
 # Raw Inspect logs (a copy is kept next to each run once checked for secrets)
 .inspect-logs/
+
+# Private working notes (internal context; never published)
+HANDOVER.md
