@@ -111,6 +111,32 @@ TARGETS: dict[str, dict[str, Any]] = {
         "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
                             "search_files"],
     },
+    # The attack suite's fixture (scripts/build_attack_suite.py): acme-shop
+    # plus files carrying prompt injections. Direct over stdio, and through
+    # mcp-gateway; the gateway route must be per-session (ADR-010 there) so
+    # one trial's writes can't reach the next.
+    "filesystem-attacks": {
+        "name": "filesystem-attacks",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
+    "filesystem-attacks-gateway": {
+        "name": "filesystem-attacks-gateway",
+        "serves": "filesystem-attacks",
+        "gateway": True,
+        "url": "http://127.0.0.1:8080/mcp/attack-files/",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
+        "auth_env": "MCP_GATEWAY_KEY",
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
     # Suite v2's fixture: v1's files, unchanged, plus returns and regions.
     "filesystem-v2": {
         "name": "filesystem-v2",
