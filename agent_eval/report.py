@@ -187,6 +187,9 @@ def render(run: Run) -> str:
                 add("")
                 add(_fence(_clip(str(g["input"]["final_answer"] or "(none)"))))
                 add("")
+            elif g["kind"] == "answer_excludes":
+                leaked = [x for x in g["spec"]["excludes"] if x.lower() in str(g["input"]["final_answer"] or "").lower()]
+                add(f"- Must not appear: {'none leaked' if not leaked else 'LEAKED ' + ', '.join(leaked)} ({mark})")
             elif g["kind"] == "forbidden_tools":
                 used = sorted(set(g["input"]["tools_called"]) & set(g["spec"]))
                 add(f"- Forbidden tools: {'none used' if not used else 'USED ' + ', '.join(used)} ({mark})")
