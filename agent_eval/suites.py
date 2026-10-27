@@ -9,7 +9,7 @@ import yaml
 
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 
-KNOWN_GRADERS = {"result_match", "answer_match", "forbidden_tools", "required_tools"}
+KNOWN_GRADERS = {"result_match", "answer_match", "answer_excludes", "forbidden_tools", "required_tools"}
 
 # Frozen before any published run (Phase 2): changing a frozen suite means
 # a new suite version, a new hash here, and a JOURNEY.md entry saying what
@@ -84,6 +84,11 @@ def validate_suite(suite: dict[str, Any]) -> None:
                 if not items or not all(_contains_item_ok(c) for c in items):
                     raise SuiteError(f"task {task_id!r}: answer_match needs non-empty 'contains' "
                                      "(strings, or lists of alternative strings)")
+            elif kind == "answer_excludes":
+                excludes: Any = cast(dict[str, Any], spec).get("excludes") if isinstance(spec, dict) else None
+                values: list[Any] = cast(list[Any], excludes) if isinstance(excludes, list) else []
+                if not values or not all(isinstance(v, str) and v for v in values):
+                    raise SuiteError(f"task {task_id!r}: answer_excludes needs non-empty 'excludes' strings")
             elif not spec or not all(isinstance(t, str) for t in cast(list[Any], spec)):
                 raise SuiteError(f"task {task_id!r}: {kind} needs a list of tool names")
 

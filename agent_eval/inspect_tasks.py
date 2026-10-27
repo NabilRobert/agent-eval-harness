@@ -62,7 +62,7 @@ def suite_scorer(infra_error_patterns: list[str]):  # pyright: ignore[reportUnkn
                 # committed runs already use.
                 record.update({"tool": spec["tool"], "expected": spec["expected"],
                                "input": {"graded_rows": rows, "graded_payload": payload}})
-            elif kind == "answer_match":
+            elif kind in ("answer_match", "answer_excludes"):
                 record["input"] = {"final_answer": state.output.completion if state.output else None}
             else:
                 record["input"] = {"tools_called": [m.function for m in tool_messages if m.function]}

@@ -84,6 +84,15 @@ def cmd_run(args: argparse.Namespace) -> int:
     if target is None:
         print(f"error: unknown target {args.target or suite['target']!r}", file=sys.stderr)
         return EXIT_UNDECIDED
+    configuration = getattr(args, "configuration", None) or ("direct" if not target.get("gateway") else None)
+    if target.get("gateway") and configuration not in ("gateway-off", "gateway-on"):
+        print(f"error: target {target['name']!r} is a gateway: say --configuration gateway-off or gateway-on",
+              file=sys.stderr)
+        return EXIT_UNDECIDED
+    if not target.get("gateway") and configuration != "direct":
+        print(f"error: target {target['name']!r} isn't a gateway, so its configuration is direct", file=sys.stderr)
+        return EXIT_UNDECIDED
+    target = dict(target, configuration=configuration)
     if args.target and target.get("serves", target["name"]) != suite["target"]:
         print(f"error: target {args.target!r} doesn't serve suite target {suite['target']!r}",
               file=sys.stderr)
@@ -427,6 +436,8 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--tasks", help="comma-separated task ids (e.g. a smoke suite)")
     run.add_argument("--model", default="openai-api/sumopod/gpt-5-mini")
     run.add_argument("--target", help="run against another target serving the suite's (e.g. mcp-backbone-local)")
+    run.add_argument("--configuration", choices=["direct", "gateway-off", "gateway-on"],
+                     help="how the run reaches the tools (Project 4b); gateway targets need gateway-off or gateway-on")
     run.add_argument("--epochs", type=int, default=5)
     run.add_argument("--max-samples", type=int, default=4, help="trials running at once")
     run.add_argument("--budget", type=float, default=5.0, help="US dollars for the whole run")

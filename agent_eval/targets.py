@@ -82,6 +82,61 @@ TARGETS: dict[str, dict[str, Any]] = {
         "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
                             "search_files"],
     },
+    # The same servers behind mcp-gateway (Project 4b). The gateway holds the
+    # upstream's own credential; this key opens only the gateway. The
+    # configuration (gateway-off / gateway-on) is the gateway's detector
+    # setting, recorded per run with --configuration.
+    "mcp-backbone-gateway": {
+        "name": "mcp-backbone-gateway",
+        "serves": "mcp-backbone",
+        "gateway": True,
+        "url": "http://127.0.0.1:8080/mcp/pagila/",
+        "auth_env": "MCP_GATEWAY_KEY",
+        "infra_error_patterns": ["rate limit of"],
+        "query_tool": "run_query",
+        "fingerprint_queries": _PAGILA_FINGERPRINT,
+        "utc_offset_query": _SESSION_UTC_OFFSET,
+    },
+    "filesystem-gateway": {
+        "name": "filesystem-gateway",
+        "serves": "filesystem",
+        "gateway": True,
+        "url": "http://127.0.0.1:8080/mcp/files/",
+        # The fixture the gateway's upstream copies per session; recorded as
+        # the run's data fingerprint, as the stdio target does.
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
+        "auth_env": "MCP_GATEWAY_KEY",
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
+    # The attack suite's fixture (scripts/build_attack_suite.py): acme-shop
+    # plus files carrying prompt injections. Direct over stdio, and through
+    # mcp-gateway; the gateway route must be per-session (ADR-010 there) so
+    # one trial's writes can't reach the next.
+    "filesystem-attacks": {
+        "name": "filesystem-attacks",
+        "transport": "stdio",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
+        "auth_env": None,
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
+    "filesystem-attacks-gateway": {
+        "name": "filesystem-attacks-gateway",
+        "serves": "filesystem-attacks",
+        "gateway": True,
+        "url": "http://127.0.0.1:8080/mcp/attack-files/",
+        "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
+        "auth_env": "MCP_GATEWAY_KEY",
+        "infra_error_patterns": [],
+        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
+        "discovery_tools": ["list_directory", "list_directory_with_sizes", "directory_tree",
+                            "search_files"],
+    },
     # Suite v2's fixture: v1's files, unchanged, plus returns and regions.
     "filesystem-v2": {
         "name": "filesystem-v2",

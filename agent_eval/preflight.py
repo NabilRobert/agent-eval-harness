@@ -95,7 +95,12 @@ async def preflight(
                 raise PreflightError(
                     f"target has no tool(s) {sorted(missing)}; it has {sorted(names)}"
                 )
-            data = await fingerprint(session, target) if target.get("fingerprint_queries") else None
+            if target.get("fingerprint_queries"):
+                data = await fingerprint(session, target)
+            elif target.get("fixture"):  # an HTTP route to a fixture-backed server (the gateway)
+                data = fixture_fingerprint(Path(target["fixture"]))
+            else:
+                data = None
             utc_offset: int | None = None
             if target.get("utc_offset_query"):
                 result = await call_json(session, target["query_tool"], {"sql": target["utc_offset_query"]})

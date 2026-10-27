@@ -178,6 +178,8 @@ def build_meta(
             "name": target["name"],
             "transport": target.get("transport", "streamable-http"),
             "address": target.get("url") or target.get("fixture"),
+            # direct / gateway-off / gateway-on (Project 4b); absent on older runs.
+            "configuration": target.get("configuration"),
         },
         "agent": {
             "model": agent["model"],
