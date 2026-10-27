@@ -16,7 +16,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install (exact versions from uv.lock)
-        run: uv sync --frozen --extra dev
+        # --locked fails if uv.lock no longer matches pyproject.toml; --frozen
+        # would install the stale lock without a word.
+        run: uv sync --locked --extra dev
 
       - name: Lint (ruff)
         run: uv run --frozen ruff check .
