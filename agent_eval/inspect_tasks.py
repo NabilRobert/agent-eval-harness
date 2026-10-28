@@ -7,7 +7,7 @@ import json
 from typing import Any, cast
 
 from inspect_ai import Task
-from inspect_ai.agent import react
+from inspect_ai.agent import as_solver, react
 from inspect_ai.dataset import Sample
 from inspect_ai.model import ChatMessageTool
 from inspect_ai.scorer import Score, Target, mean, scorer
@@ -18,6 +18,10 @@ from inspect_ai.tool import mcp_server_http, mcp_server_stdio, mcp_tools
 
 from agent_eval.grading import GRADER_VERSION, grade_one
 from agent_eval.records import task_hash
+from agent_eval.tracing import traced_agent
+
+# The name of Inspect's agent, as the trace's `invoke_agent` span gives it.
+AGENT_NAME = "react"
 
 
 def _tool_payload(message: ChatMessageTool) -> dict[str, Any] | None:
@@ -134,7 +138,12 @@ def build_task(
     ]
     return Task(
         dataset=dataset,
-        solver=react(prompt=agent["system_prompt"], tools=tools),
+        # The trace's parent spans for each trial; no-ops unless tracing is on.
+        solver=traced_agent(
+            as_solver(react(prompt=agent["system_prompt"], tools=tools)),
+            task_name=suite["suite"],
+            agent_name=AGENT_NAME,
+        ),
         scorer=suite_scorer(target["infra_error_patterns"]),
         message_limit=agent["message_limit"],
         time_limit=agent["time_limit"],

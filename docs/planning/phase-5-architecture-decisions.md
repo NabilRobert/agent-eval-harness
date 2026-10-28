@@ -18,6 +18,8 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
   about 20 lines, so pulling in numpy/scipy isn't worth it.
 - **Tooling:** ruff, pyright (strict), pytest, GitHub Actions, the same as
   MCP-backbone.
+- **Tracing (optional):** the OpenTelemetry SDK and its OTLP/HTTP
+  exporter, off unless an endpoint is set (ADR-012).
 - **Runtime:** one Docker image (Python 3.12 + Node, both pinned) run on
   demand on the VPS with Docker Compose (ADR-008). Also runs on the laptop
   for development.
@@ -361,3 +363,45 @@ of the portfolio; (c) would mean writing decorators where type hints do
 the work, and differs from the gateway.
 **Revisit if:** Typer and the gateway diverge on versions, or Typer's
 startup cost becomes noticeable in CI.
+
+### ADR-012: Optional OpenTelemetry traces, one per trial
+**Context:** agent-observability (Project 6) needs one live trace from
+the agent through mcp-gateway and MCP-backbone to Postgres (its ADR-009).
+The MCP SDK 2.3.0 the harness already uses opens a client span for every
+request and injects the trace context into the request's `_meta`, but
+only once a tracer provider is installed, and with nothing above them
+each request would start its own trace. Inspect AI 0.3.283 has no
+OpenTelemetry code to reuse.
+**Options:** (a) install a provider and add one parent span per trial;
+(b) a third-party tracing layer (OpenInference, Langfuse's SDK); (c) no
+tracing in the harness, leaving it to agent-observability's replay of
+Inspect logs; (d) depend on MCP-backbone's `app/tracing.py`.
+**Decision:** (a), off unless `OTEL_EXPORTER_OTLP_ENDPOINT` (or the
+traces-only variable) is set, so a normal run is unchanged.
+`agent_eval/tracing.py` copies MCP-backbone's exporter setup and its
+capped 2 s shutdown (`app/tracing.py` at `5f38bd2`), and wraps the agent
+in two spans per trial: `eval sample {id}` (named as agent-observability's
+replay names it) and `invoke_agent react` (the GenAI conventions' agent
+span). Spans follow agent-observability's `docs/conventions.md`: no
+prompts, answers or tool arguments; an error records only its class.
+`scripts/scripted_pagila_agent.py` drives the database path with
+Inspect's mock model, as `scripts/gullible_agent.py` drives the
+filesystem one, so a trace costs $0.
+**Consequences:**
+- Two new pinned dependencies, `opentelemetry-sdk` and
+  `opentelemetry-exporter-otlp-proto-http` 1.45.1, the version of the
+  `opentelemetry-api` the MCP SDK already brought in.
+- Inspect's log names the solver `traced_agent` instead of `react`.
+  Nothing reads that name: export reads samples, events and scores.
+- The MCP SDK names its client spans `MCP send tools/call <tool>`, not
+  the `tools/call <tool>` the conventions table shows; the harness
+  leaves the SDK's spans as they are.
+- A dead viewer loses spans; the run still finishes, at most 2 s later.
+**Rejected:** (b) uses its own attribute names rather than the
+OpenTelemetry GenAI ones the portfolio follows, and adds a dependency
+for a few lines of glue; (c) can't put the trace context into the live
+requests, so the server's spans could never join the agent's trace;
+(d) MCP-backbone is a server, not a package: depending on it would
+install its whole stack, and its module reads its own settings.
+**Revisit if:** Inspect gains OpenTelemetry support, or the MCP SDK's
+span names change with the conventions.

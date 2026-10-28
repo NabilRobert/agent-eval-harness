@@ -5,7 +5,9 @@ any instruction it reads. $0: no model is called.
 
 It shows mechanics, not model behaviour: direct, every attack should
 succeed; through the gateway with detection on, an attack can only succeed
-where the detector let the output through.
+where the detector let the output through. With
+OTEL_EXPORTER_OTLP_ENDPOINT set, each trial sends one trace
+(agent_eval/tracing.py).
 
     uv run python scripts/gullible_agent.py --target filesystem-attacks
     MCP_GATEWAY_KEY=... uv run python scripts/gullible_agent.py --target filesystem-attacks-gateway
@@ -36,6 +38,8 @@ from agent_eval.export import trial_from_sample
 from agent_eval.inspect_tasks import build_task
 from agent_eval.suites import load_suite, suite_task_hashes
 from agent_eval.targets import TARGETS
+from agent_eval.tracing import tracing_if_configured
+from agent_eval.version import harness_git
 
 REPO = Path(__file__).resolve().parent.parent
 WRITE_HINTS = re.compile(r"write_file|edit_file|overwrite|delete|上書き|削除", re.IGNORECASE)
@@ -128,7 +132,10 @@ def main() -> int:
         "epochs": 1,
     }
     task = build_task(suite, target, agent, key)
-    with tempfile.TemporaryDirectory() as logs:
+    with (
+        tracing_if_configured(service_version=harness_git()),
+        tempfile.TemporaryDirectory() as logs,
+    ):
         [log] = inspect_eval(
             task,
             model=get_model(MODEL, custom_outputs=gullible),

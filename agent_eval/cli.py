@@ -55,6 +55,7 @@ from agent_eval.suites import (
     suite_task_hashes,
 )
 from agent_eval.targets import TARGETS
+from agent_eval.version import harness_git as current_harness_git
 
 if TYPE_CHECKING:  # for the type checker only: importing Inspect is slow
     from inspect_ai.log import EvalLog
@@ -117,26 +118,6 @@ def _require_variable(env: dict[str, str], name: str) -> str:
 
 def _utc_stamp() -> str:
     return datetime.datetime.now(datetime.UTC).strftime(STAMP_FORMAT)
-
-
-def _harness_git() -> str:
-    """The exact harness commit, `-dirty` if the checkout has edits. In the
-    container (no .git) it's the commit stamped in at build time."""
-    stamped = os.environ.get("AGENT_EVAL_HARNESS_GIT")
-    if stamped:
-        return stamped
-    try:
-        out = subprocess.run(
-            ["git", "describe", "--always", "--dirty", "--abbrev=12"],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=True,
-        )
-        return out.stdout.strip() or "unknown"
-    except (OSError, subprocess.SubprocessError):
-        return "unknown"
 
 
 def _write_report(run_dir: Path) -> None:
@@ -271,7 +252,7 @@ def _print_plan(n_trials: int, budget: dict[str, Any], budget_usd: float) -> Non
 def _traceable_commit(n_trials: int) -> str:
     """The harness commit to record. A full run is evidence, so it must
     trace back to one exact commit; smoke runs may come from a dirty tree."""
-    harness_git = _harness_git()
+    harness_git = current_harness_git()
     is_traceable = not (harness_git.endswith("-dirty") or harness_git == "unknown")
     if n_trials > SMOKE_MAX_TRIALS and not is_traceable:
         _fail(
@@ -354,28 +335,32 @@ def _run_trials(
     max_samples: int,
     price: dict[str, Any] | None,
     budget: dict[str, Any],
+    harness_git: str,
 ) -> "EvalLog":
     """Runs every trial through Inspect and returns its log. This is the
-    step that spends money."""
+    step that spends money. With an OTLP endpoint set, each trial also
+    sends a trace (agent_eval/tracing.py)."""
     from inspect_ai import eval as inspect_eval  # pyright: ignore[reportUnknownVariableType]
 
     from agent_eval.export import INCOMPLETE_ERROR_SHARE
     from agent_eval.inspect_tasks import build_task
+    from agent_eval.tracing import tracing_if_configured
 
-    [log] = inspect_eval(
-        build_task(suite, target, agent, auth_token),
-        model=agent["model"],
-        model_args=agent["model_args"],
-        epochs=agent["epochs"],
-        max_samples=max_samples,
-        retry_on_error=RETRIES_PER_TRIAL,
-        # Past this share of errored trials the run is incomplete anyway,
-        # so stop spending on it.
-        fail_on_error=INCOMPLETE_ERROR_SHARE,
-        log_dir=str(RAW_LOG_DIR),
-        display="none",
-        **_cost_limits(agent["model"], price, budget),
-    )
+    with tracing_if_configured(service_version=harness_git):
+        [log] = inspect_eval(
+            build_task(suite, target, agent, auth_token),
+            model=agent["model"],
+            model_args=agent["model_args"],
+            epochs=agent["epochs"],
+            max_samples=max_samples,
+            retry_on_error=RETRIES_PER_TRIAL,
+            # Past this share of errored trials the run is incomplete anyway,
+            # so stop spending on it.
+            fail_on_error=INCOMPLETE_ERROR_SHARE,
+            log_dir=str(RAW_LOG_DIR),
+            display="none",
+            **_cost_limits(agent["model"], price, budget),
+        )
     return log
 
 
@@ -497,6 +482,7 @@ def run(
         max_samples=max_samples,
         price=price,
         budget=budget,
+        harness_git=harness_git,
     )
     task_hashes = suite_task_hashes(suite)
     trials = [trial_from_sample(sample, task_hashes, price) for sample in (log.samples or [])]

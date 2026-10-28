@@ -297,6 +297,31 @@ uv run agent-eval publish [--check]
 Keys are never written to records, and each run's output is checked for
 every key's value before it's saved.
 
+## Tracing (optional)
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` (for example `http://localhost:4318`)
+and each trial sends one OpenTelemetry trace to that viewer: an
+`eval sample <task>` span, the agent's `invoke_agent react` span under it,
+and the MCP SDK's span for every request the agent sends. The trace
+context travels in each request's `_meta`, so a traced MCP server's spans
+join the same trace. Without the variable nothing is installed and runs
+are unchanged. Spans hold names, ids and the model, never prompts,
+answers or tool arguments ([ADR-012](docs/planning/phase-5-architecture-decisions.md)).
+
+Two scripted agents produce a trace for $0, with Inspect's mock model in
+place of a real one:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
+  uv run python scripts/scripted_pagila_agent.py --target mcp-backbone-local --tasks e01
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 \
+  uv run python scripts/gullible_agent.py --target filesystem-attacks
+```
+
+The Pagila one lists the tables, runs the task's reference query and
+submits the rows; with `--target mcp-backbone-gateway` (and
+`MCP_GATEWAY_KEY` set) it goes through mcp-gateway.
+
 ## Running on the VPS
 
 The harness also runs on demand in a locked-down container on the same VPS
