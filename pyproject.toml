@@ -13,6 +13,10 @@ dependencies = [
     "mcp==2.3.0",
     "pyyaml==6.0.3",
     "typer==0.27.3",
+    # Tracing, off unless an OTLP endpoint is set (ADR-012). The same
+    # version as the opentelemetry-api the MCP SDK already brings in.
+    "opentelemetry-sdk==1.45.1",
+    "opentelemetry-exporter-otlp-proto-http==1.45.1",
 ]
 
 [project.optional-dependencies]
@@ -38,9 +42,12 @@ exclude = ["suites/fixtures/**"]
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
+# Tests import the scripted agents from scripts/ (pytest's pythonpath below).
+extraPaths = ["scripts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["scripts"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["agent_eval"]
