@@ -92,8 +92,9 @@ Prices = Annotated[str, typer.Option("--prices", show_default="<repo>/prices.yam
 
 # Plain tracebacks: Typer's pretty ones can print local variables, and
 # `run` holds the keys from the env file in locals.
-app = typer.Typer(add_completion=False, no_args_is_help=True, help=HELP,
-                  pretty_exceptions_enable=False)
+app = typer.Typer(
+    add_completion=False, no_args_is_help=True, help=HELP, pretty_exceptions_enable=False
+)
 
 
 # Shared helpers
@@ -127,7 +128,11 @@ def _harness_git() -> str:
     try:
         out = subprocess.run(
             ["git", "describe", "--always", "--dirty", "--abbrev=12"],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=5, check=True,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
         )
         return out.stdout.strip() or "unknown"
     except (OSError, subprocess.SubprocessError):
@@ -161,7 +166,9 @@ def _choose_target(
     is_gateway = bool(target.get("gateway"))
     configuration = configuration or (None if is_gateway else "direct")
     if is_gateway and configuration not in ("gateway-off", "gateway-on"):
-        _fail(f"target {target['name']!r} is a gateway: say --configuration gateway-off or gateway-on")
+        _fail(
+            f"target {target['name']!r} is a gateway: say --configuration gateway-off or gateway-on"
+        )
     if not is_gateway and configuration != "direct":
         _fail(f"target {target['name']!r} isn't a gateway, so its configuration is direct")
     # --target can only swap in another server for the same suite (a local
@@ -178,11 +185,14 @@ def _read_env(target: dict[str, Any], env_file: str) -> dict[str, str]:
     if not target.get("auth_env_command"):
         return env
     try:
-        out = subprocess.run(target["auth_env_command"], capture_output=True, text=True,
-                             timeout=30, check=True).stdout
+        out = subprocess.run(
+            target["auth_env_command"], capture_output=True, text=True, timeout=30, check=True
+        ).stdout
     except (OSError, subprocess.SubprocessError):
-        _fail(f"couldn't read the {target['name']} key; is it running? "
-              "(docker compose -f repro/compose.yaml up -d)")
+        _fail(
+            f"couldn't read the {target['name']} key; is it running? "
+            "(docker compose -f repro/compose.yaml up -d)"
+        )
     return {**env, **parse_env_text(out)}
 
 
@@ -224,14 +234,22 @@ def _new_run_dir(out: str, run_id: str) -> Path:
 
 
 def _plan_spend(
-    *, model: str, prices_path: str, n_trials: int, budget_usd: float, runs_dir: Path, suite_name: str
+    *,
+    model: str,
+    prices_path: str,
+    n_trials: int,
+    budget_usd: float,
+    runs_dir: Path,
+    suite_name: str,
 ) -> tuple[dict[str, Any] | None, dict[str, Any]]:
     """The model's price (None if unpriced) and the budget plan, before
     anything is spent. Refuses a run the budget can't cover."""
     try:
         price = price_for(model, load_prices(Path(prices_path)))
         budget = plan_budget(
-            n_trials=n_trials, budget=budget_usd, price=price,
+            n_trials=n_trials,
+            budget=budget_usd,
+            price=price,
             tokens_per_trial=measured_tokens_per_trial(runs_dir, suite_name, model),
         )
     except BudgetError as exc:
@@ -244,8 +262,10 @@ def _print_plan(n_trials: int, budget: dict[str, Any], budget_usd: float) -> Non
         estimate = "unpriced"
     else:
         estimate = f"${budget['estimate_usd']:.2f}"
-    print(f"plan: {n_trials} trials, estimate {estimate} ({budget['token_basis']} tokens), "
-          f"budget ${budget_usd:.2f}")
+    print(
+        f"plan: {n_trials} trials, estimate {estimate} ({budget['token_basis']} tokens), "
+        f"budget ${budget_usd:.2f}"
+    )
 
 
 def _traceable_commit(n_trials: int) -> str:
@@ -254,8 +274,10 @@ def _traceable_commit(n_trials: int) -> str:
     harness_git = _harness_git()
     is_traceable = not (harness_git.endswith("-dirty") or harness_git == "unknown")
     if n_trials > SMOKE_MAX_TRIALS and not is_traceable:
-        _fail(f"harness checkout is {harness_git}; commit first (full runs need a clean "
-              "tree, smoke runs don't)")
+        _fail(
+            f"harness checkout is {harness_git}; commit first (full runs need a clean "
+            "tree, smoke runs don't)"
+        )
     return harness_git
 
 
@@ -270,7 +292,9 @@ def _system_prompt(
     return suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
 
 
-def _preflight_target(target: dict[str, Any], auth_token: str, suite: dict[str, Any]) -> dict[str, Any]:
+def _preflight_target(
+    target: dict[str, Any], auth_token: str, suite: dict[str, Any]
+) -> dict[str, Any]:
     """Checks the target before any trial: its tools, versions and data.
     Returns what it found, which goes into the run's meta.json."""
     from agent_eval.preflight import PreflightError, preflight  # the MCP client: slow to import
@@ -295,19 +319,24 @@ def _tool_allowlist(exclude_tools: str, tool_names: list[str], suite: dict[str, 
     unknown = excluded - set(tool_names)
     needed_by_graders = excluded & required_tools(suite)
     if unknown or needed_by_graders:
-        _fail(f"can't exclude {sorted(excluded)}: unknown {sorted(unknown)}, or "
-              f"needed by the graders {sorted(needed_by_graders)}")
+        _fail(
+            f"can't exclude {sorted(excluded)}: unknown {sorted(unknown)}, or "
+            f"needed by the graders {sorted(needed_by_graders)}"
+        )
     return [name for name in tool_names if name not in excluded]
 
 
-def _cost_limits(model: str, price: dict[str, Any] | None, budget: dict[str, Any]) -> dict[str, Any]:
+def _cost_limits(
+    model: str, price: dict[str, Any] | None, budget: dict[str, Any]
+) -> dict[str, Any]:
     """Inspect's per-trial cost cap and prices; none for an unpriced model."""
     from inspect_ai.model import ModelCost
 
     if price is None:
         return {}
     cost = ModelCost(
-        input=float(price["input"]), output=float(price["output"]),
+        input=float(price["input"]),
+        output=float(price["output"]),
         # Cache writes cost the full input price; reads use the cached
         # price when the table has one.
         input_cache_write=float(price["input"]),
@@ -317,8 +346,14 @@ def _cost_limits(model: str, price: dict[str, Any] | None, budget: dict[str, Any
 
 
 def _run_trials(
-    *, suite: dict[str, Any], target: dict[str, Any], agent: dict[str, Any], auth_token: str,
-    max_samples: int, price: dict[str, Any] | None, budget: dict[str, Any],
+    *,
+    suite: dict[str, Any],
+    target: dict[str, Any],
+    agent: dict[str, Any],
+    auth_token: str,
+    max_samples: int,
+    price: dict[str, Any] | None,
+    budget: dict[str, Any],
 ) -> "EvalLog":
     """Runs every trial through Inspect and returns its log. This is the
     step that spends money."""
@@ -366,32 +401,45 @@ def _print_run_summary(run_id: str, meta: dict[str, Any]) -> None:
 
 @app.command(help="run a suite and write run records")
 def run(
-    suite_path: Annotated[str, typer.Option("--suite", show_default="<repo>/suites/pagila.yaml")] = (
-        str(REPO_ROOT / "suites" / "pagila.yaml")
-    ),
-    tasks: Annotated[str | None, typer.Option(
-        help="comma-separated task ids (e.g. a smoke suite)")] = None,
+    suite_path: Annotated[
+        str, typer.Option("--suite", show_default="<repo>/suites/pagila.yaml")
+    ] = (str(REPO_ROOT / "suites" / "pagila.yaml")),
+    tasks: Annotated[
+        str | None, typer.Option(help="comma-separated task ids (e.g. a smoke suite)")
+    ] = None,
     model: Annotated[str, typer.Option()] = "openai-api/sumopod/gpt-5-mini",
-    target_name: Annotated[str | None, typer.Option(
-        "--target",
-        help="run against another target serving the suite's (e.g. mcp-backbone-local)")] = None,
-    configuration: Annotated[Literal["direct", "gateway-off", "gateway-on"] | None, typer.Option(
-        help="how the run reaches the tools (Project 4b); "
-        "gateway targets need gateway-off or gateway-on")] = None,
+    target_name: Annotated[
+        str | None,
+        typer.Option(
+            "--target",
+            help="run against another target serving the suite's (e.g. mcp-backbone-local)",
+        ),
+    ] = None,
+    configuration: Annotated[
+        Literal["direct", "gateway-off", "gateway-on"] | None,
+        typer.Option(
+            help="how the run reaches the tools (Project 4b); "
+            "gateway targets need gateway-off or gateway-on"
+        ),
+    ] = None,
     epochs: Annotated[int, typer.Option()] = 5,
     max_samples: Annotated[int, typer.Option(help="trials running at once")] = 4,
-    budget_usd: Annotated[float, typer.Option(
-        "--budget", help="US dollars for the whole run")] = 5.0,
+    budget_usd: Annotated[
+        float, typer.Option("--budget", help="US dollars for the whole run")
+    ] = 5.0,
     prices_path: Prices = str(REPO_ROOT / "prices.yaml"),
     plan_only: Annotated[bool, typer.Option("--plan-only", help="print the plan and stop")] = False,
-    exclude_tools: Annotated[str | None, typer.Option(
-        help="comma-separated tools to withhold (a degraded agent)")] = None,
-    system_prompt_file: Annotated[str | None, typer.Option(
-        help="replace the suite's system prompt (a degraded agent)")] = None,
+    exclude_tools: Annotated[
+        str | None, typer.Option(help="comma-separated tools to withhold (a degraded agent)")
+    ] = None,
+    system_prompt_file: Annotated[
+        str | None, typer.Option(help="replace the suite's system prompt (a degraded agent)")
+    ] = None,
     # Exact text, used by `confirm`.
     system_prompt: Annotated[str | None, typer.Option(hidden=True)] = None,
-    message_limit: Annotated[int, typer.Option(
-        help="messages per trial before the trial stops as a fail (default 20)")] = 20,
+    message_limit: Annotated[
+        int, typer.Option(help="messages per trial before the trial stops as a fail (default 20)")
+    ] = 20,
     out: Annotated[str, typer.Option()] = "runs",
     run_id: Annotated[str | None, typer.Option()] = None,
     env_file: EnvFile = str(REPO_ROOT / ".env"),
@@ -408,8 +456,14 @@ def run(
 
     # 2. Budget (before anything is spent).
     n_trials = len(suite["tasks"]) * epochs
-    price, budget = _plan_spend(model=model, prices_path=prices_path, n_trials=n_trials,
-                                budget_usd=budget_usd, runs_dir=Path(out), suite_name=suite["suite"])
+    price, budget = _plan_spend(
+        model=model,
+        prices_path=prices_path,
+        n_trials=n_trials,
+        budget_usd=budget_usd,
+        runs_dir=Path(out),
+        suite_name=suite["suite"],
+    )
     _print_plan(n_trials, budget, budget_usd)
     if plan_only:
         return
@@ -435,15 +489,31 @@ def run(
     # 4. Run the trials, then record them (never a secret).
     from agent_eval.export import SecretLeakError, assert_no_secrets, build_meta, trial_from_sample
 
-    log = _run_trials(suite=suite, target=target, agent=agent, auth_token=auth_token,
-                      max_samples=max_samples, price=price, budget=budget)
+    log = _run_trials(
+        suite=suite,
+        target=target,
+        agent=agent,
+        auth_token=auth_token,
+        max_samples=max_samples,
+        price=price,
+        budget=budget,
+    )
     task_hashes = suite_task_hashes(suite)
     trials = [trial_from_sample(sample, task_hashes, price) for sample in (log.samples or [])]
     meta = build_meta(
-        log, trials, run_id=run_id, suite=suite, task_hashes=task_hashes, agent=agent,
-        preflight_info=info, harness_git=harness_git,
+        log,
+        trials,
+        run_id=run_id,
+        suite=suite,
+        task_hashes=task_hashes,
+        agent=agent,
+        preflight_info=info,
+        harness_git=harness_git,
         system_prompt_sha256=sha256_hex(agent["system_prompt"]),
-        suite_sha256=suite_hash(suite), budget_plan=budget, price=price, target=target,
+        suite_sha256=suite_hash(suite),
+        budget_plan=budget,
+        price=price,
+        target=target,
     )
     try:
         assert_no_secrets([ordered_json(meta)] + [ordered_json(t) for t in trials], secrets)
@@ -499,7 +569,9 @@ def reexport(run_dir: Path, prices_path: Prices = str(REPO_ROOT / "prices.yaml")
 @app.command(help="render report.md from a run's records")
 def report(
     run_dir: Path,
-    check: Annotated[bool, typer.Option("--check", help="fail if report.md is out of date")] = False,
+    check: Annotated[
+        bool, typer.Option("--check", help="fail if report.md is out of date")
+    ] = False,
 ) -> None:
     """Renders report.md from the records; with --check, fails (exit 1) if
     the committed report doesn't match what the records render to."""
@@ -518,11 +590,24 @@ def report(
     print(f"{path}: up to date")
 
 
-def _start_confirmation_run(side: str, run_args: list[str], run_id: str, out: str, budget: float) -> None:
+def _start_confirmation_run(
+    side: str, run_args: list[str], run_id: str, out: str, budget: float
+) -> None:
     """One side's rerun, as a separate `agent-eval run` process, so it is
     recorded exactly like any other run."""
-    command = [sys.executable, "-m", "agent_eval.cli", "run", *run_args,
-               "--run-id", run_id, "--out", out, "--budget", str(budget)]
+    command = [
+        sys.executable,
+        "-m",
+        "agent_eval.cli",
+        "run",
+        *run_args,
+        "--run-id",
+        run_id,
+        "--out",
+        out,
+        "--budget",
+        str(budget),
+    ]
     code = subprocess.run(command, cwd=REPO_ROOT, check=False).returncode
     if code != 0:
         _fail(f"the {side} confirmation run failed (exit {code})")
@@ -533,10 +618,16 @@ def _save_confirmation(
 ) -> None:
     """Records the confirmation and its verdict in confirmations/<stamp>.json."""
     record = {name: value for name, value in confirmation.items() if not name.endswith("_args")}
-    record.update({
-        "runs": run_ids, "verdict": result.verdict, "exit_code": result.exit_code,
-        "point": result.point, "interval": result.interval, "reasons": result.reasons,
-    })
+    record.update(
+        {
+            "runs": run_ids,
+            "verdict": result.verdict,
+            "exit_code": result.exit_code,
+            "point": result.point,
+            "interval": result.interval,
+            "reasons": result.reasons,
+        }
+    )
     folder = REPO_ROOT / "confirmations"
     folder.mkdir(exist_ok=True)
     (folder / f"{stamp}.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
@@ -559,17 +650,21 @@ def confirm(
         _fail(str(exc))
     stamp = _utc_stamp()
     run_ids = {"baseline": f"confirm-{stamp}-baseline", "candidate": f"confirm-{stamp}-candidate"}
-    print(f"confirming {confirmation['candidate']} vs {confirmation['baseline']}: "
-          f"{len(confirmation['tasks'])} dropped tasks x {confirmation['epochs']} attempts, "
-          f"both agents: {confirmation['tasks']}")
+    print(
+        f"confirming {confirmation['candidate']} vs {confirmation['baseline']}: "
+        f"{len(confirmation['tasks'])} dropped tasks x {confirmation['epochs']} attempts, "
+        f"both agents: {confirmation['tasks']}"
+    )
     for side in ("baseline", "candidate"):
         _start_confirmation_run(side, confirmation[f"{side}_args"], run_ids[side], out, budget)
     result = compare_runs(Path(out) / run_ids["baseline"], Path(out) / run_ids["candidate"], gate)
     _save_confirmation(stamp, confirmation, run_ids, result)
     print(f"confirmation verdict (fresh trials only): {result.verdict} (exit {result.exit_code})")
     if result.interval is not None and result.point is not None:
-        print(f"  change {result.point:+.1%} (95% interval {result.interval[0]:+.1%} to "
-              f"{result.interval[1]:+.1%})")
+        print(
+            f"  change {result.point:+.1%} (95% interval {result.interval[0]:+.1%} to "
+            f"{result.interval[1]:+.1%})"
+        )
     for line in result.reasons:
         print(f"  reason: {line}")
     raise typer.Exit(result.exit_code)
@@ -606,8 +701,10 @@ def _print_comparison(result: Comparison) -> None:
         print("  all gates: " + ", ".join(verdicts))
     if result.interval is not None and result.point is not None:
         low, high = result.interval
-        print(f"  suite strict pass rate change: {result.point:+.1%} "
-              f"(95% interval {low:+.1%} to {high:+.1%})")
+        print(
+            f"  suite strict pass rate change: {result.point:+.1%} "
+            f"(95% interval {low:+.1%} to {high:+.1%})"
+        )
     for line in result.warnings:
         print(f"  warning: {line}")
     if result.missing:
@@ -627,8 +724,10 @@ def _print_comparison(result: Comparison) -> None:
 def compare(
     baseline: Path,
     candidate: Path,
-    gate: Annotated[Gate, typer.Option(
-        help="decision rule (ADR-001); v1 for comparisons pre-registered with it")] = "v2",
+    gate: Annotated[
+        Gate,
+        typer.Option(help="decision rule (ADR-001); v1 for comparisons pre-registered with it"),
+    ] = "v2",
 ) -> None:
     result = compare_runs(baseline, candidate, gate)
     _print_comparison(result)

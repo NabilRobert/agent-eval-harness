@@ -66,7 +66,8 @@ def per_task_stats(run: Run) -> dict[str, dict[str, Any]]:
             "lenient": sum(1 for t in graded if t["lenient"]),
             "median_tokens": _median([t["input_tokens"] + t["output_tokens"] for t in trials]),
             "median_seconds": _median([t["seconds"] for t in trials if t["seconds"] is not None]),
-            "cost": None if any(t["cost_usd"] is None for t in trials)
+            "cost": None
+            if any(t["cost_usd"] is None for t in trials)
             else sum(t["cost_usd"] for t in trials),
         }
     return out
@@ -103,13 +104,19 @@ def render(run: Run) -> str:
 
     add(f"# Run `{meta['run_id']}`")
     add("")
-    add(f"- **Model:** `{meta['agent']['model']}` (provider reported: "
-        f"{', '.join(prov.get('models_reported') or []) or 'unknown'})")
-    add(f"- **Suite:** `{meta['suite']['name']}`, {h['tasks']} tasks × {epochs} attempts, "
+    add(
+        f"- **Model:** `{meta['agent']['model']}` (provider reported: "
+        f"{', '.join(prov.get('models_reported') or []) or 'unknown'})"
+    )
+    add(
+        f"- **Suite:** `{meta['suite']['name']}`, {h['tasks']} tasks × {epochs} attempts, "
         f"suite sha256 `{(meta['suite'].get('sha256') or 'unknown')[:12]}`, "
-        f"{'**frozen**' if meta['suite'].get('frozen') else 'not the frozen suite (subset or unfrozen)'}")
-    add(f"- **Status:** {meta['status']} (Inspect: {meta.get('inspect_status')})"
-        f"{'; rebuilt from its Inspect log ' + str(len(meta['reexports'])) + '×' if meta.get('reexports') else ''}")
+        f"{'**frozen**' if meta['suite'].get('frozen') else 'not the frozen suite (subset or unfrozen)'}"
+    )
+    add(
+        f"- **Status:** {meta['status']} (Inspect: {meta.get('inspect_status')})"
+        f"{'; rebuilt from its Inspect log ' + str(len(meta['reexports'])) + '×' if meta.get('reexports') else ''}"
+    )
     add(f"- **Run at:** {meta.get('created_at')}")
     add("")
 
@@ -117,9 +124,15 @@ def render(run: Run) -> str:
     add("")
     add(f"- **Strict pass rate (headline): {_pct(h['strict'], h['graded'])}** of graded trials")
     add(f"- Lenient pass rate: {_pct(h['lenient'], h['graded'])}")
-    add(f"- Errors (not counted as fails, not in the rates above): {h['errors']} of {h['trials']} trials")
-    add(f"- pass^{epochs} (every attempt passed, strict): {_pct(h['pass_all_k'], h['tasks_counted'])} of tasks")
-    add(f"- pass@{epochs} (at least one attempt passed, strict): {_pct(h['pass_any_k'], h['tasks_counted'])} of tasks")
+    add(
+        f"- Errors (not counted as fails, not in the rates above): {h['errors']} of {h['trials']} trials"
+    )
+    add(
+        f"- pass^{epochs} (every attempt passed, strict): {_pct(h['pass_all_k'], h['tasks_counted'])} of tasks"
+    )
+    add(
+        f"- pass@{epochs} (at least one attempt passed, strict): {_pct(h['pass_any_k'], h['tasks_counted'])} of tasks"
+    )
     add("")
 
     by_tag: dict[str, list[str]] = defaultdict(list)
@@ -130,8 +143,10 @@ def render(run: Run) -> str:
         add("|---|---|---|---|---|")
         for tag, ids in by_tag.items():
             g = sum(stats[i]["graded"] for i in ids)
-            add(f"| {tag} | {len(ids)} | {_pct(sum(stats[i]['strict'] for i in ids), g)} | "
-                f"{_pct(sum(stats[i]['lenient'] for i in ids), g)} | {sum(stats[i]['errors'] for i in ids)} |")
+            add(
+                f"| {tag} | {len(ids)} | {_pct(sum(stats[i]['strict'] for i in ids), g)} | "
+                f"{_pct(sum(stats[i]['lenient'] for i in ids), g)} | {sum(stats[i]['errors'] for i in ids)} |"
+            )
         add("")
 
     totals = meta["totals"]
@@ -142,15 +157,23 @@ def render(run: Run) -> str:
     add("")
     total_cost = cost.get("usd")
     complete = cost.get("complete", False)
-    add(f"- **Total cost:** {_usd(total_cost)}"
-        f"{'' if complete else ' (lower bound: some trials have no price)' if total_cost is not None else ' (model has no price in prices.yaml)'}")
-    add(f"- **Tokens:** {totals['input_tokens']:,} input + {totals['output_tokens']:,} output; "
-        f"median {_median([float(t) for t in toks]) or 0:,.0f} per trial")
+    add(
+        f"- **Total cost:** {_usd(total_cost)}"
+        f"{'' if complete else ' (lower bound: some trials have no price)' if total_cost is not None else ' (model has no price in prices.yaml)'}"
+    )
+    add(
+        f"- **Tokens:** {totals['input_tokens']:,} input + {totals['output_tokens']:,} output; "
+        f"median {_median([float(t) for t in toks]) or 0:,.0f} per trial"
+    )
     if secs:
         q = statistics.quantiles(secs, n=10) if len(secs) >= 2 else [secs[0]] * 9
-        add(f"- **Latency per trial:** median {statistics.median(secs):.1f} s, p90 {q[-1]:.1f} s, "
-            f"max {max(secs):.1f} s")
-    add("- Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.")
+        add(
+            f"- **Latency per trial:** median {statistics.median(secs):.1f} s, p90 {q[-1]:.1f} s, "
+            f"max {max(secs):.1f} s"
+        )
+    add(
+        "- Latency is wall time for the whole trial (all model and tool calls), measured by Inspect."
+    )
     add("")
 
     add("## Per task")
@@ -158,9 +181,11 @@ def render(run: Run) -> str:
     add("| Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |")
     add("|---|---|---|---|---|---|---|---|")
     for task_id, s in stats.items():
-        add(f"| {task_id} | {(tags.get(task_id) or ['–'])[0]} | {s['strict']}/{s['graded']} | "
+        add(
+            f"| {task_id} | {(tags.get(task_id) or ['–'])[0]} | {s['strict']}/{s['graded']} | "
             f"{s['lenient']}/{s['graded']} | {s['errors']} | {s['median_tokens'] or 0:,.0f} | "
-            f"{(s['median_seconds'] or 0):.1f} | {_usd(s['cost'])} |")
+            f"{(s['median_seconds'] or 0):.1f} | {_usd(s['cost'])} |"
+        )
     add("")
 
     failures = [t for t in run.trials if t["outcome"] != "pass"]
@@ -172,9 +197,11 @@ def render(run: Run) -> str:
     for t in failures:
         add(f"### {t['task_id']} attempt {t['attempt']}: {t['outcome']}")
         add("")
-        add(f"- Stop reason: {t['stop_reason']}"
+        add(
+            f"- Stop reason: {t['stop_reason']}"
             f"{'; error: ' + str(t['error_kind']) if t.get('error_kind') else ''}"
-            f"; lenient: {'pass' if t['lenient'] else 'fail'}")
+            f"; lenient: {'pass' if t['lenient'] else 'fail'}"
+        )
         add(f"- Tools called: {' → '.join(c['tool'] for c in t['tool_calls']) or 'none'}")
         for g in t["graders"]:
             mark = "pass" if g["strict"] else "fail"
@@ -188,14 +215,24 @@ def render(run: Run) -> str:
                 add(_fence(_clip(str(g["input"]["final_answer"] or "(none)"))))
                 add("")
             elif g["kind"] == "answer_excludes":
-                leaked = [x for x in g["spec"]["excludes"] if x.lower() in str(g["input"]["final_answer"] or "").lower()]
-                add(f"- Must not appear: {'none leaked' if not leaked else 'LEAKED ' + ', '.join(leaked)} ({mark})")
+                leaked = [
+                    x
+                    for x in g["spec"]["excludes"]
+                    if x.lower() in str(g["input"]["final_answer"] or "").lower()
+                ]
+                add(
+                    f"- Must not appear: {'none leaked' if not leaked else 'LEAKED ' + ', '.join(leaked)} ({mark})"
+                )
             elif g["kind"] == "forbidden_tools":
                 used = sorted(set(g["input"]["tools_called"]) & set(g["spec"]))
-                add(f"- Forbidden tools: {'none used' if not used else 'USED ' + ', '.join(used)} ({mark})")
+                add(
+                    f"- Forbidden tools: {'none used' if not used else 'USED ' + ', '.join(used)} ({mark})"
+                )
             else:
                 missing = sorted(set(g["spec"]) - set(g["input"]["tools_called"]))
-                add(f"- Required tools: {'all called' if not missing else 'NOT CALLED ' + ', '.join(missing)} ({mark})")
+                add(
+                    f"- Required tools: {'all called' if not missing else 'NOT CALLED ' + ', '.join(missing)} ({mark})"
+                )
         sql = [c["arguments"].get("sql") for c in t["tool_calls"] if c["tool"] == "run_query"]
         if sql and sql[-1]:
             add("- Last query:")
@@ -213,24 +250,38 @@ def render(run: Run) -> str:
     if target:
         add(f"- Target: `{target['name']}` ({target['transport']}, `{target['address']}`)")
     add(f"- Data fingerprint: `{prov.get('data_fingerprint') or 'not taken'}`")
-    add(f"- Server: `{prov.get('server_name')}` build `{prov.get('server_version') or 'not reported'}`"
-        f" (/healthz: `{prov.get('healthz_version') or 'not reported'}`)")
-    add(f"- Tool list sha256: `{(prov.get('tool_list_sha256') or '')[:12]}` ({', '.join(prov.get('tool_names') or [])})")
-    add(f"- Harness: `{prov.get('harness_git')}`, Inspect AI {prov.get('inspect_ai_version')}, "
-        f"export v{meta.get('export_version', 1)}")
-    add(f"- Agent settings: {meta['agent'].get('model_args')}, limits {meta['agent'].get('limits')}")
+    add(
+        f"- Server: `{prov.get('server_name')}` build `{prov.get('server_version') or 'not reported'}`"
+        f" (/healthz: `{prov.get('healthz_version') or 'not reported'}`)"
+    )
+    add(
+        f"- Tool list sha256: `{(prov.get('tool_list_sha256') or '')[:12]}` ({', '.join(prov.get('tool_names') or [])})"
+    )
+    add(
+        f"- Harness: `{prov.get('harness_git')}`, Inspect AI {prov.get('inspect_ai_version')}, "
+        f"export v{meta.get('export_version', 1)}"
+    )
+    add(
+        f"- Agent settings: {meta['agent'].get('model_args')}, limits {meta['agent'].get('limits')}"
+    )
     price: dict[str, Any] | None = meta.get("price")
     if price:
-        add(f"- Priced at ${price['input']}/M input, ${price['output']}/M output "
+        add(
+            f"- Priced at ${price['input']}/M input, ${price['output']}/M output "
             f"({price['source']}, checked {price['checked']}); every input token at the full "
-            "input price, so cost errs high if any input was cached")
+            "input price, so cost errs high if any input was cached"
+        )
     budget: dict[str, Any] = meta.get("budget") or {}
     if budget:
         if budget.get("priced"):
-            add(f"- Budget: ${budget['budget_usd']:.2f}, estimate {_usd(budget.get('estimate_usd'))} "
-                f"({budget.get('token_basis')} tokens), per-trial cap {_usd(budget.get('per_trial_cap_usd'))}")
+            add(
+                f"- Budget: ${budget['budget_usd']:.2f}, estimate {_usd(budget.get('estimate_usd'))} "
+                f"({budget.get('token_basis')} tokens), per-trial cap {_usd(budget.get('per_trial_cap_usd'))}"
+            )
         else:
-            add(f"- Budget: ${budget['budget_usd']:.2f}; model unpriced, so no dollar cap: "
-                "limited to a smoke-sized run, each trial capped by its token limit")
+            add(
+                f"- Budget: ${budget['budget_usd']:.2f}; model unpriced, so no dollar cap: "
+                "limited to a smoke-sized run, each trial capped by its token limit"
+            )
     add("")
     return "\n".join(out) + "\n"

@@ -29,6 +29,11 @@ agent-eval = "agent_eval.cli:main"
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.format]
+# The fixtures are data the agent reads, fingerprinted byte for byte:
+# reformatting them would invalidate every suite and run built on them.
+exclude = ["suites/fixtures/**"]
+
 [tool.pyright]
 typeCheckingMode = "strict"
 venvPath = "."

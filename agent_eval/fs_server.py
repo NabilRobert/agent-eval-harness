@@ -20,8 +20,14 @@ from types import FrameType
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SERVER_JS = (
-    REPO_ROOT / "tools" / "fs-server" / "node_modules" / "@modelcontextprotocol"
-    / "server-filesystem" / "dist" / "index.js"
+    REPO_ROOT
+    / "tools"
+    / "fs-server"
+    / "node_modules"
+    / "@modelcontextprotocol"
+    / "server-filesystem"
+    / "dist"
+    / "index.js"
 )
 TEMP_PREFIX = "agent-eval-fs-"
 

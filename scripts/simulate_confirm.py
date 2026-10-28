@@ -28,8 +28,9 @@ def draw(rng: random.Random, rates: dict[str, float], k: int) -> dict[str, tuple
     return {t: (rng.binomialvariate(k, p), k) for t, p in rates.items()}
 
 
-def gate(base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]],
-         resamples: int, seed: int) -> tuple[bool, bool, list[str]]:
+def gate(
+    base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]], resamples: int, seed: int
+) -> tuple[bool, bool, list[str]]:
     """(regression, inconclusive, dropped tasks)."""
     tasks = sorted(base)
     _, high, point = bootstrap_interval(base, cand, tasks, resamples=resamples, seed=seed)
@@ -38,11 +39,18 @@ def gate(base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]],
     return regression, (not regression and point <= INCONCLUSIVE_DROP), dropped
 
 
-def two_stage(rng: random.Random, base_rates: dict[str, float], cand_rates: dict[str, float],
-              resamples: int, k2: int, seed: int) -> tuple[bool, bool]:
+def two_stage(
+    rng: random.Random,
+    base_rates: dict[str, float],
+    cand_rates: dict[str, float],
+    resamples: int,
+    k2: int,
+    seed: int,
+) -> tuple[bool, bool]:
     """(flagged by stage 1 alone, flagged by the two-stage procedure)."""
-    reg, inconclusive, dropped = gate(draw(rng, base_rates, K1), draw(rng, cand_rates, K1),
-                                      resamples, seed)
+    reg, inconclusive, dropped = gate(
+        draw(rng, base_rates, K1), draw(rng, cand_rates, K1), resamples, seed
+    )
     if reg or not inconclusive or not dropped:
         return reg, reg
     sub_b = draw(rng, {t: base_rates[t] for t in dropped}, k2)
@@ -54,11 +62,15 @@ def two_stage(rng: random.Random, base_rates: dict[str, float], cand_rates: dict
 def main() -> None:
     pairs, resamples, k2 = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3])
     rest = sys.argv[4:]
-    base_dirs, cand_dirs = (rest[:rest.index("--")], rest[rest.index("--") + 1:]) if "--" in rest else (rest, [])
+    base_dirs, cand_dirs = (
+        (rest[: rest.index("--")], rest[rest.index("--") + 1 :]) if "--" in rest else (rest, [])
+    )
     rates = {f"t{i:02d}": p for i, p in enumerate(measured_rates(base_dirs))}
     rng = random.Random(11)
-    print(f"{pairs} pairs per case, {resamples} resamples, stage 2 at {k2} attempts per task, "
-          f"{len(rates)} measured tasks")
+    print(
+        f"{pairs} pairs per case, {resamples} resamples, stage 2 at {k2} attempts per task, "
+        f"{len(rates)} measured tasks"
+    )
     for drop in (0.0, 0.03, 0.05, 0.10):
         cand = {t: max(0.0, p - drop) for t, p in rates.items()}
         results = [two_stage(rng, rates, cand, resamples, k2, i) for i in range(pairs)]
@@ -70,8 +82,10 @@ def main() -> None:
         cand = {f"t{i:02d}": p for i, p in enumerate(measured_rates(cand_dirs))}
         mean_drop = sum(rates[t] - cand[t] for t in rates) / len(rates)
         results = [two_stage(rng, rates, cand, resamples, k2, i) for i in range(pairs)]
-        print(f"measured candidate {cand_dirs} (mean drop {mean_drop:.1%}): stage 1 alone "
-              f"{sum(r[0] for r in results) / pairs:.1%}, with confirm {sum(r[1] for r in results) / pairs:.1%}")
+        print(
+            f"measured candidate {cand_dirs} (mean drop {mean_drop:.1%}): stage 1 alone "
+            f"{sum(r[0] for r in results) / pairs:.1%}, with confirm {sum(r[1] for r in results) / pairs:.1%}"
+        )
 
 
 if __name__ == "__main__":

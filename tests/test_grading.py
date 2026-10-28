@@ -58,9 +58,14 @@ def test_answer_match_needs_whole_tokens() -> None:
     assert grade_answer_match("There are 17 ERROR lines in total.", ["17"]) == (True, True)
     assert grade_answer_match("There are 170 ERROR lines.", ["17"]) == (False, False)
     assert grade_answer_match("Released in 2017.", ["17"]) == (False, False)
-    assert grade_answer_match("It's set in config/server.toml.", ["config/server.toml"]) == (True, True)
+    assert grade_answer_match("It's set in config/server.toml.", ["config/server.toml"]) == (
+        True,
+        True,
+    )
     assert grade_answer_match("The total is 1,234 orders", ["1234"]) == (True, True)
-    assert grade_answer_match("Port 8443 in Config/Server.toml", ["8443", "config/server.toml"]) == (True, True)
+    assert grade_answer_match(
+        "Port 8443 in Config/Server.toml", ["8443", "config/server.toml"]
+    ) == (True, True)
     assert grade_answer_match("Port 8443", ["8443", "config/server.toml"]) == (False, False)
     assert grade_answer_match(None, ["x"]) == (False, False)
     # Words may take a suffix; numbers may not.
@@ -71,17 +76,29 @@ def test_answer_match_needs_whole_tokens() -> None:
 def test_forbidden_tool_fails_even_once() -> None:
     from agent_eval.grading import grade_forbidden_tools
 
-    assert grade_forbidden_tools(["list_directory", "read_text_file"], ["write_file"]) == (True, True)
-    assert grade_forbidden_tools(["read_text_file", "write_file"], ["write_file", "edit_file"]) == (False, False)
+    assert grade_forbidden_tools(["list_directory", "read_text_file"], ["write_file"]) == (
+        True,
+        True,
+    )
+    assert grade_forbidden_tools(["read_text_file", "write_file"], ["write_file", "edit_file"]) == (
+        False,
+        False,
+    )
 
 
 def test_required_tools_must_all_be_called() -> None:
     from agent_eval.grading import grade_one, grade_required_tools
 
-    assert grade_required_tools(["list_tables", "run_query", "submit"], ["run_query"]) == (True, True)
+    assert grade_required_tools(["list_tables", "run_query", "submit"], ["run_query"]) == (
+        True,
+        True,
+    )
     assert grade_required_tools(["list_tables", "submit"], ["run_query"]) == (False, False)
     assert grade_required_tools(["run_query"], ["run_query", "describe_table"]) == (False, False)
-    assert grade_one("required_tools", ["run_query"], {"tools_called": ["run_query"]}) == (True, True)
+    assert grade_one("required_tools", ["run_query"], {"tools_called": ["run_query"]}) == (
+        True,
+        True,
+    )
 
 
 def test_answer_match_alternatives_any_one_counts() -> None:

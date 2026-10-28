@@ -34,30 +34,48 @@ def flagged(base: Counts, cand: Counts) -> bool:
 
 def main() -> None:
     pairs, rest = int(sys.argv[1]), sys.argv[2:]
-    run_dirs, cand_dirs = (rest[:rest.index("--")], rest[rest.index("--") + 1:]) if "--" in rest else (rest, [])
+    run_dirs, cand_dirs = (
+        (rest[: rest.index("--")], rest[rest.index("--") + 1 :]) if "--" in rest else (rest, [])
+    )
     rates = {f"t{i:02d}": p for i, p in enumerate(measured_rates(run_dirs))}
-    measured = {f"t{i:02d}": p for i, p in enumerate(measured_rates(cand_dirs))} if cand_dirs else None
+    measured = (
+        {f"t{i:02d}": p for i, p in enumerate(measured_rates(cand_dirs))} if cand_dirs else None
+    )
     flaky = {t for t, p in rates.items() if p < 1.0}
     plans = {
         "5 everywhere": {t: 5 for t in rates},
         "10 everywhere": {t: 10 for t in rates},
-        f"targeted (10 on the {len(flaky)} flaky tasks)": {t: 10 if t in flaky else 5 for t in rates},
+        f"targeted (10 on the {len(flaky)} flaky tasks)": {
+            t: 10 if t in flaky else 5 for t in rates
+        },
     }
     base_trials = 5 * len(rates)
     rng = random.Random(5)
-    cases: dict[str, float | None] = {"no change": 0.0, "-3 pts": 0.03, "-5 pts": 0.05, "-10 pts": 0.10}
+    cases: dict[str, float | None] = {
+        "no change": 0.0,
+        "-3 pts": 0.03,
+        "-5 pts": 0.05,
+        "-10 pts": 0.10,
+    }
     if measured:
         cases["measured uneven drop"] = None
-    print(f"{run_dirs}: {len(rates)} tasks, {len(flaky)} below 100% in the baseline; {pairs} pairs per cell")
+    print(
+        f"{run_dirs}: {len(rates)} tasks, {len(flaky)} below 100% in the baseline; {pairs} pairs per cell"
+    )
     print("| Attempts | Trials per run (cost) | " + " | ".join(cases) + " |")
     print("|---|---|" + "---|" * len(cases))
     for name, attempts in plans.items():
         trials = sum(attempts.values())
         cells: list[str] = []
         for drop in cases.values():
-            cand = measured if drop is None and measured else {
-                t: max(0.0, p - (drop or 0.0)) for t, p in rates.items()}
-            hits = sum(flagged(draw(rng, rates, attempts), draw(rng, cand, attempts)) for _ in range(pairs))
+            cand = (
+                measured
+                if drop is None and measured
+                else {t: max(0.0, p - (drop or 0.0)) for t, p in rates.items()}
+            )
+            hits = sum(
+                flagged(draw(rng, rates, attempts), draw(rng, cand, attempts)) for _ in range(pairs)
+            )
             cells.append(f"{hits / pairs:.1%}")
         print(f"| {name} | {trials} ({trials / base_trials:.2f}x) | " + " | ".join(cells) + " |")
 

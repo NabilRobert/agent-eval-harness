@@ -57,15 +57,28 @@ def suite_scorer(infra_error_patterns: list[str]):  # pyright: ignore[reportUnkn
                 payload = _tool_payload(calls[-1]) if calls else None
                 # The last call to the graded tool is the agent's answer; if
                 # it didn't succeed, there are no rows to grade.
-                rows = payload.get("rows") if payload and payload.get("status") == "succeeded" else None
+                rows = (
+                    payload.get("rows")
+                    if payload and payload.get("status") == "succeeded"
+                    else None
+                )
                 # "tool"/"expected" kept at the top level: the record shape
                 # committed runs already use.
-                record.update({"tool": spec["tool"], "expected": spec["expected"],
-                               "input": {"graded_rows": rows, "graded_payload": payload}})
+                record.update(
+                    {
+                        "tool": spec["tool"],
+                        "expected": spec["expected"],
+                        "input": {"graded_rows": rows, "graded_payload": payload},
+                    }
+                )
             elif kind in ("answer_match", "answer_excludes"):
-                record["input"] = {"final_answer": state.output.completion if state.output else None}
+                record["input"] = {
+                    "final_answer": state.output.completion if state.output else None
+                }
             else:
-                record["input"] = {"tools_called": [m.function for m in tool_messages if m.function]}
+                record["input"] = {
+                    "tools_called": [m.function for m in tool_messages if m.function]
+                }
             record["strict"], record["lenient"] = grade_one(kind, spec, record["input"])
             grader_results.append(record)
         strict_all = all(r["strict"] for r in grader_results)
@@ -100,7 +113,8 @@ def build_task(
         if target.get("transport") == "stdio":
             # A fresh server, on a fresh copy of the fixture, per trial.
             server = mcp_server_stdio(
-                name=target["name"], command=sys.executable,
+                name=target["name"],
+                command=sys.executable,
                 args=["-m", "agent_eval.fs_server", target["fixture"]],
             )
         else:

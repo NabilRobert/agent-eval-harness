@@ -156,7 +156,9 @@ def build_meta(
     target: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     status = run_status(log.status, trials)
-    reported = sorted({c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]})
+    reported = sorted(
+        {c["model_reported"] for t in trials for c in t["model_calls"] if c["model_reported"]}
+    )
     return {
         "run_id": run_id,
         "created_at": log.eval.created,
@@ -166,7 +168,8 @@ def build_meta(
             "name": suite["suite"],
             "sha256": suite_sha256,
             # True only for the whole frozen suite, never a subset of it.
-            "frozen": suite_sha256 is not None and FROZEN_SUITES.get(suite["suite"]) == suite_sha256,
+            "frozen": suite_sha256 is not None
+            and FROZEN_SUITES.get(suite["suite"]) == suite_sha256,
             "task_hashes": task_hashes,
             "task_tags": {t["id"]: t.get("tags", []) for t in suite["tasks"]},
         },
@@ -174,7 +177,9 @@ def build_meta(
         # The exact price the costs below were computed with, and its source.
         "price": price,
         # What the run talked to: never a key, only where (Phase 2).
-        "target": None if target is None else {
+        "target": None
+        if target is None
+        else {
             "name": target["name"],
             "transport": target.get("transport", "streamable-http"),
             "address": target.get("url") or target.get("fixture"),
@@ -229,8 +234,7 @@ def _total_cost(trials: list[dict[str, Any]]) -> dict[str, Any]:
     """A total that includes an unknown trial cost is a lower bound, and
     says so (Phase 3), rather than quietly counting it as $0."""
     known = [t["cost_usd"] for t in trials if t["cost_usd"] is not None]
-    return {"usd": round(sum(known), 6) if known else None,
-            "complete": len(known) == len(trials)}
+    return {"usd": round(sum(known), 6) if known else None, "complete": len(known) == len(trials)}
 
 
 def assert_no_secrets(texts: list[str], secrets: list[str]) -> None:
@@ -249,8 +253,9 @@ def inspect_log_contains_secret(log_path: Path, secrets: list[str]) -> bool:
     return any(len(s) >= 8 and s in text for s in secrets)
 
 
-def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
-             at: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def reexport(
+    meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None, at: str
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Rebuilds a run's trials from its saved Inspect log with the current
     export code, so an export bug never needs a paid re-run. The raw log is
     the evidence and is untouched; the rebuild is recorded in the meta, so
@@ -274,10 +279,14 @@ def reexport(meta: dict[str, Any], log_path: Path, price: dict[str, Any] | None,
     new_meta["status"] = run_status(log.status, trials)
     new_meta["price"] = price
     new_meta["totals"] = totals(trials)
-    new_meta["reexports"] = [*meta.get("reexports", []), {
-        "at": at, "from_export_version": meta.get("export_version", 1),
-        "to_export_version": EXPORT_VERSION,
-        "price_checked": price.get("checked") if price else None,
-    }]
+    new_meta["reexports"] = [
+        *meta.get("reexports", []),
+        {
+            "at": at,
+            "from_export_version": meta.get("export_version", 1),
+            "to_export_version": EXPORT_VERSION,
+            "price_checked": price.get("checked") if price else None,
+        },
+    ]
     new_meta["export_version"] = EXPORT_VERSION
     return new_meta, trials

@@ -33,8 +33,9 @@ async def generate(source_path: Path, target: dict[str, Any], auth_token: str) -
     async with connect(target["url"], auth_token) as session:
         init = await session.initialize()
         data = await fingerprint(session, target)
-        offset_rows = (await call_json(session, target["query_tool"],
-                                       {"sql": target["utc_offset_query"]}))["rows"]
+        offset_rows = (
+            await call_json(session, target["query_tool"], {"sql": target["utc_offset_query"]})
+        )["rows"]
         for task in source["tasks"]:
             sql: str = task["reference_sql"]
             result = await call_json(session, target["query_tool"], {"sql": sql})
@@ -43,14 +44,19 @@ async def generate(source_path: Path, target: dict[str, Any], auth_token: str) -
                 problems.append(f"{task['id']}: {result.get('status')}: {result.get('error')}")
                 continue
             if result.get("truncated") or not rows or len(rows) > MAX_EXPECTED_ROWS:
-                problems.append(f"{task['id']}: {len(rows)} rows (truncated={result.get('truncated')})")
+                problems.append(
+                    f"{task['id']}: {len(rows)} rows (truncated={result.get('truncated')})"
+                )
                 continue
             if _LIMIT_1.search(sql):
                 top2 = await call_json(
                     session, target["query_tool"], {"sql": _LIMIT_1.sub("limit 2", sql)}
                 )
                 top_rows = cast(list[dict[str, Any]], top2.get("rows") or [])
-                if len(top_rows) == 2 and list(top_rows[0].values())[-1] == list(top_rows[1].values())[-1]:
+                if (
+                    len(top_rows) == 2
+                    and list(top_rows[0].values())[-1] == list(top_rows[1].values())[-1]
+                ):
                     problems.append(f"{task['id']}: first two rows tie: {top_rows}")
                     continue
             tasks.append(

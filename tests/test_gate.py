@@ -22,8 +22,11 @@ N_TASKS, K = 30, 5
 
 
 def _task(i: int) -> dict[str, Any]:
-    return {"id": f"t{i:02d}", "prompt": f"q{i}",
-            "graders": [{"result_match": {"tool": "run_query", "expected": [{"n": i}]}}]}
+    return {
+        "id": f"t{i:02d}",
+        "prompt": f"q{i}",
+        "graders": [{"result_match": {"tool": "run_query", "expected": [{"n": i}]}}],
+    }
 
 
 TASKS = [_task(i) for i in range(N_TASKS)]
@@ -37,13 +40,28 @@ def _trials(passes: list[int]) -> list[dict[str, Any]]:
         for attempt in range(1, K + 1):
             ok = attempt <= p
             rows = expected if ok else [{"n": -1}]
-            out.append({
-                "task_id": task["id"], "task_hash": task_hash(task), "attempt": attempt,
-                "outcome": "pass" if ok else "fail", "strict": ok, "lenient": ok,
-                "graders": [{"kind": "result_match", "tool": "run_query", "expected": expected,
-                             "input": {"graded_rows": rows}, "strict": ok, "lenient": ok}],
-                "cost_usd": 0.003, "seconds": 10.0,
-            })
+            out.append(
+                {
+                    "task_id": task["id"],
+                    "task_hash": task_hash(task),
+                    "attempt": attempt,
+                    "outcome": "pass" if ok else "fail",
+                    "strict": ok,
+                    "lenient": ok,
+                    "graders": [
+                        {
+                            "kind": "result_match",
+                            "tool": "run_query",
+                            "expected": expected,
+                            "input": {"graded_rows": rows},
+                            "strict": ok,
+                            "lenient": ok,
+                        }
+                    ],
+                    "cost_usd": 0.003,
+                    "seconds": 10.0,
+                }
+            )
     return out
 
 
@@ -52,8 +70,9 @@ def _suite() -> dict[str, Any]:
 
 
 def _compare(run_factory: RunFactory, base: list[int], cand: list[int], gate: str = "v1"):  # pyright: ignore[reportUnknownParameterType]
-    return compare_runs(run_factory(_trials(base), suite=_suite()),
-                        run_factory(_trials(cand), suite=_suite()), gate)
+    return compare_runs(
+        run_factory(_trials(base), suite=_suite()), run_factory(_trials(cand), suite=_suite()), gate
+    )
 
 
 MOSTLY_EASY = [5] * 24 + [4, 4, 3, 3, 2, 2]
@@ -124,8 +143,11 @@ def test_cost_increase_is_a_warning_not_a_regression(run_factory: RunFactory) ->
     pricier = _trials(MOSTLY_EASY)
     for t in pricier:
         t["cost_usd"] = 0.006
-    result = compare_runs(run_factory(_trials(MOSTLY_EASY), suite=_suite()),
-                          run_factory(pricier, suite=_suite()), "v1")
+    result = compare_runs(
+        run_factory(_trials(MOSTLY_EASY), suite=_suite()),
+        run_factory(pricier, suite=_suite()),
+        "v1",
+    )
     assert result.exit_code == EXIT_OK
     assert any("median cost per trial up 100%" in w for w in result.warnings)
 

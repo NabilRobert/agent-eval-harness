@@ -20,7 +20,10 @@ PRICE = {"input": 0.25, "output": 2.0, "source": "x", "checked": "2026-10-23"}
 
 
 def test_unpriced_model_may_only_run_smoke_sized_runs() -> None:
-    assert plan(n_trials=SMOKE_MAX_TRIALS, budget=5, price=None, tokens_per_trial=None)["priced"] is False
+    assert (
+        plan(n_trials=SMOKE_MAX_TRIALS, budget=5, price=None, tokens_per_trial=None)["priced"]
+        is False
+    )
     with pytest.raises(BudgetError, match="smoke"):
         plan(n_trials=SMOKE_MAX_TRIALS + 1, budget=5, price=None, tokens_per_trial=None)
 
@@ -54,10 +57,20 @@ def test_price_lookup_needs_the_full_model_id() -> None:
 def test_measured_tokens_ignore_incomplete_and_other_runs(tmp_path: Path) -> None:
     def meta(name: str, status: str, suite: str, trials: int, tokens: tuple[int, int]) -> None:
         (tmp_path / name).mkdir()
-        (tmp_path / name / "meta.json").write_text(json.dumps({
-            "status": status, "suite": {"name": suite}, "agent": {"model": "m"},
-            "totals": {"trials": trials, "input_tokens": tokens[0], "output_tokens": tokens[1]},
-        }))
+        (tmp_path / name / "meta.json").write_text(
+            json.dumps(
+                {
+                    "status": status,
+                    "suite": {"name": suite},
+                    "agent": {"model": "m"},
+                    "totals": {
+                        "trials": trials,
+                        "input_tokens": tokens[0],
+                        "output_tokens": tokens[1],
+                    },
+                }
+            )
+        )
 
     meta("a", "complete", "pagila", 2, (4000, 400))
     meta("b", "incomplete", "pagila", 1, (99_000, 9_000))
@@ -105,18 +118,24 @@ def test_ungradable_tasks_are_refused(task: dict[str, object]) -> None:
 
 
 def test_duplicate_ids_are_refused() -> None:
-    task = {"id": "a", "prompt": "q",
-            "graders": [{"result_match": {"tool": "run_query", "expected": [{"n": 1}]}}]}
+    task = {
+        "id": "a",
+        "prompt": "q",
+        "graders": [{"result_match": {"tool": "run_query", "expected": [{"n": 1}]}}],
+    }
     with pytest.raises(SuiteError, match="duplicate"):
         validate_suite({"suite": "s", "target": "t", "tasks": [task, task]})
 
 
-@pytest.mark.parametrize(("sql", "top_one"), [
-    ("select a from t order by b desc limit 1", True),
-    ("select a from t order by b desc LIMIT 1;", True),
-    ("select a from t order by b desc limit 10", False),
-    ("select a from t order by b desc limit 5", False),
-])
+@pytest.mark.parametrize(
+    ("sql", "top_one"),
+    [
+        ("select a from t order by b desc limit 1", True),
+        ("select a from t order by b desc LIMIT 1;", True),
+        ("select a from t order by b desc limit 10", False),
+        ("select a from t order by b desc limit 5", False),
+    ],
+)
 def test_tie_check_applies_to_top_one_queries_only(sql: str, top_one: bool) -> None:
     assert bool(_LIMIT_1.search(sql)) is top_one
 
@@ -153,7 +172,9 @@ def test_fixture_fingerprint_changes_when_any_file_changes(tmp_path: Path) -> No
 def test_frozen_filesystem_suite_matches_its_recorded_hash() -> None:
     from agent_eval.suites import FROZEN_SUITES
 
-    assert suite_hash(load_suite(REPO / "suites" / "filesystem.yaml")) == FROZEN_SUITES["filesystem"]
+    assert (
+        suite_hash(load_suite(REPO / "suites" / "filesystem.yaml")) == FROZEN_SUITES["filesystem"]
+    )
 
 
 def test_a_run_refuses_data_its_suite_wasnt_generated_against() -> None:
@@ -194,8 +215,10 @@ def test_filesystem_v2_is_frozen_and_keeps_v1_intact() -> None:
     v2 = load_suite(REPO / "suites" / "filesystem-v2.yaml")
     assert suite_hash(v2) == FROZEN_SUITES["filesystem-v2"]
     assert len(v2["tasks"]) == 34 and v2["target"] == "filesystem-v2"
-    assert all([next(iter(g)) for g in t["graders"]] == ["answer_match", "forbidden_tools"]
-               for t in v2["tasks"])
+    assert all(
+        [next(iter(g)) for g in t["graders"]] == ["answer_match", "forbidden_tools"]
+        for t in v2["tasks"]
+    )
     v2_fp = fixture_fingerprint(REPO / "suites" / "fixtures" / "acme-shop-v2")["sha256"]
     assert v2_fp == v2["generated"]["data_fingerprint"] != v1["generated"]["data_fingerprint"]
     # v1's 16 other tasks are byte-identical in v2; only f09 gained alternatives.

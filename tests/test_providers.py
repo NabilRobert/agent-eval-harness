@@ -15,7 +15,10 @@ def test_strict_tools_off_only_on_the_openai_compatible_route() -> None:
 
 
 def test_sumopod_variables_are_required_only_for_sumopod_models() -> None:
-    assert required_env("openai-api/sumopod/gpt-5-mini") == ["SUMOPOD_AI_API_KEY", "SUMOPOD_BASE_URL"]
+    assert required_env("openai-api/sumopod/gpt-5-mini") == [
+        "SUMOPOD_AI_API_KEY",
+        "SUMOPOD_BASE_URL",
+    ]
     assert required_env("openai/gpt-5-mini") == []
 
 
@@ -31,8 +34,22 @@ def test_an_openai_key_alone_is_enough_to_plan(
         monkeypatch.delenv(name, raising=False)
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=sk-test-not-real\n")
-    code = main(["run", "--suite", "suites/filesystem.yaml", "--tasks", "f01,f17", "--epochs", "1",
-                 "--model", "openai/gpt-5-mini", "--env-file", str(env), "--plan-only"])
+    code = main(
+        [
+            "run",
+            "--suite",
+            "suites/filesystem.yaml",
+            "--tasks",
+            "f01,f17",
+            "--epochs",
+            "1",
+            "--model",
+            "openai/gpt-5-mini",
+            "--env-file",
+            str(env),
+            "--plan-only",
+        ]
+    )
     assert code == 0
     assert "plan: 2 trials" in capsys.readouterr().out
 
@@ -43,7 +60,17 @@ def test_an_unpriced_provider_cant_do_a_full_run(
     """Never costed at someone else's prices: unpriced means smoke-sized only."""
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=sk-test-not-real\n")
-    code = main(["run", "--suite", "suites/filesystem.yaml", "--model", "openai/gpt-5-mini",
-                 "--env-file", str(env), "--plan-only"])
+    code = main(
+        [
+            "run",
+            "--suite",
+            "suites/filesystem.yaml",
+            "--model",
+            "openai/gpt-5-mini",
+            "--env-file",
+            str(env),
+            "--plan-only",
+        ]
+    )
     assert code == 2
     assert "no price" in capsys.readouterr().err
