@@ -14,4 +14,9 @@ __pycache__/
 .inspect-logs/
 
 # Private working notes (internal context; never published)
-HANDOVER.md
+HANDOVER*.md
+
+# Editor and OS leftovers
+.DS_Store
+.vscode/
+.idea/
