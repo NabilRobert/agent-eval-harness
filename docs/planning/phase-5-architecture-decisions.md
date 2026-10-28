@@ -10,8 +10,8 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
 ## Stack
 
 - **Python 3.12**, packaged as one installable package with an
-  `agent-eval` console command. CLI built on `argparse` (one fewer
-  dependency; three subcommands don't need more).
+  `agent-eval` console command. CLI built on Typer (ADR-011; it replaced
+  `argparse`).
 - **Agent loop, repeats, limits and MCP client:** Inspect AI, pinned exactly
   (ADR-009; it superseded pydantic-ai, ADR-003).
 - **Statistics:** standard library + `random.Random(seed)`. The bootstrap is
@@ -332,3 +332,32 @@ use on his keys" non-goal; (c) fails the reproducibility metric.
 - **The fingerprint guard became general.** Every run checks it against
   the suite's recorded fingerprint, for the live endpoint as well as the
   local copy.
+
+### ADR-011: Typer for the CLI, replacing argparse
+**Context:** the CLI started on `argparse` because three subcommands
+didn't justify a dependency. It grew to seven, and Arthur's other
+projects settled on Typer: mcp-gateway's CLI uses it, and his rules
+(2026-10-28) say to use the shared stack rather than hand-roll what a
+framework does.
+**Options:** (a) keep `argparse`; (b) Typer; (c) Click directly.
+**Decision:** (b), at mcp-gateway's exact version (0.27.3) and in its
+style. Typer 0.27 carries its own copy of Click, and Rich was already
+installed for Inspect, so the lock gains only Typer and shellingham.
+The commands, options, defaults, exit codes and the harness's own
+messages are unchanged, checked by recording every command's help and
+the CI commands' exit codes before and after the change. `cli.py` still
+imports Inspect only inside `run`.
+**Consequences:**
+- `--help` and usage errors look different: Typer's panels instead of
+  argparse's plain text. Usage errors still exit 2.
+- Paths inside the checkout show their defaults as `<repo>/...`, not as
+  the machine's absolute path.
+- Typer's pretty tracebacks are off: they can print local variables,
+  and `run` holds the env file's keys in locals.
+- argparse accepted unambiguous abbreviations (`--plan` for
+  `--plan-only`); Click doesn't. Nothing in the repo used them.
+**Rejected:** (a) leaves the one CLI that looks different from the rest
+of the portfolio; (c) would mean writing decorators where type hints do
+the work, and differs from the gateway.
+**Revisit if:** Typer and the gateway diverge on versions, or Typer's
+startup cost becomes noticeable in CI.
