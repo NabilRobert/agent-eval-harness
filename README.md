@@ -331,12 +331,37 @@ keys from an env file outside the repo. See
 runs on both suites (`runs/vps-smoke-*`) completed there, recording the
 server build they ran against.
 
-## Records
+## Layout
 
-- [Planning, Phases 1–7](docs/planning/): the problem, requirements, domain
-  model, flows and failures, ADRs, risks and spikes with their results, and
-  the slice plan with every pre-registration.
+Run it with `uv sync --frozen --extra dev`, then `uv run agent-eval --help`.
+
+| Folder or file | What it holds |
+|---|---|
+| `agent_eval/` | The harness: the `agent-eval` CLI (`cli.py`), suites, targets, the Inspect task, graders, export, compare, report, publish |
+| `suites/` | The frozen task suites (YAML), and in `suites/fixtures/` the synthetic projects the filesystem suites read |
+| `runs/` | Committed run records: `meta.json`, `trials.jsonl`, `report.md` and Inspect's raw `inspect.eval` per run. CI checks them |
+| `results.yaml`, `RESULTS.md` | What's published, and the tables `agent-eval publish` generates from the records |
+| `confirmations/` | The record of each `agent-eval confirm` run |
+| `prices.yaml` | Model prices, each with its source and the date it was checked |
+| `prompts/` | The degraded system prompt one pre-registered proof ran with |
+| `scripts/` | Suite builders, the gate simulations behind the sensitivity tables, and scripted mock-model agents ($0) |
+| `tests/` | The pytest suite: offline, no key, no network |
+| `tools/fs-server/` | The pinned reference MCP filesystem server (`npm ci` installs it) |
+| `repro/` | A local copy of the Pagila target, for rerunning the published results |
+| `deploy/`, `Dockerfile` | The locked-down container for runs on the VPS, and its runbook |
+| `docs/planning/` | The plan, the decision records and the evaluation (see Docs) |
+
+## Docs
+
+- [Planning, Phases 1–7](docs/planning/README.md): the problem,
+  requirements, domain model, flows and failures, risks and spikes with
+  their results, and the slice plan with every pre-registration.
+- [Decision records (ADRs)](docs/planning/phase-5-architecture-decisions.md):
+  every architecture decision and the options it beat.
 - [Evaluation](docs/planning/evaluation.md): the project measured against
   its own plan, including a cold-read review of this README.
+- [RESULTS.md](RESULTS.md): every published run and comparison, with
+  provenance.
 - [JOURNEY.md](JOURNEY.md): the build log, including what broke and what I
   got wrong.
+- [deploy/RUNBOOK.md](deploy/RUNBOOK.md): running the harness on the VPS.
