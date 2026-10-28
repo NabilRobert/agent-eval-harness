@@ -23,6 +23,9 @@ jobs:
       - name: Lint (ruff)
         run: uv run --frozen ruff check .
 
+      - name: Formatting (ruff format)
+        run: uv run --frozen ruff format --check .
+
       - name: Type check (pyright)
         run: uv run --frozen pyright agent_eval/ tests/ scripts/
 

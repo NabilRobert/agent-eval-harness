@@ -9,7 +9,13 @@ import yaml
 
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 
-KNOWN_GRADERS = {"result_match", "answer_match", "answer_excludes", "forbidden_tools", "required_tools"}
+KNOWN_GRADERS = {
+    "result_match",
+    "answer_match",
+    "answer_excludes",
+    "forbidden_tools",
+    "required_tools",
+}
 
 # Frozen before any published run (Phase 2): changing a frozen suite means
 # a new suite version, a new hash here, and a JOURNEY.md entry saying what
@@ -34,6 +40,7 @@ PAGILA_SYSTEM_PROMPT = (
     "explore the schema before writing SQL. Call run_query exactly once "
     "with your final answer query."
 )
+
 
 class SuiteError(Exception):
     """A suite that can't be run as written. Exit 2, nothing spent."""
@@ -74,21 +81,33 @@ def validate_suite(suite: dict[str, Any]) -> None:
             [(kind, spec)] = grader.items()
             if kind == "result_match":
                 expected = spec.get("expected")
-                if not spec.get("tool") or not isinstance(expected, list) or not all(
-                    isinstance(row, dict) for row in cast(list[Any], expected)
+                if (
+                    not spec.get("tool")
+                    or not isinstance(expected, list)
+                    or not all(isinstance(row, dict) for row in cast(list[Any], expected))
                 ):
-                    raise SuiteError(f"task {task_id!r}: result_match needs a tool and a list of rows")
+                    raise SuiteError(
+                        f"task {task_id!r}: result_match needs a tool and a list of rows"
+                    )
             elif kind == "answer_match":
-                contains: Any = cast(dict[str, Any], spec).get("contains") if isinstance(spec, dict) else None
+                contains: Any = (
+                    cast(dict[str, Any], spec).get("contains") if isinstance(spec, dict) else None
+                )
                 items: list[Any] = cast(list[Any], contains) if isinstance(contains, list) else []
                 if not items or not all(_contains_item_ok(c) for c in items):
-                    raise SuiteError(f"task {task_id!r}: answer_match needs non-empty 'contains' "
-                                     "(strings, or lists of alternative strings)")
+                    raise SuiteError(
+                        f"task {task_id!r}: answer_match needs non-empty 'contains' "
+                        "(strings, or lists of alternative strings)"
+                    )
             elif kind == "answer_excludes":
-                excludes: Any = cast(dict[str, Any], spec).get("excludes") if isinstance(spec, dict) else None
+                excludes: Any = (
+                    cast(dict[str, Any], spec).get("excludes") if isinstance(spec, dict) else None
+                )
                 values: list[Any] = cast(list[Any], excludes) if isinstance(excludes, list) else []
                 if not values or not all(isinstance(v, str) and v for v in values):
-                    raise SuiteError(f"task {task_id!r}: answer_excludes needs non-empty 'excludes' strings")
+                    raise SuiteError(
+                        f"task {task_id!r}: answer_excludes needs non-empty 'excludes' strings"
+                    )
             elif not spec or not all(isinstance(t, str) for t in cast(list[Any], spec)):
                 raise SuiteError(f"task {task_id!r}: {kind} needs a list of tool names")
 
@@ -128,19 +147,27 @@ def data_mismatch(
     generated: dict[str, Any] = suite.get("generated") or {}
     expected: str | None = generated.get("data_fingerprint")
     if expected and target_fingerprint != expected:
-        return (f"target data fingerprint {str(target_fingerprint)[:12]} doesn't match the "
-                f"{expected[:12]} this suite's answers were generated against")
+        return (
+            f"target data fingerprint {str(target_fingerprint)[:12]} doesn't match the "
+            f"{expected[:12]} this suite's answers were generated against"
+        )
     expected_offset: int | None = generated.get("session_utc_offset")
     if expected_offset is not None and target_utc_offset != expected_offset:
         actual = "unknown" if target_utc_offset is None else f"{target_utc_offset}s"
-        return (f"target database session is at UTC offset {actual}, but this suite "
-                f"was generated and published at {expected_offset}s; answers to questions about "
-                "dates would be graded differently")
+        return (
+            f"target database session is at UTC offset {actual}, but this suite "
+            f"was generated and published at {expected_offset}s; answers to questions about "
+            "dates would be graded differently"
+        )
     return None
 
 
 def required_tools(suite: dict[str, Any]) -> set[str]:
     """Tools the graders read results from: an agent config may not
     withhold them, and the target must have them."""
-    return {g["result_match"]["tool"] for t in suite["tasks"] for g in t["graders"]
-            if "result_match" in g}
+    return {
+        g["result_match"]["tool"]
+        for t in suite["tasks"]
+        for g in t["graders"]
+        if "result_match" in g
+    }

@@ -64,12 +64,23 @@ def main() -> int:
     subprocess.run(["alembic", "upgrade", "head"], cwd="/app", env=env, check=True)
 
     print("== seeding the eval workspace")
-    key = subprocess.run(
-        [sys.executable, "-c",
-         "import asyncio; from scripts.seed_workspace import seed; "
-         "print(asyncio.run(seed('eval', None, 'eval', __import__('secrets').token_urlsafe(16), 2000, 2000)))"],
-        cwd="/app", env=env, check=True, capture_output=True, text=True,
-    ).stdout.strip().splitlines()[-1]
+    key = (
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import asyncio; from scripts.seed_workspace import seed; "
+                "print(asyncio.run(seed('eval', None, 'eval', __import__('secrets').token_urlsafe(16), 2000, 2000)))",
+            ],
+            cwd="/app",
+            env=env,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        .stdout.strip()
+        .splitlines()[-1]
+    )
     (OUT / "repro.env").write_text(f"MCP_BACKBONE_LOCAL_KEY={key}\n")
     DONE.write_text(f"pagila {commit}\n")
     print("== done: the server starts next; the harness reads its key from the out volume")

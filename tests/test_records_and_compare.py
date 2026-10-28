@@ -51,22 +51,27 @@ def test_changed_task_is_not_compared(run_factory: RunFactory) -> None:
 
 def test_different_data_is_not_compared(run_factory: RunFactory) -> None:
     provenance: dict[str, Any] = {**make_meta()["provenance"], "data_fingerprint": "other-data"}
-    result = compare_runs(run_factory([make_trial(1, GOOD)]),
-                          run_factory([make_trial(1, GOOD)], provenance=provenance))
+    result = compare_runs(
+        run_factory([make_trial(1, GOOD)]),
+        run_factory([make_trial(1, GOOD)], provenance=provenance),
+    )
     assert result.exit_code == EXIT_UNDECIDED
     assert any("fingerprint" in r for r in result.reasons)
 
 
 def test_incomplete_run_is_not_compared(run_factory: RunFactory) -> None:
-    result = compare_runs(run_factory([make_trial(1, GOOD)]),
-                          run_factory([make_trial(1, GOOD)], status="incomplete"))
+    result = compare_runs(
+        run_factory([make_trial(1, GOOD)]), run_factory([make_trial(1, GOOD)], status="incomplete")
+    )
     assert result.exit_code == EXIT_UNDECIDED
 
 
 def test_provenance_differences_are_listed(run_factory: RunFactory) -> None:
     provenance: dict[str, Any] = {**make_meta()["provenance"], "server_version": "v2"}
-    result = compare_runs(run_factory([make_trial(1, GOOD)]),
-                          run_factory([make_trial(1, GOOD)], provenance=provenance))
+    result = compare_runs(
+        run_factory([make_trial(1, GOOD)]),
+        run_factory([make_trial(1, GOOD)], provenance=provenance),
+    )
     assert result.differences == ["server_version: 'v1' -> 'v2'"]
 
 
@@ -109,15 +114,23 @@ def test_column_order_survives_writing_and_loading(run_factory: RunFactory) -> N
 def test_task_hash_notices_reordered_expected_columns() -> None:
     from agent_eval.records import task_hash
 
-    a = {"prompt": "q", "graders": [{"result_match": {"tool": "t", "expected": [{"x": 1, "y": 2}]}}]}
-    b = {"prompt": "q", "graders": [{"result_match": {"tool": "t", "expected": [{"y": 2, "x": 1}]}}]}
+    a = {
+        "prompt": "q",
+        "graders": [{"result_match": {"tool": "t", "expected": [{"x": 1, "y": 2}]}}],
+    }
+    b = {
+        "prompt": "q",
+        "graders": [{"result_match": {"tool": "t", "expected": [{"y": 2, "x": 1}]}}],
+    }
     assert task_hash(a) != task_hash(b)
 
 
 def test_every_committed_run_is_intact_and_regrades_to_its_stored_grades() -> None:
     """Runs off the repo: CI fails if any committed run was edited, or if
     the current graders would grade any stored trial differently."""
-    runs = sorted(p.parent for p in (Path(__file__).resolve().parent.parent / "runs").glob("*/meta.json"))
+    runs = sorted(
+        p.parent for p in (Path(__file__).resolve().parent.parent / "runs").glob("*/meta.json")
+    )
     assert runs
     for run_dir in runs:
         result = compare_runs(run_dir, run_dir)
@@ -137,8 +150,11 @@ def test_a_meta_that_cant_be_written_leaves_the_run_untouched(tmp_path: Path) ->
     write_run(run, make_meta(), [make_trial(1, GOOD)])
     before = {p.name: p.read_text() for p in run.iterdir()}
     with pytest.raises(TypeError):
-        write_run(run, make_meta(price={"checked": datetime.date(2026, 10, 23)}),
-                  [make_trial(1, [{"count": 1}])])
+        write_run(
+            run,
+            make_meta(price={"checked": datetime.date(2026, 10, 23)}),
+            [make_trial(1, [{"count": 1}])],
+        )
     assert {p.name: p.read_text() for p in run.iterdir()} == before
     load_run(run)  # still consistent
 
@@ -158,5 +174,5 @@ def test_a_trial_that_hit_a_limit_regrades_as_a_fail_even_with_correct_rows(
 def test_env_text_parsing_handles_quotes_comments_and_blanks() -> None:
     from agent_eval.envfile import parse_env_text
 
-    text = '# comment\n\nA=1\nB="two"\nC=\'three\'\nnot a line\n'
+    text = "# comment\n\nA=1\nB=\"two\"\nC='three'\nnot a line\n"
     assert parse_env_text(text) == {"A": "1", "B": "two", "C": "three"}

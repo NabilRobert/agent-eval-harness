@@ -38,8 +38,11 @@ def fixture_fingerprint(fixture: Path) -> dict[str, Any]:
     """A fixture's identity: every file's relative path and content hash.
     Any edit to the fixture changes it, so runs on different fixtures are
     never compared."""
-    files = {str(p.relative_to(fixture)): hashlib.sha256(p.read_bytes()).hexdigest()
-             for p in sorted(fixture.rglob("*")) if p.is_file()}
+    files = {
+        str(p.relative_to(fixture)): hashlib.sha256(p.read_bytes()).hexdigest()
+        for p in sorted(fixture.rglob("*"))
+        if p.is_file()
+    }
     return {"sha256": sha256_hex(stable_json(files)), "parts": [{"files": len(files)}]}
 
 
@@ -56,7 +59,9 @@ async def _preflight_stdio(target: dict[str, Any], required: set[str]) -> dict[s
                 init = await session.initialize()
                 listed = await session.list_tools()
     except Exception as exc:  # the server failed to start: preflight failure
-        raise PreflightError(f"can't start the {target['name']} server: {type(exc).__name__}") from exc
+        raise PreflightError(
+            f"can't start the {target['name']} server: {type(exc).__name__}"
+        ) from exc
     tools: list[dict[str, Any]] = sorted(
         ({"name": t.name, "input_schema": t.input_schema} for t in listed.tools),
         key=lambda t: str(t["name"]),
@@ -103,7 +108,9 @@ async def preflight(
                 data = None
             utc_offset: int | None = None
             if target.get("utc_offset_query"):
-                result = await call_json(session, target["query_tool"], {"sql": target["utc_offset_query"]})
+                result = await call_json(
+                    session, target["query_tool"], {"sql": target["utc_offset_query"]}
+                )
                 if result.get("status") != "succeeded":
                     raise PreflightError(f"UTC offset query refused: {result.get('error')}")
                 utc_offset = int(float(result["rows"][0]["utc_offset_seconds"]))

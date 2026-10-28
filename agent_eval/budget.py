@@ -74,7 +74,10 @@ def measured_tokens_per_trial(runs_dir: Path, suite: str, model: str) -> tuple[i
 
 
 def plan(
-    *, n_trials: int, budget: float, price: dict[str, Any] | None,
+    *,
+    n_trials: int,
+    budget: float,
+    price: dict[str, Any] | None,
     tokens_per_trial: tuple[int, int] | None,
 ) -> dict[str, Any]:
     """The run's spending plan, or BudgetError if it can't be run safely."""
@@ -86,10 +89,20 @@ def plan(
                 f"model has no price in prices.yaml, so only smoke runs (<= {SMOKE_MAX_TRIALS} "
                 f"trials) are allowed; this run has {n_trials}"
             )
-        return {"budget_usd": budget, "estimate_usd": None, "per_trial_cap_usd": None,
-                "token_basis": basis, "priced": False}
+        return {
+            "budget_usd": budget,
+            "estimate_usd": None,
+            "per_trial_cap_usd": None,
+            "token_basis": basis,
+            "priced": False,
+        }
     estimate = n_trials * (cost_usd(per_trial[0], per_trial[1], price) or 0.0)
     if estimate > budget:
         raise BudgetError(f"estimated ${estimate:.2f} is over the ${budget:.2f} budget")
-    return {"budget_usd": budget, "estimate_usd": round(estimate, 4),
-            "per_trial_cap_usd": budget / n_trials, "token_basis": basis, "priced": True}
+    return {
+        "budget_usd": budget,
+        "estimate_usd": round(estimate, 4),
+        "per_trial_cap_usd": budget / n_trials,
+        "token_basis": basis,
+        "priced": True,
+    }

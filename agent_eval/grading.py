@@ -158,7 +158,13 @@ def grade_required_tools(tools_called: list[str], required: list[str]) -> tuple[
     return ok, ok
 
 
-GRADER_KINDS = ("result_match", "answer_match", "answer_excludes", "forbidden_tools", "required_tools")
+GRADER_KINDS = (
+    "result_match",
+    "answer_match",
+    "answer_excludes",
+    "forbidden_tools",
+    "required_tools",
+)
 
 
 def grade_one(kind: str, spec: Any, inputs: dict[str, Any]) -> tuple[bool, bool]:

@@ -26,7 +26,10 @@ def test_plan_reruns_exactly_the_dropped_tasks_with_each_agent_reproduced() -> N
     # Both prompts are the one the runs used (proven by its recorded hash).
     meta = load_run(RUNS / "proof-mini-b").meta
     from agent_eval.records import sha256_hex
-    assert sha256_hex(base[base.index("--system-prompt") + 1]) == meta["agent"]["system_prompt_sha256"]
+
+    assert (
+        sha256_hex(base[base.index("--system-prompt") + 1]) == meta["agent"]["system_prompt_sha256"]
+    )
 
 
 def test_withheld_tools_are_reproduced(tmp_path: Path) -> None:

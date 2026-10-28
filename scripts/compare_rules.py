@@ -26,8 +26,13 @@ def fisher_one_sided(b_pass: int, b_n: int, c_pass: int, c_n: int) -> float:
     exact test for "the candidate passes less often"."""
     total_pass, total = b_pass + c_pass, b_n + c_n
     denom = math.comb(total, c_n)
-    return sum(math.comb(total_pass, k) * math.comb(total - total_pass, c_n - k)
-               for k in range(max(0, c_n - (total - total_pass)), c_pass + 1)) / denom
+    return (
+        sum(
+            math.comb(total_pass, k) * math.comb(total - total_pass, c_n - k)
+            for k in range(max(0, c_n - (total - total_pass)), c_pass + 1)
+        )
+        / denom
+    )
 
 
 def pooled_z_flag(base: Counts, cand: Counts, z_crit: float = 1.96) -> bool:
@@ -53,9 +58,14 @@ def within_task_interval(base: Counts, cand: Counts, resamples: int, seed: int) 
     rng = random.Random(seed)
     tasks = sorted(base)
     means = sorted(
-        sum(rng.binomialvariate(cand[t][1], cand[t][0] / cand[t][1]) / cand[t][1]
-            - rng.binomialvariate(base[t][1], base[t][0] / base[t][1]) / base[t][1] for t in tasks) / len(tasks)
-        for _ in range(resamples))
+        sum(
+            rng.binomialvariate(cand[t][1], cand[t][0] / cand[t][1]) / cand[t][1]
+            - rng.binomialvariate(base[t][1], base[t][0] / base[t][1]) / base[t][1]
+            for t in tasks
+        )
+        / len(tasks)
+        for _ in range(resamples)
+    )
     return means[min(resamples - 1, int(0.975 * resamples))]
 
 
@@ -76,7 +86,8 @@ def rules(resamples: int) -> dict[str, Callable[[Counts, Counts, int], bool]]:
         "gate v1 (bootstrap + task rule)": shipped,
         "gate v2 (pooled z + task rule), as shipped": v2,
         "within-task bootstrap (fixed suite) + task rule": lambda b, c, s: (
-            within_task_interval(b, c, resamples, s) < 0 or bool(broken_tasks(b, c, sorted(b)))),
+            within_task_interval(b, c, resamples, s) < 0 or bool(broken_tasks(b, c, sorted(b)))
+        ),
         "fixed threshold: drop >= 5 pts": lambda b, c, _s: drop(b, c) >= 0.05,
         "fixed threshold: drop >= 10 pts": lambda b, c, _s: drop(b, c) >= 0.10,
         "pooled two-proportion z-test": lambda b, c, _s: pooled_z_flag(b, c),
@@ -92,7 +103,9 @@ def draw(rng: random.Random, rates: dict[str, float]) -> Counts:
 def main() -> None:
     pairs, resamples = int(sys.argv[1]), int(sys.argv[2])
     rest = sys.argv[3:]
-    base_dirs, cand_dirs = (rest[:rest.index("--")], rest[rest.index("--") + 1:]) if "--" in rest else (rest, [])
+    base_dirs, cand_dirs = (
+        (rest[: rest.index("--")], rest[rest.index("--") + 1 :]) if "--" in rest else (rest, [])
+    )
     if base_dirs == ["mixed"]:
         # ADR-001's assumed flakier suite: 30 tasks from 30% to 100%.
         base_rates = {f"t{i:02d}": 0.3 + 0.7 * i / 29 for i in range(30)}
@@ -106,16 +119,22 @@ def main() -> None:
         mean = sum(base_rates[t] - cand[t] for t in base_rates) / len(base_rates)
         cases[f"measured uneven drop ({mean:.1%})"] = cand
     rule_set = rules(resamples)
-    print(f"{len(base_rates)} tasks x {K} attempts, {pairs} simulated pairs per case, base {base_dirs}")
+    print(
+        f"{len(base_rates)} tasks x {K} attempts, {pairs} simulated pairs per case, base {base_dirs}"
+    )
     header = "| Rule | " + " | ".join(cases) + " |"
     print(header)
     print("|" + "---|" * (len(cases) + 1))
     rng = random.Random(3)
-    samples = {name: [(draw(rng, base_rates), draw(rng, rates)) for _ in range(pairs)]
-               for name, rates in cases.items()}
+    samples = {
+        name: [(draw(rng, base_rates), draw(rng, rates)) for _ in range(pairs)]
+        for name, rates in cases.items()
+    }
     for rule_name, rule in rule_set.items():
-        cells = [f"{sum(rule(b, c, i) for i, (b, c) in enumerate(samples[name])) / pairs:.1%}"
-                 for name in cases]
+        cells = [
+            f"{sum(rule(b, c, i) for i, (b, c) in enumerate(samples[name])) / pairs:.1%}"
+            for name in cases
+        ]
         print(f"| {rule_name} | " + " | ".join(cells) + " |")
 
 

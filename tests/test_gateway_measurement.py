@@ -30,14 +30,23 @@ def test_no_answer_leaks_nothing() -> None:
 
 
 def test_grade_one_dispatches_answer_excludes() -> None:
-    assert grade_one("answer_excludes", {"excludes": ["X1"]}, {"final_answer": "has X1"}) == (False, False)
+    assert grade_one("answer_excludes", {"excludes": ["X1"]}, {"final_answer": "has X1"}) == (
+        False,
+        False,
+    )
 
 
 def suite_with(grader: dict[str, Any]) -> dict[str, Any]:
-    return {"suite": "s", "target": "filesystem", "tasks": [{"id": "t", "prompt": "p", "graders": [grader]}]}
+    return {
+        "suite": "s",
+        "target": "filesystem",
+        "tasks": [{"id": "t", "prompt": "p", "graders": [grader]}],
+    }
 
 
-@pytest.mark.parametrize("spec", [{}, {"excludes": []}, {"excludes": [""]}, {"excludes": [3]}, ["X"]])
+@pytest.mark.parametrize(
+    "spec", [{}, {"excludes": []}, {"excludes": [""]}, {"excludes": [3]}, ["X"]]
+)
 def test_a_malformed_answer_excludes_is_rejected(spec: Any) -> None:
     with pytest.raises(SuiteError, match="answer_excludes"):
         validate_suite(suite_with({"answer_excludes": spec}))
@@ -56,16 +65,35 @@ def test_gateway_targets_serve_the_existing_suites() -> None:
 def run_plan(tmp_path: Path, *extra: str) -> int:
     env = tmp_path / ".env"
     env.write_text("OPENAI_API_KEY=sk-test-not-real\nMCP_GATEWAY_KEY=gw-test-not-real\n")
-    return main(["run", "--suite", "suites/filesystem.yaml", "--tasks", "f01", "--epochs", "1",
-                 "--model", "openai/gpt-5-mini", "--env-file", str(env), "--plan-only", *extra])
+    return main(
+        [
+            "run",
+            "--suite",
+            "suites/filesystem.yaml",
+            "--tasks",
+            "f01",
+            "--epochs",
+            "1",
+            "--model",
+            "openai/gpt-5-mini",
+            "--env-file",
+            str(env),
+            "--plan-only",
+            *extra,
+        ]
+    )
 
 
-def test_a_gateway_run_must_say_its_configuration(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_a_gateway_run_must_say_its_configuration(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     assert run_plan(tmp_path, "--target", "filesystem-gateway") == 2
     assert "--configuration gateway-off or gateway-on" in capsys.readouterr().err
 
 
-def test_a_direct_run_cant_claim_a_gateway(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_a_direct_run_cant_claim_a_gateway(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     assert run_plan(tmp_path, "--configuration", "gateway-on") == 2
     assert "isn't a gateway" in capsys.readouterr().err
 
@@ -74,19 +102,49 @@ def test_a_direct_run_cant_claim_a_gateway(tmp_path: Path, capsys: pytest.Captur
 def test_a_gateway_run_with_its_configuration_plans(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], configuration: str
 ) -> None:
-    assert run_plan(tmp_path, "--target", "filesystem-gateway", "--configuration", configuration) == 0
+    assert (
+        run_plan(tmp_path, "--target", "filesystem-gateway", "--configuration", configuration) == 0
+    )
     assert "plan: 1 trials" in capsys.readouterr().out
 
 
 def test_the_report_shows_a_leak(run_factory: Callable[..., Path]) -> None:
     trial = make_trial(1, [{"count": 1000}], "fail")
-    trial.update({"input_tokens": 1, "output_tokens": 1, "seconds": 1.0, "cost_usd": None,
-                  "tool_calls": [], "stop_reason": "completed", "strict": False, "lenient": False})
-    trial["graders"] = [{"kind": "answer_excludes", "spec": {"excludes": ["CANARY-9"]},
-                         "input": {"final_answer": "here: CANARY-9"}, "strict": False, "lenient": False}]
+    trial.update(
+        {
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "seconds": 1.0,
+            "cost_usd": None,
+            "tool_calls": [],
+            "stop_reason": "completed",
+            "strict": False,
+            "lenient": False,
+        }
+    )
+    trial["graders"] = [
+        {
+            "kind": "answer_excludes",
+            "spec": {"excludes": ["CANARY-9"]},
+            "input": {"final_answer": "here: CANARY-9"},
+            "strict": False,
+            "lenient": False,
+        }
+    ]
     extras: dict[str, Any] = {
-        "agent": {"model": "m", "model_args": {}, "system_prompt_sha256": "p",
-                  "tool_allowlist": None, "limits": {}, "epochs": 1},
-        "totals": {"trials": 1, "input_tokens": 1, "output_tokens": 1, "cost_usd": {"usd": None, "complete": False}},
+        "agent": {
+            "model": "m",
+            "model_args": {},
+            "system_prompt_sha256": "p",
+            "tool_allowlist": None,
+            "limits": {},
+            "epochs": 1,
+        },
+        "totals": {
+            "trials": 1,
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "cost_usd": {"usd": None, "complete": False},
+        },
     }
     assert "LEAKED CANARY-9" in render(load_run(run_factory([trial], **extras)))

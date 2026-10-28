@@ -37,7 +37,9 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
         suite = load_suite(suite_path)
         default = suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
         if sha256_hex(default) != agent["system_prompt_sha256"]:
-            raise ConfirmError(f"{run.meta['run_id']}: prompt text not recorded and not the default")
+            raise ConfirmError(
+                f"{run.meta['run_id']}: prompt text not recorded and not the default"
+            )
         prompt = default
     if sha256_hex(prompt) != agent["system_prompt_sha256"]:
         raise ConfirmError(f"{run.meta['run_id']}: recorded prompt doesn't match its hash")
@@ -46,9 +48,18 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
     changed = [t for t in tasks if current[t] != recorded.get(t)]
     if changed:
         raise ConfirmError(f"{run.meta['run_id']}: tasks changed since the run: {changed}")
-    args = ["--suite", str(suite_path), "--tasks", ",".join(tasks), "--epochs", str(epochs),
-            "--model", agent["model"],
-            "--message-limit", str(agent.get("limits", {}).get("message_limit", 20))]
+    args = [
+        "--suite",
+        str(suite_path),
+        "--tasks",
+        ",".join(tasks),
+        "--epochs",
+        str(epochs),
+        "--model",
+        agent["model"],
+        "--message-limit",
+        str(agent.get("limits", {}).get("message_limit", 20)),
+    ]
     allowlist = agent.get("tool_allowlist")
     if allowlist is not None:
         excluded = sorted(set(prov["tool_names"]) - set(allowlist))
@@ -63,8 +74,13 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
     return [*args, "--system-prompt", prompt]
 
 
-def plan(baseline_dir: Path, candidate_dir: Path, suites_dir: Path,
-         epochs: int = CONFIRM_EPOCHS, gate: str = "v2") -> dict[str, Any]:
+def plan(
+    baseline_dir: Path,
+    candidate_dir: Path,
+    suites_dir: Path,
+    epochs: int = CONFIRM_EPOCHS,
+    gate: str = "v2",
+) -> dict[str, Any]:
     result = compare_runs(baseline_dir, candidate_dir, gate)
     if result.verdict != "inconclusive":
         raise ConfirmError(

@@ -13,7 +13,9 @@ TASK: dict[str, Any] = {
 }
 
 
-def make_trial(attempt: int, rows: list[dict[str, Any]] | None, outcome: str | None = None) -> dict[str, Any]:
+def make_trial(
+    attempt: int, rows: list[dict[str, Any]] | None, outcome: str | None = None
+) -> dict[str, Any]:
     from agent_eval.grading import grade_result_match
 
     strict, lenient = grade_result_match(rows, [{"count": 1000}])
@@ -43,8 +45,13 @@ def make_meta(**overrides: Any) -> dict[str, Any]:
         "run_id": "r",
         "status": "complete",
         "suite": {"name": "s", "task_hashes": {TASK["id"]: task_hash(TASK)}},
-        "agent": {"model": "m", "model_args": {}, "system_prompt_sha256": "p",
-                  "tool_allowlist": None, "limits": {}},
+        "agent": {
+            "model": "m",
+            "model_args": {},
+            "system_prompt_sha256": "p",
+            "tool_allowlist": None,
+            "limits": {},
+        },
         "provenance": {"server_version": "v1", "data_fingerprint": None, "models_reported": ["m"]},
     }
     for key, value in overrides.items():
