@@ -39,6 +39,11 @@ line-length = 100
 exclude = ["suites/fixtures/**"]
 
 [tool.pyright]
+# The folders CI type-checks, so the editor reports what CI reports.
+# repro/ is left out: setup_repro.py runs inside the repro image, where it
+# imports MCP-backbone's own scripts (cloned there at a pinned commit), so
+# those imports can't resolve in this checkout.
+include = ["agent_eval", "tests", "scripts"]
 typeCheckingMode = "strict"
 venvPath = "."
 venv = ".venv"
