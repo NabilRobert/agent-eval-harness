@@ -65,10 +65,11 @@ Run records land in `~/agent-eval-harness/runs/<id>/`.
 ## Publish a run
 
 Run records are committed from the laptop, never from the VPS (the VPS
-holds no GitHub credentials):
+holds no GitHub credentials). `<vps>` is the server's address or your SSH
+alias for it; addresses stay out of this public repo:
 
 ```bash
-scp -r ubuntu@43.134.28.228:~/agent-eval-harness/runs/<id> runs/
+scp -r ubuntu@<vps>:~/agent-eval-harness/runs/<id> runs/
 uv run agent-eval report runs/<id> --check
 git add runs/<id> && git commit -m "feat: <id> run"
 ```
