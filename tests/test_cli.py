@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner, Result
 
+from agent_eval import cli
 from agent_eval.cli import REPO_ROOT, app, main
 
 RUN = REPO_ROOT / "runs" / "smoke-b1"
@@ -221,12 +222,10 @@ def test_publish_check_passes_on_the_committed_results() -> None:
 
 
 def test_publish_check_fails_when_the_results_drift(monkeypatch: pytest.MonkeyPatch) -> None:
-    import agent_eval.publish
-
     def drifted(root: Path) -> tuple[str, str]:
         return "drifted\n", "drifted\n"
 
-    monkeypatch.setattr(agent_eval.publish, "render", drifted)
+    monkeypatch.setattr(cli, "render_results", drifted)
     result = invoke("publish", "--check")
     assert result.exit_code == 1
     assert "out of date with the run records" in text(result)
