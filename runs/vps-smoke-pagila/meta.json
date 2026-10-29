@@ -85,19 +85,28 @@
     "harness_git": "40915c776cfc",
     "inspect_ai_version": "0.3.283"
   },
-  "export_version": 4,
+  "export_version": 5,
   "totals": {
     "trials": 1,
     "pass_strict": 1,
     "pass_lenient": 1,
     "errors": 0,
     "input_tokens": 3244,
+    "cached_input_tokens": 0,
     "output_tokens": 627,
     "cost_usd": {
       "usd": 0.002065,
       "complete": true
     }
   },
+  "reexports": [
+    {
+      "at": "2026-10-29T00:56:41+00:00",
+      "from_export_version": 4,
+      "to_export_version": 5,
+      "price_checked": "2026-10-23"
+    }
+  ],
   "schema_version": 1,
-  "trials_sha256": "6a58f2315e8d6ec6338f4d11f06185c2f321e0960042493895b69c6f2a6fd458"
+  "trials_sha256": "2cd26587c721adda50fe7593314fd54f6b038afbcf9d0252cf855b3f448e1b29"
 }

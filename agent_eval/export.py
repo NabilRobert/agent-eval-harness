@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from inspect_ai.log import EvalLog, EvalSample, read_eval_log, resolve_sample_attachments
+from inspect_ai.model import ModelUsage
 
 from agent_eval.budget import cost_usd
 from agent_eval.grading import GRADER_VERSION, grade_one
@@ -20,7 +21,9 @@ from agent_eval.suites import FROZEN_SUITES
 INCOMPLETE_ERROR_SHARE = 0.10
 # Bump when export output changes; `reexport` records which version
 # rebuilt a run's trials.
-EXPORT_VERSION = 4  # v2: column order, attachments; v3: task tags; v4: grades recomputed at export
+# v2: column order, attachments; v3: task tags; v4: grades recomputed at
+# export; v5: cached input tokens counted, and costed at the cached price.
+EXPORT_VERSION = 5
 
 
 class SecretLeakError(Exception):
@@ -52,18 +55,33 @@ def _tool_calls(sample: EvalSample) -> list[dict[str, Any]]:
     return calls
 
 
+def _input_token_counts(usage: ModelUsage | None) -> tuple[int | None, int | None]:
+    """(every input token, the cached ones among them) for one model call.
+    Inspect splits the provider's prompt tokens into `input_tokens` and the
+    cache reads and writes, so on its own `input_tokens` leaves out every
+    cached token (found by Juku's spike 5: up to 61% of the filesystem
+    suites' prompt tokens)."""
+    if usage is None:
+        return None, None
+    cached = usage.input_tokens_cache_read or 0
+    written = usage.input_tokens_cache_write or 0
+    return usage.input_tokens + cached + written, cached
+
+
 def _model_calls(sample: EvalSample) -> list[dict[str, Any]]:
     calls: list[dict[str, Any]] = []
     for event in sample.events:
         if event.event != "model":
             continue
         usage = event.output.usage
+        input_tokens, cached_input_tokens = _input_token_counts(usage)
         calls.append(
             {
                 # The model name the provider says it served, which can
                 # differ from the one asked for (Phase 3 provenance).
                 "model_reported": event.output.model,
-                "input_tokens": usage.input_tokens if usage else None,
+                "input_tokens": input_tokens,
+                "cached_input_tokens": cached_input_tokens,
                 "output_tokens": usage.output_tokens if usage else None,
                 "reasoning_tokens": usage.reasoning_tokens if usage else None,
                 "seconds": round(event.working_time, 3) if event.working_time else None,
@@ -114,6 +132,7 @@ def trial_from_sample(
 
     model_calls = _model_calls(sample)
     input_tokens = sum(c["input_tokens"] or 0 for c in model_calls)
+    cached_input_tokens = sum(c["cached_input_tokens"] or 0 for c in model_calls)
     output_tokens = sum(c["output_tokens"] or 0 for c in model_calls)
     task_id = str(sample.id)
     return {
@@ -132,9 +151,10 @@ def trial_from_sample(
         "tool_calls": _tool_calls(sample),
         "model_calls": model_calls,
         "input_tokens": input_tokens,
+        "cached_input_tokens": cached_input_tokens,
         "output_tokens": output_tokens,
         # Unknown (None), never 0, when the model has no price (Phase 3).
-        "cost_usd": cost_usd(input_tokens, output_tokens, price),
+        "cost_usd": cost_usd(input_tokens, output_tokens, price, cached_input_tokens),
         "seconds": round(sample.total_time, 3) if sample.total_time else None,
     }
 
@@ -225,6 +245,7 @@ def totals(trials: list[dict[str, Any]]) -> dict[str, Any]:
         "pass_lenient": sum(1 for t in trials if t["outcome"] != "error" and t["lenient"]),
         "errors": sum(1 for t in trials if t["outcome"] == "error"),
         "input_tokens": sum(t["input_tokens"] for t in trials),
+        "cached_input_tokens": sum(t.get("cached_input_tokens", 0) for t in trials),
         "output_tokens": sum(t["output_tokens"] for t in trials),
         "cost_usd": _total_cost(trials),
     }

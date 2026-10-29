@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-nano` (provider reported: gpt-5-nano)
 - **Suite:** `filesystem`, 17 tasks × 5 attempts, suite sha256 `94ad6a86e144`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-24T05:24:57+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.0764
-- **Tokens:** 247,916 input + 159,902 output; median 4,217 per trial
+- **Total cost:** $0.0783
+- **Tokens:** 638,828 input (390,912 of them cached) + 159,902 output; median 8,313 per trial
 - **Latency per trial:** median 12.6 s, p90 25.2 s, max 35.1 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,23 +30,23 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| f01 | easy | 3/5 | 3/5 | 0 | 4,798 | 13.5 | $0.0038 |
-| f02 | easy | 5/5 | 5/5 | 0 | 3,402 | 12.1 | $0.0035 |
-| f03 | medium | 1/5 | 1/5 | 0 | 11,511 | 25.9 | $0.0090 |
-| f04 | medium | 5/5 | 5/5 | 0 | 10,541 | 24.2 | $0.0097 |
-| f05 | easy | 5/5 | 5/5 | 0 | 3,580 | 8.2 | $0.0030 |
-| f06 | hard | 5/5 | 5/5 | 0 | 5,537 | 17.8 | $0.0054 |
-| f07 | hard | 5/5 | 5/5 | 0 | 7,272 | 25.4 | $0.0101 |
-| f08 | easy | 5/5 | 5/5 | 0 | 2,281 | 10.4 | $0.0024 |
-| f09 | medium | 3/5 | 3/5 | 0 | 4,412 | 13.3 | $0.0035 |
-| f10 | medium | 5/5 | 5/5 | 0 | 4,073 | 13.9 | $0.0045 |
-| f11 | medium | 3/5 | 3/5 | 0 | 3,694 | 11.3 | $0.0034 |
-| f12 | easy | 3/5 | 3/5 | 0 | 4,557 | 12.5 | $0.0033 |
-| f13 | medium | 5/5 | 5/5 | 0 | 1,426 | 6.0 | $0.0016 |
-| f14 | easy | 0/5 | 0/5 | 0 | 3,764 | 10.7 | $0.0030 |
-| f15 | hard | 5/5 | 5/5 | 0 | 2,725 | 10.6 | $0.0034 |
-| f16 | hard | 4/5 | 4/5 | 0 | 4,526 | 14.0 | $0.0038 |
-| f17 | hard | 5/5 | 5/5 | 0 | 2,381 | 11.4 | $0.0030 |
+| f01 | easy | 3/5 | 3/5 | 0 | 12,773 | 13.5 | $0.0040 |
+| f02 | easy | 5/5 | 5/5 | 0 | 7,731 | 12.1 | $0.0036 |
+| f03 | medium | 1/5 | 1/5 | 0 | 14,355 | 25.9 | $0.0091 |
+| f04 | medium | 5/5 | 5/5 | 0 | 14,381 | 24.2 | $0.0098 |
+| f05 | easy | 5/5 | 5/5 | 0 | 7,420 | 8.2 | $0.0031 |
+| f06 | hard | 5/5 | 5/5 | 0 | 8,225 | 17.8 | $0.0054 |
+| f07 | hard | 5/5 | 5/5 | 0 | 10,933 | 25.4 | $0.0102 |
+| f08 | easy | 5/5 | 5/5 | 0 | 6,388 | 10.4 | $0.0025 |
+| f09 | medium | 3/5 | 3/5 | 0 | 10,300 | 13.3 | $0.0037 |
+| f10 | medium | 5/5 | 5/5 | 0 | 8,024 | 13.9 | $0.0046 |
+| f11 | medium | 3/5 | 3/5 | 0 | 8,558 | 11.3 | $0.0035 |
+| f12 | easy | 3/5 | 3/5 | 0 | 11,981 | 12.5 | $0.0034 |
+| f13 | medium | 5/5 | 5/5 | 0 | 3,986 | 6.0 | $0.0017 |
+| f14 | easy | 0/5 | 0/5 | 0 | 10,318 | 10.7 | $0.0031 |
+| f15 | hard | 5/5 | 5/5 | 0 | 6,565 | 10.6 | $0.0035 |
+| f16 | hard | 4/5 | 4/5 | 0 | 9,646 | 14.0 | $0.0039 |
+| f17 | hard | 5/5 | 5/5 | 0 | 6,221 | 11.4 | $0.0031 |
 
 ## Trials that didn't pass strictly
 
@@ -293,8 +293,8 @@ I will run another round of parallel searches for more varied environment variab
 - Data fingerprint: `304f741838b4595097c0130d8eff35ffa88775771f7a07f7e0862e205e7d5c0d`
 - Server: `secure-filesystem-server` build `0.2.0` (/healthz: `not reported`)
 - Tool list sha256: `3530bf09c844` (create_directory, directory_tree, edit_file, get_file_info, list_allowed_directories, list_directory, list_directory_with_sizes, move_file, read_file, read_media_file, read_multiple_files, read_text_file, search_files, write_file)
-- Harness: `afb748146a3a`, Inspect AI 0.3.283, export v4
+- Harness: `afb748146a3a`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.05/M input, $0.4/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.05/M input ($0.005/M cached), $0.4/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.1998 (default (pessimistic) tokens), per-trial cap $0.0588
 

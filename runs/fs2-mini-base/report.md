@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini, openai-api/sumopod/gpt-5-mini)
 - **Suite:** `filesystem-v2`, 34 tasks × 5 attempts, suite sha256 `4210f586d3e3`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-24T11:48:40+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.5651
-- **Tokens:** 732,817 input + 190,959 output; median 4,200 per trial
+- **Total cost:** $0.5838
+- **Tokens:** 1,481,617 input (748,800 of them cached) + 190,959 output; median 7,630 per trial
 - **Latency per trial:** median 11.9 s, p90 45.9 s, max 120.1 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,40 +30,40 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| f01 | easy | 4/5 | 4/5 | 0 | 4,194 | 10.1 | $0.0114 |
-| f02 | easy | 4/5 | 4/5 | 0 | 3,518 | 9.0 | $0.0094 |
-| f03 | medium | 5/5 | 5/5 | 0 | 8,891 | 12.7 | $0.0190 |
-| f04 | medium | 5/5 | 5/5 | 0 | 9,859 | 20.3 | $0.0288 |
-| f05 | easy | 5/5 | 5/5 | 0 | 4,375 | 9.4 | $0.0092 |
-| f06 | hard | 5/5 | 5/5 | 0 | 4,228 | 9.2 | $0.0088 |
-| f07 | hard | 5/5 | 5/5 | 0 | 5,831 | 37.9 | $0.0328 |
-| f08 | easy | 5/5 | 5/5 | 0 | 2,503 | 9.0 | $0.0061 |
-| f09 | medium | 4/5 | 4/5 | 0 | 3,166 | 21.4 | $0.0100 |
-| f10 | medium | 5/5 | 5/5 | 0 | 3,536 | 12.7 | $0.0101 |
-| f11 | medium | 5/5 | 5/5 | 0 | 3,830 | 11.0 | $0.0103 |
-| f12 | easy | 5/5 | 5/5 | 0 | 2,703 | 9.9 | $0.0062 |
-| f13 | medium | 5/5 | 5/5 | 0 | 2,210 | 5.2 | $0.0052 |
-| f14 | easy | 2/5 | 2/5 | 0 | 6,002 | 18.7 | $0.0133 |
-| f15 | hard | 5/5 | 5/5 | 0 | 3,347 | 11.8 | $0.0097 |
-| f16 | hard | 4/5 | 4/5 | 0 | 4,593 | 10.5 | $0.0099 |
-| f17 | hard | 5/5 | 5/5 | 0 | 2,413 | 9.8 | $0.0088 |
-| n01 | medium | 5/5 | 5/5 | 0 | 9,264 | 19.9 | $0.0269 |
-| n02 | hard | 5/5 | 5/5 | 0 | 9,999 | 32.6 | $0.0315 |
-| n03 | hard | 5/5 | 5/5 | 0 | 8,240 | 62.7 | $0.0513 |
-| n04 | medium | 3/5 | 3/5 | 0 | 6,524 | 32.8 | $0.0339 |
-| n05 | medium | 5/5 | 5/5 | 0 | 3,337 | 11.7 | $0.0123 |
-| n06 | easy | 5/5 | 5/5 | 0 | 9,400 | 9.9 | $0.0192 |
-| n07 | medium | 5/5 | 5/5 | 0 | 2,969 | 7.3 | $0.0079 |
-| n08 | easy | 5/5 | 5/5 | 0 | 3,784 | 8.8 | $0.0092 |
-| n09 | easy | 5/5 | 5/5 | 0 | 4,032 | 7.8 | $0.0097 |
-| n10 | hard | 5/5 | 5/5 | 0 | 2,558 | 8.8 | $0.0061 |
-| n11 | medium | 5/5 | 5/5 | 0 | 4,062 | 15.8 | $0.0097 |
-| n12 | hard | 5/5 | 5/5 | 0 | 9,312 | 17.1 | $0.0279 |
-| n13 | hard | 0/5 | 0/5 | 0 | 11,718 | 120.0 | $0.0245 |
-| n14 | hard | 5/5 | 5/5 | 0 | 10,007 | 59.6 | $0.0577 |
-| n15 | medium | 5/5 | 5/5 | 0 | 2,230 | 7.5 | $0.0053 |
-| n16 | hard | 5/5 | 5/5 | 0 | 5,047 | 21.5 | $0.0190 |
-| n17 | medium | 5/5 | 5/5 | 0 | 1,996 | 4.5 | $0.0040 |
+| f01 | easy | 4/5 | 4/5 | 0 | 8,162 | 10.1 | $0.0120 |
+| f02 | easy | 4/5 | 4/5 | 0 | 7,230 | 9.0 | $0.0099 |
+| f03 | medium | 5/5 | 5/5 | 0 | 11,768 | 12.7 | $0.0194 |
+| f04 | medium | 5/5 | 5/5 | 0 | 13,184 | 20.3 | $0.0292 |
+| f05 | easy | 5/5 | 5/5 | 0 | 6,983 | 9.4 | $0.0095 |
+| f06 | hard | 5/5 | 5/5 | 0 | 7,044 | 9.2 | $0.0092 |
+| f07 | hard | 5/5 | 5/5 | 0 | 10,461 | 37.9 | $0.0332 |
+| f08 | easy | 5/5 | 5/5 | 0 | 5,451 | 9.0 | $0.0065 |
+| f09 | medium | 4/5 | 4/5 | 0 | 11,121 | 21.4 | $0.0109 |
+| f10 | medium | 5/5 | 5/5 | 0 | 6,472 | 12.7 | $0.0105 |
+| f11 | medium | 5/5 | 5/5 | 0 | 7,377 | 11.0 | $0.0108 |
+| f12 | easy | 5/5 | 5/5 | 0 | 6,884 | 9.9 | $0.0068 |
+| f13 | medium | 5/5 | 5/5 | 0 | 3,477 | 5.2 | $0.0053 |
+| f14 | easy | 2/5 | 2/5 | 0 | 19,891 | 18.7 | $0.0149 |
+| f15 | hard | 5/5 | 5/5 | 0 | 6,214 | 11.8 | $0.0101 |
+| f16 | hard | 4/5 | 4/5 | 0 | 7,846 | 10.5 | $0.0105 |
+| f17 | hard | 5/5 | 5/5 | 0 | 3,693 | 9.8 | $0.0090 |
+| n01 | medium | 5/5 | 5/5 | 0 | 12,336 | 19.9 | $0.0273 |
+| n02 | hard | 5/5 | 5/5 | 0 | 13,711 | 32.6 | $0.0320 |
+| n03 | hard | 5/5 | 5/5 | 0 | 9,520 | 62.7 | $0.0515 |
+| n04 | medium | 3/5 | 3/5 | 0 | 14,332 | 32.8 | $0.0348 |
+| n05 | medium | 5/5 | 5/5 | 0 | 5,831 | 11.7 | $0.0126 |
+| n06 | easy | 5/5 | 5/5 | 0 | 10,086 | 9.9 | $0.0197 |
+| n07 | medium | 5/5 | 5/5 | 0 | 8,601 | 7.3 | $0.0086 |
+| n08 | easy | 5/5 | 5/5 | 0 | 7,000 | 8.8 | $0.0097 |
+| n09 | easy | 5/5 | 5/5 | 0 | 7,758 | 7.8 | $0.0102 |
+| n10 | hard | 5/5 | 5/5 | 0 | 5,374 | 8.8 | $0.0065 |
+| n11 | medium | 5/5 | 5/5 | 0 | 7,565 | 15.8 | $0.0102 |
+| n12 | hard | 5/5 | 5/5 | 0 | 14,293 | 17.1 | $0.0285 |
+| n13 | hard | 0/5 | 0/5 | 0 | 41,926 | 120.0 | $0.0274 |
+| n14 | hard | 5/5 | 5/5 | 0 | 14,487 | 59.6 | $0.0586 |
+| n15 | medium | 5/5 | 5/5 | 0 | 3,579 | 7.5 | $0.0055 |
+| n16 | hard | 5/5 | 5/5 | 0 | 6,593 | 21.5 | $0.0192 |
+| n17 | medium | 5/5 | 5/5 | 0 | 3,285 | 4.5 | $0.0041 |
 
 ## Trials that didn't pass strictly
 
@@ -255,8 +255,8 @@ I'll read the CSV file data/archive/orders-2025.csv to compute the total. I'll u
 - Data fingerprint: `1e2fae2245b87564b897ccbf5b42f958f0dad641df456ece03c295074fbb8b26`
 - Server: `secure-filesystem-server` build `0.2.0` (/healthz: `not reported`)
 - Tool list sha256: `3530bf09c844` (create_directory, directory_tree, edit_file, get_file_info, list_allowed_directories, list_directory, list_directory_with_sizes, move_file, read_file, read_media_file, read_multiple_files, read_text_file, search_files, write_file)
-- Harness: `1dc1d1101acb`, Inspect AI 0.3.283, export v4
+- Harness: `1dc1d1101acb`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $1.9975 (default (pessimistic) tokens), per-trial cap $0.0294
 

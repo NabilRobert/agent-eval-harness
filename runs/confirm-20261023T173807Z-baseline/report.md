@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila`, 8 tasks × 10 attempts, suite sha256 `97a277530313`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-23T17:38:11+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.2403
-- **Tokens:** 299,261 input + 82,760 output; median 4,466 per trial
+- **Total cost:** $0.2423
+- **Tokens:** 378,493 input (79,232 of them cached) + 82,760 output; median 5,308 per trial
 - **Latency per trial:** median 14.6 s, p90 20.0 s, max 25.7 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,14 +30,14 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| h03 | hard | 8/10 | 10/10 | 0 | 4,247 | 18.7 | $0.0336 |
-| h06 | hard | 10/10 | 10/10 | 0 | 4,470 | 13.3 | $0.0295 |
-| h08 | hard | 10/10 | 10/10 | 0 | 4,011 | 12.2 | $0.0222 |
-| m04 | medium | 7/10 | 7/10 | 0 | 4,588 | 14.3 | $0.0298 |
-| m07 | medium | 10/10 | 10/10 | 0 | 4,348 | 14.5 | $0.0281 |
-| m09 | medium | 10/10 | 10/10 | 0 | 4,560 | 14.6 | $0.0285 |
-| x03 | expert | 8/10 | 8/10 | 0 | 5,006 | 17.0 | $0.0368 |
-| x08 | expert | 10/10 | 10/10 | 0 | 4,478 | 14.9 | $0.0317 |
+| h03 | hard | 8/10 | 10/10 | 0 | 5,500 | 18.7 | $0.0342 |
+| h06 | hard | 10/10 | 10/10 | 0 | 6,516 | 13.3 | $0.0299 |
+| h08 | hard | 10/10 | 10/10 | 0 | 4,011 | 12.2 | $0.0223 |
+| m04 | medium | 7/10 | 7/10 | 0 | 5,459 | 14.3 | $0.0300 |
+| m07 | medium | 10/10 | 10/10 | 0 | 4,653 | 14.5 | $0.0283 |
+| m09 | medium | 10/10 | 10/10 | 0 | 4,586 | 14.6 | $0.0287 |
+| x03 | expert | 8/10 | 8/10 | 0 | 5,432 | 17.0 | $0.0372 |
+| x08 | expert | 10/10 | 10/10 | 0 | 4,818 | 14.9 | $0.0318 |
 
 ## Trials that didn't pass strictly
 
@@ -163,8 +163,8 @@ WHERE rental_date >= '2025-01-01'
 - Data fingerprint: `fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `26713edaac57`, Inspect AI 0.3.283, export v4
+- Harness: `26713edaac57`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.2136 (measured tokens), per-trial cap $0.0625
 

@@ -467,3 +467,20 @@ agent. The reproduction stack also pins the server from before the fix,
 which strict mode would reject. `compare` would name the change
 (`agent.model_args`), but a difference you can see is still a
 difference. The fix was for MCP-backbone's other clients.
+
+## 2026-10-29 — The costs were low, not high
+
+The cost note said every input token was charged at the full input
+price, so costs could only err high. They erred low. Inspect splits a
+response's prompt tokens into `input_tokens` and the cached reads, and
+the export only summed `input_tokens`, so cached tokens were neither
+counted nor charged. Juku's spike 5 found it in the committed logs: 3.06
+M of 9.68 M input tokens were cached, up to 61% on the filesystem suites.
+The budget cap was never affected: Inspect prices each call itself, with
+cached tokens at the cached price.
+
+Export v5 counts every input token, records how many were cached, and
+charges those at the table's `cache_read` price. Every committed run was
+rebuilt from its saved log (`agent-eval reexport`); only token and cost
+fields changed. The total went from $4.45 to $4.52 (+1.5%), up to +3.8%
+on a filesystem run. No grade or verdict moved.

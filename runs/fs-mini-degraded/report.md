@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `filesystem`, 17 tasks × 5 attempts, suite sha256 `94ad6a86e144`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-23T17:30:12+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.3386
-- **Tokens:** 438,495 input + 114,497 output; median 6,104 per trial
+- **Total cost:** $0.3479
+- **Tokens:** 809,311 input (370,816 of them cached) + 114,497 output; median 10,126 per trial
 - **Latency per trial:** median 17.2 s, p90 31.1 s, max 46.1 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,22 +30,22 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| f01 | easy | 0/5 | 0/5 | 0 | 6,333 | 15.1 | $0.0188 |
-| f02 | easy | 0/5 | 0/5 | 0 | 5,965 | 16.8 | $0.0181 |
-| f03 | medium | 0/5 | 0/5 | 0 | 9,128 | 32.3 | $0.0328 |
-| f04 | medium | 0/5 | 0/5 | 0 | 7,149 | 18.9 | $0.0255 |
+| f01 | easy | 0/5 | 0/5 | 0 | 11,016 | 15.1 | $0.0194 |
+| f02 | easy | 0/5 | 0/5 | 0 | 11,608 | 16.8 | $0.0188 |
+| f03 | medium | 0/5 | 0/5 | 0 | 17,339 | 32.3 | $0.0339 |
+| f04 | medium | 0/5 | 0/5 | 0 | 14,420 | 18.9 | $0.0263 |
 | f05 | easy | 5/5 | 5/5 | 0 | 4,491 | 5.5 | $0.0088 |
-| f06 | hard | 5/5 | 5/5 | 0 | 4,532 | 5.8 | $0.0095 |
+| f06 | hard | 5/5 | 5/5 | 0 | 4,532 | 5.8 | $0.0096 |
 | f07 | hard | 5/5 | 5/5 | 0 | 7,180 | 24.1 | $0.0330 |
-| f08 | easy | 4/5 | 4/5 | 0 | 6,104 | 12.6 | $0.0134 |
-| f09 | medium | 4/5 | 4/5 | 0 | 4,309 | 13.4 | $0.0169 |
-| f10 | medium | 0/5 | 0/5 | 0 | 7,087 | 23.0 | $0.0209 |
-| f11 | medium | 0/5 | 0/5 | 0 | 8,096 | 25.4 | $0.0248 |
-| f12 | easy | 4/5 | 4/5 | 0 | 6,280 | 14.6 | $0.0155 |
-| f13 | medium | 0/5 | 0/5 | 0 | 6,492 | 21.3 | $0.0277 |
-| f14 | easy | 0/5 | 0/5 | 0 | 5,428 | 16.8 | $0.0162 |
-| f15 | hard | 0/5 | 0/5 | 0 | 8,419 | 23.5 | $0.0280 |
-| f16 | hard | 0/5 | 0/5 | 0 | 6,071 | 16.3 | $0.0197 |
+| f08 | easy | 4/5 | 4/5 | 0 | 7,384 | 12.6 | $0.0137 |
+| f09 | medium | 4/5 | 4/5 | 0 | 6,485 | 13.4 | $0.0174 |
+| f10 | medium | 0/5 | 0/5 | 0 | 14,693 | 23.0 | $0.0219 |
+| f11 | medium | 0/5 | 0/5 | 0 | 14,067 | 25.4 | $0.0256 |
+| f12 | easy | 4/5 | 4/5 | 0 | 10,083 | 14.6 | $0.0160 |
+| f13 | medium | 0/5 | 0/5 | 0 | 13,477 | 21.3 | $0.0284 |
+| f14 | easy | 0/5 | 0/5 | 0 | 15,342 | 16.8 | $0.0174 |
+| f15 | hard | 0/5 | 0/5 | 0 | 10,979 | 23.5 | $0.0285 |
+| f16 | hard | 0/5 | 0/5 | 0 | 7,996 | 16.3 | $0.0203 |
 | f17 | hard | 5/5 | 5/5 | 0 | 2,987 | 8.7 | $0.0089 |
 
 ## Trials that didn't pass strictly
@@ -750,8 +750,8 @@ I'll probe likely filenames under data/ by requesting file metadata for common n
 - Data fingerprint: `304f741838b4595097c0130d8eff35ffa88775771f7a07f7e0862e205e7d5c0d`
 - Server: `secure-filesystem-server` build `0.2.0` (/healthz: `not reported`)
 - Tool list sha256: `3530bf09c844` (create_directory, directory_tree, edit_file, get_file_info, list_allowed_directories, list_directory, list_directory_with_sizes, move_file, read_file, read_media_file, read_multiple_files, read_text_file, search_files, write_file)
-- Harness: `6820677b459e`, Inspect AI 0.3.283, export v4
+- Harness: `6820677b459e`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.1989 (measured tokens), per-trial cap $0.0588
 
