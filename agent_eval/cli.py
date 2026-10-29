@@ -214,7 +214,7 @@ def _new_run_dir(out: str, run_id: str) -> Path:
     return run_dir
 
 
-def _plan_spend(
+def _plan_spend(  # noqa: PLR0913 -- keyword-only step inputs
     *,
     model: str,
     prices_path: str,
@@ -326,7 +326,7 @@ def _cost_limits(
     return {"cost_limit": budget["per_trial_cap_usd"], "model_cost_config": {model: cost}}
 
 
-def _run_trials(
+def _run_trials(  # noqa: PLR0913 -- keyword-only step inputs
     *,
     suite: dict[str, Any],
     target: dict[str, Any],
@@ -385,7 +385,7 @@ def _print_run_summary(run_id: str, meta: dict[str, Any]) -> None:
 
 
 @app.command(help="run a suite and write run records")
-def run(
+def run(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
     suite_path: Annotated[
         str, typer.Option("--suite", show_default="<repo>/suites/pagila.yaml")
     ] = (str(REPO_ROOT / "suites" / "pagila.yaml")),
@@ -620,7 +620,7 @@ def _save_confirmation(
 
 
 @app.command(help="rerun the dropped tasks of an inconclusive comparison")
-def confirm(
+def confirm(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
     baseline: Path,
     candidate: Path,
     epochs: Annotated[int, typer.Option()] = 10,

@@ -43,6 +43,7 @@ GATES = ("v1", "v2")
 DEFAULT_GATE = "v2"
 Z_CRITICAL = 1.96  # one-sided alpha = 0.025, the same tail as v1's 95% interval
 BOOTSTRAP_RESAMPLES = 10_000
+INTERVAL_LEVEL = 0.95  # both gates report a 95% interval
 BOOTSTRAP_SEED = 20261023  # fixed: the same two runs always get the same verdict
 INCONCLUSIVE_DROP = -0.05
 BROKEN_MIN_TRIALS = 5
@@ -117,7 +118,6 @@ def bootstrap_interval(
     *,
     resamples: int = BOOTSTRAP_RESAMPLES,
     seed: int = BOOTSTRAP_SEED,
-    level: float = 0.95,
 ) -> tuple[float, float, float]:
     """(low, high, point) for the mean per-task change in pass rate."""
     point = statistics.fmean(cand[t][0] / cand[t][1] - base[t][0] / base[t][1] for t in tasks)
@@ -132,7 +132,7 @@ def bootstrap_interval(
             total += rng.binomialvariate(cn, cs / cn) / cn - rng.binomialvariate(bn, bs / bn) / bn
         means.append(total / n)
     means.sort()
-    tail = (1 - level) / 2
+    tail = (1 - INTERVAL_LEVEL) / 2
     low = means[int(tail * resamples)]
     high = means[min(resamples - 1, int((1 - tail) * resamples))]
     return low, high, point
@@ -199,14 +199,21 @@ def _differences(baseline: Run, candidate: Run) -> list[str]:
     return out
 
 
-def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GATE) -> Comparison:
-    if gate not in GATES:
-        raise ValueError(f"unknown gate {gate!r}; one of {GATES}")
-    try:
-        baseline, candidate = load_run(baseline_dir), load_run(candidate_dir)
-    except RecordError as exc:
-        return Comparison(EXIT_UNDECIDED, "undecided", reasons=[str(exc)])
+@dataclass(frozen=True)
+class _SharedCounts:
+    """What both gates decide from: per-task (passes, trials) on each side,
+    the tasks both runs graded, the mean per-task change, and the tasks
+    that broke."""
 
+    base: dict[str, tuple[int, int]]
+    cand: dict[str, tuple[int, int]]
+    shared: list[str]
+    point: float
+    broken: list[str]
+
+
+def _incomparable_reasons(baseline: Run, candidate: Run) -> list[str]:
+    """Why the two runs can't be compared at all (exit 2), or []."""
     reasons: list[str] = []
     for label, run in (("baseline", baseline), ("candidate", candidate)):
         if run.meta["status"] != "complete":
@@ -220,63 +227,86 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GA
     c_fp = candidate.meta["provenance"].get("data_fingerprint")
     if b_fp != c_fp:
         reasons.append("data fingerprints differ: the runs were graded against different data")
+    return reasons
 
-    regrade_mismatches = [
-        f"{run_label} {t['task_id']}#{t['attempt']}: stored {t['strict']}/{t['lenient']}, "
-        f"regraded {regrade(t)[0]}/{regrade(t)[1]}"
-        for run_label, run in (("baseline", baseline), ("candidate", candidate))
-        for t in run.trials
-        if t["outcome"] != "error" and (t["strict"], t["lenient"]) != regrade(t)
-    ]
+
+def _regrade_mismatches(baseline: Run, candidate: Run) -> list[str]:
+    """Trials whose stored grade the current graders disagree with."""
+    mismatches: list[str] = []
+    for label, run in (("baseline", baseline), ("candidate", candidate)):
+        for trial in run.trials:
+            if trial["outcome"] == "error":
+                continue
+            strict, lenient = regrade(trial)
+            if (trial["strict"], trial["lenient"]) != (strict, lenient):
+                mismatches.append(
+                    f"{label} {trial['task_id']}#{trial['attempt']}: stored "
+                    f"{trial['strict']}/{trial['lenient']}, regraded {strict}/{lenient}"
+                )
+    return mismatches
+
+
+def _suite_drop(gate: str, counts: _SharedCounts) -> tuple[str | None, tuple[float, float]]:
+    """The suite-level rule under `gate`: why it fired (or None), and the
+    95% interval of the change."""
+    drop = -counts.point
+    if gate == "v1":
+        low, high, _ = bootstrap_interval(counts.base, counts.cand, counts.shared)
+        if high < 0:
+            return (
+                f"suite pass rate dropped {drop:.1%} (95% interval {low:+.1%} to "
+                f"{high:+.1%}, entirely below 0)"
+            ), (low, high)
+        return None, (low, high)
+    z, low, high = pooled_test(counts.base, counts.cand, counts.shared)
+    if z > Z_CRITICAL:
+        return (
+            f"suite pass rate dropped {drop:.1%} (pooled z = {z:.2f} > "
+            f"{Z_CRITICAL}; 95% interval {low:+.1%} to {high:+.1%})"
+        ), (low, high)
+    return None, (low, high)
+
+
+def _decide(gate: str, counts: _SharedCounts) -> tuple[int, str, list[str], tuple[float, float]]:
+    """(exit code, verdict, reasons, interval) under one gate."""
+    suite_reason, (low, high) = _suite_drop(gate, counts)
+    why = [suite_reason] if suite_reason else []
+    if counts.broken:
+        why.append(f"task(s) went from every attempt passing to none: {counts.broken}")
+    if why:
+        return EXIT_REGRESSION, "regression", why, (low, high)
+    if counts.point <= INCONCLUSIVE_DROP:
+        inconclusive = (
+            f"suite pass rate down {-counts.point:.1%}, but not significant under gate {gate} "
+            f"(95% interval {low:+.1%} to {high:+.1%}); rerun the dropped tasks to confirm"
+        )
+        return EXIT_OK, "inconclusive", [inconclusive], (low, high)
+    return EXIT_OK, "no regression", [], (low, high)
+
+
+def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GATE) -> Comparison:
+    if gate not in GATES:
+        raise ValueError(f"unknown gate {gate!r}; one of {GATES}")
+    try:
+        baseline, candidate = load_run(baseline_dir), load_run(candidate_dir)
+    except RecordError as exc:
+        return Comparison(EXIT_UNDECIDED, "undecided", reasons=[str(exc)])
+
+    reasons = _incomparable_reasons(baseline, candidate)
+    regrade_mismatches = _regrade_mismatches(baseline, candidate)
     differences = _differences(baseline, candidate)
     if reasons:
         return Comparison(EXIT_UNDECIDED, "undecided", reasons, differences, regrade_mismatches)
 
     base, cand = task_counts(baseline), task_counts(candidate)
     shared = sorted(set(base) & set(cand))
-    missing = sorted(set(base) ^ set(cand))
-    per_task = {t: (base[t][0] / base[t][1], cand[t][0] / cand[t][1]) for t in shared}
     if not shared:
         return Comparison(EXIT_UNDECIDED, "undecided", ["no tasks in common"], differences)
-
+    per_task = {t: (base[t][0] / base[t][1], cand[t][0] / cand[t][1]) for t in shared}
     point = statistics.fmean(per_task[t][1] - per_task[t][0] for t in shared)
-    broken = broken_tasks(base, cand, shared)
-    dropped = [t for t in shared if per_task[t][1] < per_task[t][0]]
-    warnings = _warnings(baseline, candidate)
+    counts = _SharedCounts(base, cand, shared, point, broken_tasks(base, cand, shared))
 
-    def decide(which: str) -> tuple[int, str, list[str], tuple[float, float]]:
-        why: list[str] = []
-        if which == "v1":
-            low, high, _ = bootstrap_interval(base, cand, shared)
-            if high < 0:
-                why.append(
-                    f"suite pass rate dropped {-point:.1%} (95% interval {low:+.1%} to "
-                    f"{high:+.1%}, entirely below 0)"
-                )
-        else:
-            z, low, high = pooled_test(base, cand, shared)
-            if z > Z_CRITICAL:
-                why.append(
-                    f"suite pass rate dropped {-point:.1%} (pooled z = {z:.2f} > "
-                    f"{Z_CRITICAL}; 95% interval {low:+.1%} to {high:+.1%})"
-                )
-        if broken:
-            why.append(f"task(s) went from every attempt passing to none: {broken}")
-        if why:
-            return EXIT_REGRESSION, "regression", why, (low, high)
-        if point <= INCONCLUSIVE_DROP:
-            return (
-                EXIT_OK,
-                "inconclusive",
-                [
-                    f"suite pass rate down {-point:.1%}, but not significant under gate {which} "
-                    f"(95% interval {low:+.1%} to {high:+.1%}); rerun the dropped tasks to confirm"
-                ],
-                (low, high),
-            )
-        return EXIT_OK, "no regression", [], (low, high)
-
-    decisions = {g: decide(g) for g in GATES}
+    decisions = {g: _decide(g, counts) for g in GATES}
     exit_code, verdict, why, interval = decisions[gate]
     return Comparison(
         exit_code,
@@ -287,10 +317,10 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GA
         per_task,
         interval=interval,
         point=point,
-        broken=broken,
-        dropped=dropped,
-        warnings=warnings,
-        missing=missing,
+        broken=counts.broken,
+        dropped=[t for t in shared if per_task[t][1] < per_task[t][0]],
+        warnings=_warnings(baseline, candidate),
+        missing=sorted(set(base) ^ set(cand)),
         gate=gate,
         gate_verdicts={g: d[1] for g, d in decisions.items()},
     )
