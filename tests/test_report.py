@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from agent_eval.records import load_run
-from agent_eval.report import _fence, headline, render  # pyright: ignore[reportPrivateUsage]
+from agent_eval.report import headline, render
+from agent_eval.report.sections import _fence  # pyright: ignore[reportPrivateUsage]
 from tests.conftest import make_trial
 
 RunFactory = Callable[..., Path]

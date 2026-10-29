@@ -3,7 +3,7 @@
 Each command reads its options, calls the modules that do the work
 (suites, budget, preflight, export, compare, report, publish) and turns
 the outcome into printed lines and an exit code. Nothing here grades or
-decides a verdict; that lives in grading.py and compare.py.
+decides a verdict; that lives in grading.py and compare/.
 
 Exit codes are shared by every command: 0 = ok or no regression,
 1 = a regression or an out-of-date file, 2 = the harness couldn't decide

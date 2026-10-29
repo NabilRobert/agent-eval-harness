@@ -1,16 +1,14 @@
-"""Renders `report.md` from a run's records alone (Phase 3: pure, no
-Inspect, no network). Deterministic: the same records always render the
-same bytes, so CI can check a committed report against a fresh render.
-
-Strict pass rate is the headline (Phase 2); lenient sits next to it so the
-lenient number never has to be taken on trust. Errors are always shown
-beside pass rates, never folded into them."""
+"""report.md, one section at a time: header, result, difficulty table,
+cost and latency, per task, the trials that didn't pass, provenance.
+`render` joins them. Model and tool text is fenced and clipped so nothing
+an agent writes can break the Markdown."""
 
 import statistics
 from collections import defaultdict
 from typing import Any
 
 from agent_eval.records import Run
+from agent_eval.report.stats import headline, median_or_none, per_task_stats
 
 _MAX_ROWS_SHOWN = 6
 _MAX_TEXT = 600
@@ -39,58 +37,12 @@ def _usd(value: float | None) -> str:
     return "unknown" if value is None else f"${value:.4f}"
 
 
-def _median(values: list[float]) -> float | None:
-    return statistics.median(values) if values else None
-
-
 def _rows(rows: list[dict[str, Any]] | None) -> str:
     if rows is None:
         return "(no successful result)"
     shown = [str(list(r.values())) for r in rows[:_MAX_ROWS_SHOWN]]
     more = f" … +{len(rows) - _MAX_ROWS_SHOWN} rows" if len(rows) > _MAX_ROWS_SHOWN else ""
     return "; ".join(shown) + more
-
-
-def per_task_stats(run: Run) -> dict[str, dict[str, Any]]:
-    by_task: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for trial in run.trials:
-        by_task[trial["task_id"]].append(trial)
-    out: dict[str, dict[str, Any]] = {}
-    for task_id, trials in by_task.items():
-        graded = [t for t in trials if t["outcome"] != "error"]
-        out[task_id] = {
-            "attempts": len(trials),
-            "graded": len(graded),
-            "errors": len(trials) - len(graded),
-            "strict": sum(1 for t in graded if t["strict"]),
-            "lenient": sum(1 for t in graded if t["lenient"]),
-            "median_tokens": _median([t["input_tokens"] + t["output_tokens"] for t in trials]),
-            "median_seconds": _median([t["seconds"] for t in trials if t["seconds"] is not None]),
-            "cost": None
-            if any(t["cost_usd"] is None for t in trials)
-            else sum(t["cost_usd"] for t in trials),
-        }
-    return out
-
-
-def headline(run: Run) -> dict[str, Any]:
-    graded = [t for t in run.trials if t["outcome"] != "error"]
-    stats = per_task_stats(run)
-    clean = [s for s in stats.values() if s["errors"] == 0 and s["graded"]]
-    return {
-        "trials": len(run.trials),
-        "graded": len(graded),
-        "errors": len(run.trials) - len(graded),
-        "strict": sum(1 for t in graded if t["strict"]),
-        "lenient": sum(1 for t in graded if t["lenient"]),
-        # pass^k: the share of tasks that passed on every attempt (Yao et
-        # al., tau-bench). Only tasks with no errored attempts count, since
-        # an errored attempt says nothing either way.
-        "pass_all_k": sum(1 for s in clean if s["strict"] == s["graded"]),
-        "pass_any_k": sum(1 for s in clean if s["strict"] > 0),
-        "tasks_counted": len(clean),
-        "tasks": len(stats),
-    }
 
 
 def _header(run: Run, h: dict[str, Any]) -> list[str]:
@@ -168,7 +120,7 @@ def _cost_and_latency(run: Run) -> list[str]:
         f"- **Tokens:** {totals['input_tokens']:,} input "
         f"({totals.get('cached_input_tokens', 0):,} of them cached) + "
         f"{totals['output_tokens']:,} output; "
-        f"median {_median(toks) or 0:,.0f} per trial",
+        f"median {median_or_none(toks) or 0:,.0f} per trial",
     ]
     if secs:
         q = statistics.quantiles(secs, n=10) if len(secs) >= 2 else [secs[0]] * 9
