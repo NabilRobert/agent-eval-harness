@@ -158,7 +158,7 @@ def trial_from_sample(
     }
 
 
-def build_meta(
+def build_meta(  # noqa: PLR0913 -- keyword-only, one per meta.json section
     log: EvalLog,
     trials: list[dict[str, Any]],
     *,

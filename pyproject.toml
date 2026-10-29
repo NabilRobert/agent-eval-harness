@@ -33,6 +33,19 @@ agent-eval = "agent_eval.cli:main"
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.lint]
+# Ruff's defaults, plus the size limits from the "keep it lean" rules: a
+# function that crosses one is split, or says why not on its definition.
+extend-select = ["C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# The fixture's files are written inline, one statement each: splitting
+# build() and build_v2() would scatter the data the suite's answers come from.
+"scripts/build_filesystem_suite.py" = ["PLR0915"]
+
 [tool.ruff.format]
 # The fixtures are data the agent reads, fingerprinted byte for byte:
 # reformatting them would invalidate every suite and run built on them.
