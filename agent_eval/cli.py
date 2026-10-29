@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, NoReturn
 import typer
 import yaml
 
+from agent_eval import REPO_ROOT
 from agent_eval.budget import (
     SMOKE_MAX_TRIALS,
     BudgetError,
@@ -60,7 +61,6 @@ from agent_eval.version import harness_git as current_harness_git
 if TYPE_CHECKING:  # for the type checker only: importing Inspect is slow
     from inspect_ai.log import EvalLog
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
 # Raw Inspect logs land here first (gitignored). One is copied next to the
 # run records only after it's been checked for secrets.
 RAW_LOG_DIR = REPO_ROOT / ".inspect-logs"

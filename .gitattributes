@@ -1,0 +1,4 @@
+# Committed run records are generated evidence: GitHub leaves them out of
+# the language stats and collapses them in diffs. Inspect's logs are zips.
+runs/** linguist-generated=true
+*.eval binary

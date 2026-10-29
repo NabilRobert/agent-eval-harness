@@ -7,15 +7,9 @@ from typing import Any, cast
 
 import yaml
 
+from agent_eval.grading import GRADER_KINDS
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 
-KNOWN_GRADERS = {
-    "result_match",
-    "answer_match",
-    "answer_excludes",
-    "forbidden_tools",
-    "required_tools",
-}
 
 # Frozen before any published run (Phase 2): changing a frozen suite means
 # a new suite version, a new hash here, and a JOURNEY.md entry saying what
@@ -76,7 +70,7 @@ def validate_suite(suite: dict[str, Any]) -> None:
         if not graders:
             raise SuiteError(f"task {task_id!r} has no graders (run scripts/generate_expected.py?)")
         for grader in graders:
-            if len(grader) != 1 or set(grader) - KNOWN_GRADERS:
+            if len(grader) != 1 or set(grader) - set(GRADER_KINDS):
                 raise SuiteError(f"task {task_id!r}: unknown grader {sorted(grader)}")
             [(kind, spec)] = grader.items()
             if kind == "result_match":

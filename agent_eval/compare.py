@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from agent_eval.grading import grade_one
+from agent_eval.grading import grade_one, stored_spec
 from agent_eval.records import RecordError, Run, load_run
 
 EXIT_OK, EXIT_REGRESSION, EXIT_UNDECIDED = 0, 1, 2
@@ -94,14 +94,7 @@ def regrade(trial: dict[str, Any]) -> tuple[bool, bool]:
     right query and then hit the message cap was regraded as a pass."""
     if trial.get("stop_reason") not in (None, "completed"):
         return False, False
-    results = [
-        grade_one(
-            g["kind"],
-            g.get("spec") or {"tool": g.get("tool"), "expected": g.get("expected")},
-            g["input"],
-        )
-        for g in trial["graders"]
-    ]
+    results = [grade_one(g["kind"], stored_spec(g), g["input"]) for g in trial["graders"]]
     return all(r[0] for r in results), all(r[1] for r in results)
 
 

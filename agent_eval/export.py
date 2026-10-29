@@ -13,7 +13,7 @@ from inspect_ai.log import EvalLog, EvalSample, read_eval_log, resolve_sample_at
 from inspect_ai.model import ModelUsage
 
 from agent_eval.budget import cost_usd
-from agent_eval.grading import GRADER_VERSION, grade_one
+from agent_eval.grading import GRADER_VERSION, grade_one, stored_spec
 from agent_eval.records import ordered_json, sha256_hex, task_hash
 from agent_eval.suites import FROZEN_SUITES
 
@@ -105,9 +105,8 @@ def trial_from_sample(
     # (`compare` would otherwise flag every trial a grader fix changed).
     graders: list[dict[str, Any]] = []
     for g in score_meta.get("graders", []):
-        spec = g.get("spec") or {"tool": g.get("tool"), "expected": g.get("expected")}
         g = {**g}
-        g["strict"], g["lenient"] = grade_one(g["kind"], spec, g["input"])
+        g["strict"], g["lenient"] = grade_one(g["kind"], stored_spec(g), g["input"])
         graders.append(g)
     strict = bool(graders) and all(g["strict"] for g in graders)
     lenient = bool(graders) and all(g["lenient"] for g in graders)
