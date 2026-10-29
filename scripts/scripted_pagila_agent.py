@@ -35,7 +35,7 @@ from inspect_ai.model import (
 )
 from inspect_ai.tool import ToolChoice, ToolInfo
 
-from agent_eval.cli import TRIAL_TIME_LIMIT_S, TRIAL_TOKEN_LIMIT
+from agent_eval.cli.common import TRIAL_TIME_LIMIT_S, TRIAL_TOKEN_LIMIT
 from agent_eval.envfile import parse_env_text
 from agent_eval.export import trial_from_sample
 from agent_eval.inspect_tasks import build_task
