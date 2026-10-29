@@ -162,7 +162,9 @@ def render(run: Run) -> str:
         f"{'' if complete else ' (lower bound: some trials have no price)' if total_cost is not None else ' (model has no price in prices.yaml)'}"
     )
     add(
-        f"- **Tokens:** {totals['input_tokens']:,} input + {totals['output_tokens']:,} output; "
+        f"- **Tokens:** {totals['input_tokens']:,} input "
+        f"({totals.get('cached_input_tokens', 0):,} of them cached) + "
+        f"{totals['output_tokens']:,} output; "
         f"median {_median([float(t) for t in toks]) or 0:,.0f} per trial"
     )
     if secs:
@@ -267,9 +269,9 @@ def render(run: Run) -> str:
     price: dict[str, Any] | None = meta.get("price")
     if price:
         add(
-            f"- Priced at ${price['input']}/M input, ${price['output']}/M output "
-            f"({price['source']}, checked {price['checked']}); every input token at the full "
-            "input price, so cost errs high if any input was cached"
+            f"- Priced at ${price['input']}/M input "
+            f"(${price.get('cache_read', price['input'])}/M cached), ${price['output']}/M output "
+            f"({price['source']}, checked {price['checked']})"
         )
     budget: dict[str, Any] = meta.get("budget") or {}
     if budget:

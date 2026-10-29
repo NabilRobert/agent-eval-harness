@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila-skeleton`, 1 tasks × 1 attempts, suite sha256 `bd3a3ba8e45d`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success); rebuilt from its Inspect log 5×
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 6×
 - **Run at:** 2026-10-23T09:29:07+00:00
 
 ## Result
@@ -20,7 +20,7 @@
 ## Cost and latency
 
 - **Total cost:** $0.0016
-- **Tokens:** 3,262 input + 381 output; median 3,643 per trial
+- **Tokens:** 3,262 input (0 of them cached) + 381 output; median 3,643 per trial
 - **Latency per trial:** median 8.6 s, p90 8.6 s, max 8.6 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -39,7 +39,7 @@ None.
 - Data fingerprint: `not taken`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `47157d7d4efc-dirty`, Inspect AI 0.3.283, export v4
+- Harness: `47157d7d4efc-dirty`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 

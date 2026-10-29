@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila`, 40 tasks × 5 attempts, suite sha256 `a79b59cb8631`, **frozen**
-- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 2×
 - **Run at:** 2026-10-23T15:41:21+00:00
 
 ## Result
@@ -22,8 +22,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.5394
-- **Tokens:** 715,849 input + 180,200 output; median 4,176 per trial
+- **Total cost:** $0.5423
+- **Tokens:** 832,073 input (116,224 of them cached) + 180,200 output; median 4,375 per trial
 - **Latency per trial:** median 12.8 s, p90 18.5 s, max 42.1 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -31,46 +31,46 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| e01 | easy | 5/5 | 5/5 | 0 | 4,421 | 11.5 | $0.0126 |
-| e02 | easy | 5/5 | 5/5 | 0 | 3,939 | 12.7 | $0.0123 |
+| e01 | easy | 5/5 | 5/5 | 0 | 6,393 | 11.5 | $0.0127 |
+| e02 | easy | 5/5 | 5/5 | 0 | 3,939 | 12.7 | $0.0124 |
 | e03 | easy | 5/5 | 5/5 | 0 | 3,378 | 11.3 | $0.0102 |
 | e04 | easy | 5/5 | 5/5 | 0 | 3,972 | 10.3 | $0.0113 |
-| e05 | easy | 5/5 | 5/5 | 0 | 5,194 | 11.9 | $0.0131 |
-| e06 | easy | 5/5 | 5/5 | 0 | 4,060 | 12.4 | $0.0115 |
+| e05 | easy | 5/5 | 5/5 | 0 | 7,242 | 11.9 | $0.0133 |
+| e06 | easy | 5/5 | 5/5 | 0 | 4,060 | 12.4 | $0.0116 |
 | e07 | easy | 5/5 | 5/5 | 0 | 3,838 | 12.3 | $0.0113 |
 | e08 | easy | 5/5 | 5/5 | 0 | 3,547 | 9.7 | $0.0104 |
-| e09 | easy | 5/5 | 5/5 | 0 | 4,343 | 12.2 | $0.0118 |
-| e10 | easy | 5/5 | 5/5 | 0 | 3,506 | 11.5 | $0.0102 |
+| e09 | easy | 5/5 | 5/5 | 0 | 6,391 | 12.2 | $0.0119 |
+| e10 | easy | 5/5 | 5/5 | 0 | 3,506 | 11.5 | $0.0103 |
 | h01 | hard | 5/5 | 5/5 | 0 | 4,136 | 11.6 | $0.0120 |
-| h02 | hard | 5/5 | 5/5 | 0 | 3,545 | 12.1 | $0.0122 |
-| h03 | hard | 4/5 | 5/5 | 0 | 5,274 | 18.6 | $0.0186 |
-| h04 | hard | 5/5 | 5/5 | 0 | 4,193 | 12.1 | $0.0128 |
-| h05 | hard | 5/5 | 5/5 | 0 | 4,878 | 15.9 | $0.0145 |
+| h02 | hard | 5/5 | 5/5 | 0 | 4,565 | 12.1 | $0.0123 |
+| h03 | hard | 4/5 | 5/5 | 0 | 5,558 | 18.6 | $0.0188 |
+| h04 | hard | 5/5 | 5/5 | 0 | 4,275 | 12.1 | $0.0129 |
+| h05 | hard | 5/5 | 5/5 | 0 | 4,878 | 15.9 | $0.0147 |
 | h06 | hard | 5/5 | 5/5 | 0 | 3,917 | 14.7 | $0.0129 |
 | h07 | hard | 5/5 | 5/5 | 0 | 4,002 | 11.6 | $0.0124 |
-| h08 | hard | 5/5 | 5/5 | 0 | 3,977 | 10.0 | $0.0115 |
+| h08 | hard | 5/5 | 5/5 | 0 | 3,977 | 10.0 | $0.0116 |
 | h09 | hard | 5/5 | 5/5 | 0 | 4,139 | 12.3 | $0.0113 |
-| h10 | hard | 5/5 | 5/5 | 0 | 4,180 | 11.1 | $0.0112 |
-| m01 | medium | 5/5 | 5/5 | 0 | 5,741 | 24.7 | $0.0221 |
+| h10 | hard | 5/5 | 5/5 | 0 | 4,180 | 11.1 | $0.0113 |
+| m01 | medium | 5/5 | 5/5 | 0 | 6,713 | 24.7 | $0.0223 |
 | m02 | medium | 5/5 | 5/5 | 0 | 4,373 | 13.2 | $0.0130 |
 | m03 | medium | 5/5 | 5/5 | 0 | 4,124 | 12.5 | $0.0118 |
-| m04 | medium | 3/5 | 3/5 | 0 | 3,890 | 12.6 | $0.0123 |
-| m05 | medium | 5/5 | 5/5 | 0 | 4,402 | 12.3 | $0.0150 |
-| m06 | medium | 4/5 | 5/5 | 0 | 4,189 | 12.8 | $0.0127 |
+| m04 | medium | 3/5 | 3/5 | 0 | 3,913 | 12.6 | $0.0124 |
+| m05 | medium | 5/5 | 5/5 | 0 | 4,402 | 12.3 | $0.0151 |
+| m06 | medium | 4/5 | 5/5 | 0 | 4,290 | 12.8 | $0.0128 |
 | m07 | medium | 5/5 | 5/5 | 0 | 3,955 | 13.2 | $0.0127 |
 | m08 | medium | 5/5 | 5/5 | 0 | 3,487 | 11.6 | $0.0092 |
 | m09 | medium | 5/5 | 5/5 | 0 | 4,377 | 12.6 | $0.0136 |
 | m10 | medium | 5/5 | 5/5 | 0 | 3,897 | 11.3 | $0.0108 |
-| x01 | expert | 5/5 | 5/5 | 0 | 4,294 | 11.5 | $0.0126 |
-| x02 | expert | 5/5 | 5/5 | 0 | 5,385 | 19.4 | $0.0195 |
-| x03 | expert | 5/5 | 5/5 | 0 | 4,878 | 18.8 | $0.0174 |
-| x04 | expert | 5/5 | 5/5 | 0 | 4,086 | 14.7 | $0.0144 |
-| x05 | expert | 5/5 | 5/5 | 0 | 4,379 | 13.0 | $0.0129 |
-| x06 | expert | 5/5 | 5/5 | 0 | 4,505 | 17.0 | $0.0161 |
+| x01 | expert | 5/5 | 5/5 | 0 | 4,468 | 11.5 | $0.0126 |
+| x02 | expert | 5/5 | 5/5 | 0 | 5,513 | 19.4 | $0.0197 |
+| x03 | expert | 5/5 | 5/5 | 0 | 5,100 | 18.8 | $0.0175 |
+| x04 | expert | 5/5 | 5/5 | 0 | 5,364 | 14.7 | $0.0145 |
+| x05 | expert | 5/5 | 5/5 | 0 | 4,646 | 13.0 | $0.0130 |
+| x06 | expert | 5/5 | 5/5 | 0 | 5,785 | 17.0 | $0.0162 |
 | x07 | expert | 3/5 | 3/5 | 0 | 4,516 | 16.7 | $0.0156 |
-| x08 | expert | 5/5 | 5/5 | 0 | 4,382 | 13.2 | $0.0129 |
-| x09 | expert | 4/5 | 5/5 | 0 | 4,517 | 14.1 | $0.0141 |
-| x10 | expert | 4/5 | 5/5 | 0 | 6,984 | 19.9 | $0.0264 |
+| x08 | expert | 5/5 | 5/5 | 0 | 4,382 | 13.2 | $0.0130 |
+| x09 | expert | 4/5 | 5/5 | 0 | 4,517 | 14.1 | $0.0142 |
+| x10 | expert | 4/5 | 5/5 | 0 | 8,198 | 19.9 | $0.0267 |
 
 ## Trials that didn't pass strictly
 
@@ -230,8 +230,8 @@ WHERE first_rental >= TIMESTAMP '2023-01-01 00:00:00'
 - Data fingerprint: `fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `02309a218cce`, Inspect AI 0.3.283, export v4
+- Harness: `02309a218cce`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.5363 (measured tokens), per-trial cap $0.0250
 

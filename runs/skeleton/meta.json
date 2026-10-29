@@ -53,6 +53,7 @@
     "pass_lenient": 1,
     "errors": 0,
     "input_tokens": 3262,
+    "cached_input_tokens": 0,
     "output_tokens": 381,
     "cost_usd": {
       "usd": 0.001577,
@@ -86,9 +87,15 @@
       "from_export_version": 3,
       "to_export_version": 4,
       "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-10-29T00:56:29+00:00",
+      "from_export_version": 4,
+      "to_export_version": 5,
+      "price_checked": "2026-10-23"
     }
   ],
-  "export_version": 4,
+  "export_version": 5,
   "price": {
     "input": 0.25,
     "cache_read": 0.025,
@@ -97,5 +104,5 @@
     "checked": "2026-10-23"
   },
   "schema_version": 1,
-  "trials_sha256": "754ff7d2c8501ced12005696d095b9cf6893a9779c822d45f736924745d23caa"
+  "trials_sha256": "fe7f18476d91851e87c3d57d177cf79aa67e65ca67f9678b938aa9fd7a127ab0"
 }

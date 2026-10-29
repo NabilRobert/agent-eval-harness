@@ -7,9 +7,11 @@
 # provider, add its entry (e.g. `openai/gpt-5-mini`) with its source;
 # without one, only smoke-sized runs are allowed.
 #
-# cache_read is the price of cached input tokens. The harness's own cost
-# figure charges every input token at the full `input` price, so it errs
-# high, never low, when the provider served some input from cache.
+# cache_read is the price of cached input tokens: the provider's cached
+# share of each call's input is charged at it, the rest at `input`. Without
+# a cache_read price, cached tokens are charged at `input`. The budget's
+# estimate before a run charges every input token at `input`, so it errs
+# high.
 models:
   openai-api/sumopod/gpt-5-mini:
     input: 0.25

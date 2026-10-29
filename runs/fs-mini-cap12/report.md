@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `filesystem`, 17 tasks × 5 attempts, suite sha256 `94ad6a86e144`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-24T08:53:59+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.2081
-- **Tokens:** 320,408 input + 64,012 output; median 4,001 per trial
+- **Total cost:** $0.2148
+- **Tokens:** 587,160 input (266,752 of them cached) + 64,012 output; median 7,097 per trial
 - **Latency per trial:** median 9.0 s, p90 19.5 s, max 72.8 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,23 +30,23 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| f01 | easy | 2/5 | 2/5 | 0 | 5,620 | 9.0 | $0.0112 |
-| f02 | easy | 2/5 | 2/5 | 0 | 3,548 | 8.1 | $0.0079 |
-| f03 | medium | 5/5 | 5/5 | 0 | 8,340 | 12.4 | $0.0175 |
-| f04 | medium | 5/5 | 5/5 | 0 | 8,969 | 19.5 | $0.0273 |
-| f05 | easy | 5/5 | 5/5 | 0 | 4,005 | 6.4 | $0.0082 |
-| f06 | hard | 5/5 | 5/5 | 0 | 4,476 | 9.9 | $0.0112 |
-| f07 | hard | 5/5 | 5/5 | 0 | 6,434 | 32.4 | $0.0410 |
-| f08 | easy | 5/5 | 5/5 | 0 | 3,642 | 7.0 | $0.0077 |
-| f09 | medium | 4/5 | 4/5 | 0 | 4,281 | 9.1 | $0.0093 |
-| f10 | medium | 5/5 | 5/5 | 0 | 4,616 | 10.7 | $0.0115 |
-| f11 | medium | 3/5 | 3/5 | 0 | 3,473 | 9.3 | $0.0089 |
-| f12 | easy | 2/5 | 2/5 | 0 | 3,548 | 7.7 | $0.0068 |
-| f13 | medium | 4/5 | 4/5 | 0 | 2,193 | 5.2 | $0.0048 |
-| f14 | easy | 2/5 | 2/5 | 0 | 3,344 | 12.6 | $0.0104 |
-| f15 | hard | 5/5 | 5/5 | 0 | 3,087 | 9.1 | $0.0084 |
-| f16 | hard | 3/5 | 3/5 | 0 | 3,569 | 8.7 | $0.0088 |
-| f17 | hard | 5/5 | 5/5 | 0 | 2,294 | 7.8 | $0.0074 |
+| f01 | easy | 2/5 | 2/5 | 0 | 8,436 | 9.0 | $0.0116 |
+| f02 | easy | 2/5 | 2/5 | 0 | 7,075 | 8.1 | $0.0083 |
+| f03 | medium | 5/5 | 5/5 | 0 | 11,173 | 12.4 | $0.0178 |
+| f04 | medium | 5/5 | 5/5 | 0 | 12,391 | 19.5 | $0.0278 |
+| f05 | easy | 5/5 | 5/5 | 0 | 5,285 | 6.4 | $0.0084 |
+| f06 | hard | 5/5 | 5/5 | 0 | 7,164 | 9.9 | $0.0115 |
+| f07 | hard | 5/5 | 5/5 | 0 | 7,877 | 32.4 | $0.0414 |
+| f08 | easy | 5/5 | 5/5 | 0 | 5,416 | 7.0 | $0.0080 |
+| f09 | medium | 4/5 | 4/5 | 0 | 7,212 | 9.1 | $0.0097 |
+| f10 | medium | 5/5 | 5/5 | 0 | 6,580 | 10.7 | $0.0118 |
+| f11 | medium | 3/5 | 3/5 | 0 | 9,456 | 9.3 | $0.0095 |
+| f12 | easy | 2/5 | 2/5 | 0 | 6,921 | 7.7 | $0.0073 |
+| f13 | medium | 4/5 | 4/5 | 0 | 3,473 | 5.2 | $0.0050 |
+| f14 | easy | 2/5 | 2/5 | 0 | 6,834 | 12.6 | $0.0109 |
+| f15 | hard | 5/5 | 5/5 | 0 | 5,846 | 9.1 | $0.0088 |
+| f16 | hard | 3/5 | 3/5 | 0 | 7,593 | 8.7 | $0.0093 |
+| f17 | hard | 5/5 | 5/5 | 0 | 3,650 | 7.8 | $0.0076 |
 
 ## Trials that didn't pass strictly
 
@@ -290,8 +290,8 @@ I'll read the four service config.yaml files to find timeout settings. I'll open
 - Data fingerprint: `304f741838b4595097c0130d8eff35ffa88775771f7a07f7e0862e205e7d5c0d`
 - Server: `secure-filesystem-server` build `0.2.0` (/healthz: `not reported`)
 - Tool list sha256: `3530bf09c844` (create_directory, directory_tree, edit_file, get_file_info, list_allowed_directories, list_directory, list_directory_with_sizes, move_file, read_file, read_media_file, read_multiple_files, read_text_file, search_files, write_file)
-- Harness: `1828ff05a742`, Inspect AI 0.3.283, export v4
+- Harness: `1828ff05a742`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 12, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.2495 (measured tokens), per-trial cap $0.0588
 

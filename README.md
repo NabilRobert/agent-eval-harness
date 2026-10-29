@@ -35,12 +35,12 @@ Two suites, run against two targets:
 
 | Run | Strict pass rate | pass^5 | Cost | Median latency |
 |---|---|---|---|---|
-| Pagila, gpt-5-mini, run 1 | 191/200 (95.5%) | 35/40 | $0.534 | 13.1 s |
-| Pagila, gpt-5-mini, run 2 | 192/200 (96.0%) | 34/40 | $0.539 | 12.8 s |
+| Pagila, gpt-5-mini, run 1 | 191/200 (95.5%) | 35/40 | $0.537 | 13.1 s |
+| Pagila, gpt-5-mini, run 2 | 192/200 (96.0%) | 34/40 | $0.542 | 12.8 s |
 | Pagila, gpt-5-nano | 182/200 (91.0%) | 30/40 | $0.276 | 27.4 s |
-| Filesystem, gpt-5-mini | 84/85 (98.8%) | 16/17 | $0.205 | 8.9 s |
-| Filesystem, gpt-5-nano | 67/85 (78.8%) | 10/17 | $0.076 | 12.6 s |
-| Filesystem, gpt-5-mini, run 2 | 84/85 (98.8%) | 16/17 | $0.217 | 10.1 s |
+| Filesystem, gpt-5-mini | 84/85 (98.8%) | 16/17 | $0.213 | 8.9 s |
+| Filesystem, gpt-5-nano | 67/85 (78.8%) | 10/17 | $0.078 | 12.6 s |
+| Filesystem, gpt-5-mini, run 2 | 84/85 (98.8%) | 16/17 | $0.225 | 10.1 s |
 
 | Regression check | Expected | Gate said |
 |---|---|---|
@@ -232,8 +232,10 @@ its interval, so a flag can be judged rather than obeyed.
 - **Latency was measured from a laptop over the internet,** so it includes
   network time. It's comparable between runs here, not with other setups.
 - **Costs use Sumopod's prices of 2026-10-23** ([`prices.yaml`](prices.yaml)).
-  Every input token is charged at the full input price, so costs err high if
-  any input was cached.
+  Cached input tokens are charged at the table's cached-input price, as the
+  provider bills them. (Until export v5, cached tokens were left out of the
+  count, so the published costs were 1.5% low overall and up to 4% low on
+  the filesystem runs; every run was rebuilt from its saved log.)
 - **Temperature is the provider default,** and recorded.
 
 ## Reproduce the results

@@ -21,7 +21,7 @@
     "token_basis": "default (pessimistic)"
   },
   "created_at": "2026-10-23T09:45:59+00:00",
-  "export_version": 4,
+  "export_version": 5,
   "inspect_status": "success",
   "provenance": {
     "data_fingerprint": "fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96",
@@ -95,6 +95,12 @@
       "from_export_version": 3,
       "to_export_version": 4,
       "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-10-29T00:56:32+00:00",
+      "from_export_version": 4,
+      "to_export_version": 5,
+      "price_checked": "2026-10-23"
     }
   ],
   "run_id": "smoke-b1",
@@ -124,10 +130,11 @@
     "pass_strict": 5,
     "pass_lenient": 6,
     "errors": 0,
-    "input_tokens": 22108,
+    "input_tokens": 37340,
+    "cached_input_tokens": 15232,
     "output_tokens": 6457,
     "cost_usd": {
-      "usd": 0.018441,
+      "usd": 0.018822,
       "complete": true
     }
   },
@@ -139,5 +146,5 @@
     "checked": "2026-10-23"
   },
   "schema_version": 1,
-  "trials_sha256": "776c3cbf117a1965637b145d34d4f86a09532718e3ac8176d52a9b34c5b471aa"
+  "trials_sha256": "ac124dc8564c11df807e2cd7b0259bef94a40c12ee3ac73baca2784d26764807"
 }

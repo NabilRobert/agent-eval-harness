@@ -4,7 +4,9 @@ rather than as quietly different run records."""
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
+from inspect_ai.event import ModelEvent
 from inspect_ai.log import read_eval_log
 
 from agent_eval.export import clean_arguments, trial_from_sample
@@ -76,3 +78,30 @@ def test_exporting_the_smoke_log_reproduces_its_committed_trials() -> None:
         for s in (log.samples or [])
     ]
     assert exported == (SMOKE / "trials.jsonl").read_text().splitlines()
+
+
+SMOKE_E1 = Path(__file__).resolve().parent.parent / "runs" / "smoke-e1"
+
+
+def raw_usage(event: ModelEvent) -> dict[str, Any]:
+    """The usage block of the provider's own response, as Inspect logged it."""
+    assert event.call is not None
+    response = cast(dict[str, Any], event.call.response)
+    return cast(dict[str, Any], response["usage"])
+
+
+def test_input_tokens_include_the_cached_ones_the_provider_reports() -> None:
+    """The provider's raw usage is the fixture: `prompt_tokens` counts every
+    input token and `prompt_tokens_details.cached_tokens` the cached ones.
+    Inspect splits them apart, and export must add them back."""
+    log = read_eval_log(str(SMOKE_E1 / "inspect.eval"))
+    meta = load_run(SMOKE_E1).meta
+    checked = 0
+    for sample in log.samples or []:
+        trial = trial_from_sample(sample, meta["suite"]["task_hashes"], meta["price"])
+        raw_usages = [raw_usage(event) for event in sample.events if event.event == "model"]
+        for call, usage in zip(trial["model_calls"], raw_usages, strict=True):
+            assert call["input_tokens"] == usage["prompt_tokens"]
+            assert call["cached_input_tokens"] == usage["prompt_tokens_details"]["cached_tokens"]
+            checked += 1
+    assert checked and load_run(SMOKE_E1).meta["totals"]["cached_input_tokens"] > 0

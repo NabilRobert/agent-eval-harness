@@ -46,6 +46,16 @@ def test_cost_is_unknown_without_a_price_never_zero() -> None:
     assert cost_usd(1_000_000, 0, PRICE) == approx(0.25)
 
 
+def test_cached_input_is_charged_at_the_cache_read_price() -> None:
+    price = {**PRICE, "cache_read": 0.025}
+    cost = cost_usd(1_000_000, 0, price, cached_input_tokens=800_000)
+    assert cost == approx(200_000 * 0.25 / 1e6 + 800_000 * 0.025 / 1e6)
+
+
+def test_cached_input_without_a_cache_read_price_is_charged_at_full_input() -> None:
+    assert cost_usd(1_000_000, 0, PRICE, cached_input_tokens=800_000) == approx(0.25)
+
+
 def test_price_lookup_needs_the_full_model_id() -> None:
     """The same model through another provider is a different price."""
     prices = {"openai-api/sumopod/gpt-5-mini": PRICE}

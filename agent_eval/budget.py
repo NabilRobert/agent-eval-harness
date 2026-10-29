@@ -47,10 +47,31 @@ def price_for(model: str, prices: dict[str, dict[str, Any]]) -> dict[str, Any] |
     return prices.get(model)
 
 
-def cost_usd(input_tokens: int, output_tokens: int, price: dict[str, Any] | None) -> float | None:
+TOKENS_PER_PRICE_UNIT = 1_000_000  # prices.yaml is in US dollars per million tokens
+
+
+def cost_usd(
+    input_tokens: int,
+    output_tokens: int,
+    price: dict[str, Any] | None,
+    cached_input_tokens: int = 0,
+) -> float | None:
+    """What these tokens cost at `price`, or None when there's no price.
+    `input_tokens` counts every input token, cached ones included;
+    `cached_input_tokens` of them are charged at the table's `cache_read`
+    price (the full input price when it has none), as the provider bills
+    them and as Inspect's per-trial cost cap counts them."""
     if price is None:
         return None
-    return (input_tokens * float(price["input"]) + output_tokens * float(price["output"])) / 1e6
+    input_price = float(price["input"])
+    cache_read_price = float(price.get("cache_read", input_price))
+    uncached_input_tokens = input_tokens - cached_input_tokens
+    dollars_per_unit = (
+        uncached_input_tokens * input_price
+        + cached_input_tokens * cache_read_price
+        + output_tokens * float(price["output"])
+    )
+    return dollars_per_unit / TOKENS_PER_PRICE_UNIT
 
 
 def measured_tokens_per_trial(runs_dir: Path, suite: str, model: str) -> tuple[int, int] | None:

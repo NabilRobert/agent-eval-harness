@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `filesystem`, 17 tasks × 5 attempts, suite sha256 `94ad6a86e144`, **frozen**
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-24T08:49:34+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.2172
-- **Tokens:** 333,015 input + 66,955 output; median 4,183 per trial
+- **Total cost:** $0.2251
+- **Tokens:** 650,839 input (317,824 of them cached) + 66,955 output; median 7,246 per trial
 - **Latency per trial:** median 10.1 s, p90 23.9 s, max 43.6 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,23 +30,23 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| f01 | easy | 5/5 | 5/5 | 0 | 3,934 | 11.0 | $0.0109 |
-| f02 | easy | 5/5 | 5/5 | 0 | 3,619 | 9.1 | $0.0092 |
-| f03 | medium | 5/5 | 5/5 | 0 | 9,237 | 13.5 | $0.0200 |
-| f04 | medium | 5/5 | 5/5 | 0 | 9,016 | 23.9 | $0.0292 |
-| f05 | easy | 5/5 | 5/5 | 0 | 4,748 | 8.0 | $0.0098 |
-| f06 | hard | 5/5 | 5/5 | 0 | 5,300 | 7.3 | $0.0110 |
-| f07 | hard | 5/5 | 5/5 | 0 | 7,674 | 34.6 | $0.0375 |
-| f08 | easy | 5/5 | 5/5 | 0 | 2,260 | 6.5 | $0.0051 |
-| f09 | medium | 5/5 | 5/5 | 0 | 3,535 | 9.8 | $0.0094 |
-| f10 | medium | 5/5 | 5/5 | 0 | 3,549 | 11.4 | $0.0110 |
-| f11 | medium | 5/5 | 5/5 | 0 | 4,758 | 10.8 | $0.0098 |
-| f12 | easy | 5/5 | 5/5 | 0 | 2,575 | 7.5 | $0.0065 |
-| f13 | medium | 5/5 | 5/5 | 0 | 2,213 | 6.6 | $0.0044 |
-| f14 | easy | 4/5 | 4/5 | 0 | 8,171 | 14.4 | $0.0158 |
-| f15 | hard | 5/5 | 5/5 | 0 | 2,934 | 9.8 | $0.0088 |
-| f16 | hard | 5/5 | 5/5 | 0 | 4,900 | 8.2 | $0.0104 |
-| f17 | hard | 5/5 | 5/5 | 0 | 2,417 | 9.3 | $0.0083 |
+| f01 | easy | 5/5 | 5/5 | 0 | 7,769 | 11.0 | $0.0116 |
+| f02 | easy | 5/5 | 5/5 | 0 | 7,331 | 9.1 | $0.0098 |
+| f03 | medium | 5/5 | 5/5 | 0 | 11,412 | 13.5 | $0.0204 |
+| f04 | medium | 5/5 | 5/5 | 0 | 13,740 | 23.9 | $0.0297 |
+| f05 | easy | 5/5 | 5/5 | 0 | 8,700 | 8.0 | $0.0102 |
+| f06 | hard | 5/5 | 5/5 | 0 | 7,130 | 7.3 | $0.0112 |
+| f07 | hard | 5/5 | 5/5 | 0 | 10,234 | 34.6 | $0.0382 |
+| f08 | easy | 5/5 | 5/5 | 0 | 5,217 | 6.5 | $0.0055 |
+| f09 | medium | 5/5 | 5/5 | 0 | 7,246 | 9.8 | $0.0100 |
+| f10 | medium | 5/5 | 5/5 | 0 | 6,529 | 11.4 | $0.0114 |
+| f11 | medium | 5/5 | 5/5 | 0 | 8,854 | 10.8 | $0.0103 |
+| f12 | easy | 5/5 | 5/5 | 0 | 6,910 | 7.5 | $0.0069 |
+| f13 | medium | 5/5 | 5/5 | 0 | 3,493 | 6.6 | $0.0046 |
+| f14 | easy | 4/5 | 4/5 | 0 | 14,384 | 14.4 | $0.0167 |
+| f15 | hard | 5/5 | 5/5 | 0 | 5,750 | 9.8 | $0.0092 |
+| f16 | hard | 5/5 | 5/5 | 0 | 7,358 | 8.2 | $0.0109 |
+| f17 | hard | 5/5 | 5/5 | 0 | 3,765 | 9.3 | $0.0085 |
 
 ## Trials that didn't pass strictly
 
@@ -69,8 +69,8 @@ I'll open README.md and docs/CONFIG.md to look for environment variable details.
 - Data fingerprint: `304f741838b4595097c0130d8eff35ffa88775771f7a07f7e0862e205e7d5c0d`
 - Server: `secure-filesystem-server` build `0.2.0` (/healthz: `not reported`)
 - Tool list sha256: `3530bf09c844` (create_directory, directory_tree, edit_file, get_file_info, list_allowed_directories, list_directory, list_directory_with_sizes, move_file, read_file, read_media_file, read_multiple_files, read_text_file, search_files, write_file)
-- Harness: `1828ff05a742`, Inspect AI 0.3.283, export v4
+- Harness: `1828ff05a742`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.2651 (measured tokens), per-trial cap $0.0588
 

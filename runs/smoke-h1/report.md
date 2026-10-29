@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila`, 3 tasks × 1 attempts, suite sha256 `e3babff6ef47`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success)
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
 - **Run at:** 2026-10-24T06:46:52+00:00
 
 ## Result
@@ -21,8 +21,8 @@
 
 ## Cost and latency
 
-- **Total cost:** $0.0081
-- **Tokens:** 9,644 input + 2,828 output; median 4,144 per trial
+- **Total cost:** $0.0082
+- **Tokens:** 13,996 input (4,352 of them cached) + 2,828 output; median 5,383 per trial
 - **Latency per trial:** median 22.5 s, p90 30.7 s, max 27.6 s
 - Latency is wall time for the whole trial (all model and tool calls), measured by Inspect.
 
@@ -30,9 +30,9 @@
 
 | Task | Difficulty | Strict | Lenient | Errors | Median tokens | Median s | Cost |
 |---|---|---|---|---|---|---|---|
-| e01 | easy | 1/1 | 1/1 | 0 | 4,144 | 20.0 | $0.0020 |
-| h03 | hard | 0/1 | 1/1 | 0 | 3,969 | 27.6 | $0.0026 |
-| x02 | expert | 1/1 | 1/1 | 0 | 4,359 | 22.5 | $0.0035 |
+| e01 | easy | 1/1 | 1/1 | 0 | 6,192 | 20.0 | $0.0021 |
+| h03 | hard | 0/1 | 1/1 | 0 | 5,249 | 27.6 | $0.0026 |
+| x02 | expert | 1/1 | 1/1 | 0 | 5,383 | 22.5 | $0.0035 |
 
 ## Trials that didn't pass strictly
 
@@ -63,8 +63,8 @@ LIMIT 1;
 - Data fingerprint: `fa70dca8db64576c0f58182dc54196ecfa936a213453a62d2af5a1838c684d96`
 - Server: `database-mcp` build `not reported` (/healthz: `not reported`)
 - Tool list sha256: `ba48f1adcf4c` (describe_table, list_tables, run_query, sample_rows)
-- Harness: `c9aff6b2339b-dirty`, Inspect AI 0.3.283, export v4
+- Harness: `c9aff6b2339b-dirty`, Inspect AI 0.3.283, export v5
 - Agent settings: {'strict_tools': False}, limits {'message_limit': 20, 'time_limit': 120, 'token_limit': 60000}
-- Priced at $0.25/M input, $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23); every input token at the full input price, so cost errs high if any input was cached
+- Priced at $0.25/M input ($0.025/M cached), $2.0/M output (Sumopod model pricing table (screenshot supplied by Arthur), checked 2026-10-23)
 - Budget: $5.00, estimate $0.0081 (measured tokens), per-trial cap $1.6667
 
