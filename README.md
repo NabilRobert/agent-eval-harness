@@ -355,6 +355,8 @@ Run it with `uv sync --frozen --extra dev`, then `uv run agent-eval --help`.
 
 ## Docs
 
+- [Guide](docs/guide.md): how the code works, in plain English: one run
+  followed through the code, a glossary, and where to change things.
 - [Planning, Phases 1–7](docs/planning/README.md): the problem,
   requirements, domain model, flows and failures, risks and spikes with
   their results, and the slice plan with every pre-registration.
