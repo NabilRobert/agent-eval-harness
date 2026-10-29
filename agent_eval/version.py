@@ -3,9 +3,9 @@ and, when tracing is on, as the trace's `service.version`."""
 
 import os
 import subprocess
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from agent_eval import REPO_ROOT
+
 GIT_TIMEOUT_SECONDS = 5
 
 

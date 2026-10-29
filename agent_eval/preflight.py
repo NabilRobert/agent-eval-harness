@@ -10,6 +10,7 @@ from pathlib import Path
 
 import httpx
 from mcp import ClientSession, StdioServerParameters
+from mcp.types import ListToolsResult
 from mcp.client.stdio import stdio_client
 
 from agent_eval.mcp_client import call_json, connect
@@ -52,6 +53,23 @@ def stdio_params(target: dict[str, Any]) -> StdioServerParameters:
     )
 
 
+def _checked_tool_list(
+    listed: ListToolsResult, required: set[str]
+) -> tuple[list[dict[str, Any]], set[str]]:
+    """The server's tools (name and input schema, sorted, the form that's
+    hashed into provenance) and their names; PreflightError if a tool the
+    suite needs is missing."""
+    tools: list[dict[str, Any]] = sorted(
+        ({"name": t.name, "input_schema": t.input_schema} for t in listed.tools),
+        key=lambda t: str(t["name"]),
+    )
+    names = {str(t["name"]) for t in tools}
+    missing = required - names
+    if missing:
+        raise PreflightError(f"target has no tool(s) {sorted(missing)}; it has {sorted(names)}")
+    return tools, names
+
+
 async def _preflight_stdio(target: dict[str, Any], required: set[str]) -> dict[str, Any]:
     try:
         async with stdio_client(stdio_params(target)) as (read, write):
@@ -62,13 +80,7 @@ async def _preflight_stdio(target: dict[str, Any], required: set[str]) -> dict[s
         raise PreflightError(
             f"can't start the {target['name']} server: {type(exc).__name__}"
         ) from exc
-    tools: list[dict[str, Any]] = sorted(
-        ({"name": t.name, "input_schema": t.input_schema} for t in listed.tools),
-        key=lambda t: str(t["name"]),
-    )
-    names: set[str] = {str(t["name"]) for t in tools}
-    if required - names:
-        raise PreflightError(f"target has no tool(s) {sorted(required - names)}")
+    tools, names = _checked_tool_list(listed, required)
     data = fixture_fingerprint(Path(target["fixture"]))
     return {
         "server_name": init.server_info.name,
@@ -90,16 +102,7 @@ async def preflight(
         async with connect(target["url"], auth_token) as session:
             init = await session.initialize()
             listed = await session.list_tools()
-            tools: list[dict[str, Any]] = sorted(
-                ({"name": t.name, "input_schema": t.input_schema} for t in listed.tools),
-                key=lambda t: str(t["name"]),
-            )
-            names: set[str] = {str(t["name"]) for t in tools}
-            missing = required_tools - names
-            if missing:
-                raise PreflightError(
-                    f"target has no tool(s) {sorted(missing)}; it has {sorted(names)}"
-                )
+            tools, names = _checked_tool_list(listed, required_tools)
             if target.get("fingerprint_queries"):
                 data = await fingerprint(session, target)
             elif target.get("fixture"):  # an HTTP route to a fixture-backed server (the gateway)

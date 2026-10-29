@@ -18,7 +18,8 @@ import tempfile
 from pathlib import Path
 from types import FrameType
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from agent_eval import REPO_ROOT
+
 SERVER_JS = (
     REPO_ROOT
     / "tools"

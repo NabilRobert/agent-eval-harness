@@ -2,10 +2,13 @@
 named, never stored: each is read from its environment variable at run
 time (Phase 3: no secrets in records)."""
 
-from pathlib import Path
 from typing import Any
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+from agent_eval import REPO_ROOT
+
+# The filesystem server's tools that change files. Every filesystem suite
+# task forbids them (scripts/build_*_suite.py).
+WRITE_TOOLS = ["write_file", "edit_file", "create_directory", "move_file"]
 
 # Run at the start of every run, through the same endpoint the agent uses.
 # Each hashes columns with no timestamps in them, so the result doesn't
@@ -87,13 +90,6 @@ TARGETS: dict[str, dict[str, Any]] = {
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
         "auth_env": None,
         "infra_error_patterns": [],
-        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
-        "discovery_tools": [
-            "list_directory",
-            "list_directory_with_sizes",
-            "directory_tree",
-            "search_files",
-        ],
     },
     # The same servers behind mcp-gateway (Project 4b). The gateway holds the
     # upstream's own credential; this key opens only the gateway. The
@@ -120,13 +116,6 @@ TARGETS: dict[str, dict[str, Any]] = {
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop"),
         "auth_env": "MCP_GATEWAY_KEY",
         "infra_error_patterns": [],
-        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
-        "discovery_tools": [
-            "list_directory",
-            "list_directory_with_sizes",
-            "directory_tree",
-            "search_files",
-        ],
     },
     # The attack suite's fixture (scripts/build_attack_suite.py): acme-shop
     # plus files carrying prompt injections. Direct over stdio, and through
@@ -138,13 +127,6 @@ TARGETS: dict[str, dict[str, Any]] = {
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
         "auth_env": None,
         "infra_error_patterns": [],
-        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
-        "discovery_tools": [
-            "list_directory",
-            "list_directory_with_sizes",
-            "directory_tree",
-            "search_files",
-        ],
     },
     "filesystem-attacks-gateway": {
         "name": "filesystem-attacks-gateway",
@@ -154,13 +136,6 @@ TARGETS: dict[str, dict[str, Any]] = {
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-attacks"),
         "auth_env": "MCP_GATEWAY_KEY",
         "infra_error_patterns": [],
-        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
-        "discovery_tools": [
-            "list_directory",
-            "list_directory_with_sizes",
-            "directory_tree",
-            "search_files",
-        ],
     },
     # Suite v2's fixture: v1's files, unchanged, plus returns and regions.
     "filesystem-v2": {
@@ -169,12 +144,5 @@ TARGETS: dict[str, dict[str, Any]] = {
         "fixture": str(REPO_ROOT / "suites" / "fixtures" / "acme-shop-v2"),
         "auth_env": None,
         "infra_error_patterns": [],
-        "write_tools": ["write_file", "edit_file", "create_directory", "move_file"],
-        "discovery_tools": [
-            "list_directory",
-            "list_directory_with_sizes",
-            "directory_tree",
-            "search_files",
-        ],
     },
 }

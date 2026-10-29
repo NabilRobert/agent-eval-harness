@@ -167,6 +167,16 @@ GRADER_KINDS = (
 )
 
 
+def stored_spec(grader_record: dict[str, Any]) -> Any:
+    """The spec a trial's grader record was graded with. Records exported
+    before the spec was stored kept only result_match's tool and expected
+    rows, at the top level."""
+    return grader_record.get("spec") or {
+        "tool": grader_record.get("tool"),
+        "expected": grader_record.get("expected"),
+    }
+
+
 def grade_one(kind: str, spec: Any, inputs: dict[str, Any]) -> tuple[bool, bool]:
     """(strict, lenient) for one grader, from its spec and the inputs the
     scorer stored. The scorer and `compare`'s regrade both call this, so a

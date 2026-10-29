@@ -16,13 +16,12 @@ from pathlib import Path
 import yaml
 
 from agent_eval.preflight import fixture_fingerprint
+from agent_eval.targets import WRITE_TOOLS
 
 REPO = Path(__file__).resolve().parent.parent
 FIXTURE = REPO / "suites" / "fixtures" / "acme-shop"
 SUITE = REPO / "suites" / "filesystem.yaml"
 rng = random.Random(20261024)
-
-WRITE_TOOLS = ["write_file", "edit_file", "create_directory", "move_file"]
 
 
 def write(rel: str, text: str) -> None:
