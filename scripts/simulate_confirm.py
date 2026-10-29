@@ -39,7 +39,7 @@ def gate(
     return regression, (not regression and point <= INCONCLUSIVE_DROP), dropped
 
 
-def two_stage(
+def two_stage(  # noqa: PLR0913 -- the simulation's parameters, passed by the sweep
     rng: random.Random,
     base_rates: dict[str, float],
     cand_rates: dict[str, float],

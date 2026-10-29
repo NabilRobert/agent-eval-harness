@@ -50,7 +50,78 @@ def _contains_item_ok(item: Any) -> bool:
     return False
 
 
+def _string_list(spec: Any, key: str) -> list[Any]:
+    """`spec[key]` when spec is a mapping holding a list there, else []."""
+    value: Any = cast(dict[str, Any], spec).get(key) if isinstance(spec, dict) else None
+    return cast(list[Any], value) if isinstance(value, list) else []
+
+
+def _result_match_problem(spec: Any) -> str | None:
+    expected = spec.get("expected")
+    if (
+        spec.get("tool")
+        and isinstance(expected, list)
+        and all(isinstance(row, dict) for row in cast(list[Any], expected))
+    ):
+        return None
+    return "result_match needs a tool and a list of rows"
+
+
+def _answer_match_problem(spec: Any) -> str | None:
+    items = _string_list(spec, "contains")
+    if items and all(_contains_item_ok(item) for item in items):
+        return None
+    return "answer_match needs non-empty 'contains' (strings, or lists of alternative strings)"
+
+
+def _answer_excludes_problem(spec: Any) -> str | None:
+    values = _string_list(spec, "excludes")
+    if values and all(isinstance(value, str) and value for value in values):
+        return None
+    return "answer_excludes needs non-empty 'excludes' strings"
+
+
+def _tool_list_problem(kind: str, spec: Any) -> str | None:
+    if spec and all(isinstance(tool, str) for tool in cast(list[Any], spec)):
+        return None
+    return f"{kind} needs a list of tool names"
+
+
+def _grader_problem(grader: dict[str, Any]) -> str | None:
+    """Why one grader entry can't be graded, or None."""
+    if len(grader) != 1 or set(grader) - set(GRADER_KINDS):
+        return f"unknown grader {sorted(grader)}"
+    [(kind, spec)] = grader.items()
+    if kind == "result_match":
+        return _result_match_problem(spec)
+    if kind == "answer_match":
+        return _answer_match_problem(spec)
+    if kind == "answer_excludes":
+        return _answer_excludes_problem(spec)
+    return _tool_list_problem(kind, spec)
+
+
+def _validate_task(task: dict[str, Any], seen: set[str]) -> None:
+    task_id = task.get("id")
+    if not isinstance(task_id, str) or not task_id:
+        raise SuiteError(f"task without an id: {task!r}"[:200])
+    if task_id in seen:
+        raise SuiteError(f"duplicate task id {task_id!r}")
+    seen.add(task_id)
+    if not isinstance(task.get("prompt"), str) or not task["prompt"].strip():
+        raise SuiteError(f"task {task_id!r} has no prompt")
+    graders = task.get("graders")
+    if not graders:
+        raise SuiteError(f"task {task_id!r} has no graders (run `agent-eval generate-expected`?)")
+    for grader in graders:
+        problem = _grader_problem(grader)
+        if problem:
+            raise SuiteError(f"task {task_id!r}: {problem}")
+
+
 def validate_suite(suite: dict[str, Any]) -> None:
+    """SuiteError naming the first thing in the suite that can't be run or
+    graded as written."""
     for key in ("suite", "target", "tasks"):
         if key not in suite:
             raise SuiteError(f"suite is missing {key!r}")
@@ -58,52 +129,7 @@ def validate_suite(suite: dict[str, Any]) -> None:
         raise SuiteError("suite has no tasks")
     seen: set[str] = set()
     for task in suite["tasks"]:
-        task_id = task.get("id")
-        if not isinstance(task_id, str) or not task_id:
-            raise SuiteError(f"task without an id: {task!r}"[:200])
-        if task_id in seen:
-            raise SuiteError(f"duplicate task id {task_id!r}")
-        seen.add(task_id)
-        if not isinstance(task.get("prompt"), str) or not task["prompt"].strip():
-            raise SuiteError(f"task {task_id!r} has no prompt")
-        graders = task.get("graders")
-        if not graders:
-            raise SuiteError(f"task {task_id!r} has no graders (run scripts/generate_expected.py?)")
-        for grader in graders:
-            if len(grader) != 1 or set(grader) - set(GRADER_KINDS):
-                raise SuiteError(f"task {task_id!r}: unknown grader {sorted(grader)}")
-            [(kind, spec)] = grader.items()
-            if kind == "result_match":
-                expected = spec.get("expected")
-                if (
-                    not spec.get("tool")
-                    or not isinstance(expected, list)
-                    or not all(isinstance(row, dict) for row in cast(list[Any], expected))
-                ):
-                    raise SuiteError(
-                        f"task {task_id!r}: result_match needs a tool and a list of rows"
-                    )
-            elif kind == "answer_match":
-                contains: Any = (
-                    cast(dict[str, Any], spec).get("contains") if isinstance(spec, dict) else None
-                )
-                items: list[Any] = cast(list[Any], contains) if isinstance(contains, list) else []
-                if not items or not all(_contains_item_ok(c) for c in items):
-                    raise SuiteError(
-                        f"task {task_id!r}: answer_match needs non-empty 'contains' "
-                        "(strings, or lists of alternative strings)"
-                    )
-            elif kind == "answer_excludes":
-                excludes: Any = (
-                    cast(dict[str, Any], spec).get("excludes") if isinstance(spec, dict) else None
-                )
-                values: list[Any] = cast(list[Any], excludes) if isinstance(excludes, list) else []
-                if not values or not all(isinstance(v, str) and v for v in values):
-                    raise SuiteError(
-                        f"task {task_id!r}: answer_excludes needs non-empty 'excludes' strings"
-                    )
-            elif not spec or not all(isinstance(t, str) for t in cast(list[Any], spec)):
-                raise SuiteError(f"task {task_id!r}: {kind} needs a list of tool names")
+        _validate_task(task, seen)
 
 
 def load_suite(path: Path, only: list[str] | None = None) -> dict[str, Any]:
