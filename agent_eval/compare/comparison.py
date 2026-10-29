@@ -1,34 +1,8 @@
-"""Compares a candidate run with a baseline from the files alone (Phase 4).
-Pure: no Inspect, no network, no key, so CI can run it.
+"""Compares a candidate run with a baseline from the run records: refuses
+runs that can't be compared (exit 2), regrades both with the current
+graders, lists what differs between them, then decides the verdict under
+each gate (gates.py) and returns it as a Comparison."""
 
-Order: integrity and comparability checks (exit 2 if the runs can't be
-compared), regrading both runs with the current graders, the provenance
-diff, then the regression gate (ADR-001):
-
-1. **Suite level.** A paired bootstrap of the mean per-task change in
-   strict pass rate (candidate − baseline): resample tasks with
-   replacement, then each drawn task's trials with replacement. Resampling
-   n Bernoulli trials with replacement is a Binomial(n, observed rate)
-   draw, so that's what's drawn. 10,000 resamples, fixed seed, 95%
-   percentile interval. Regression if the whole interval is below 0.
-2. **Task level.** Any task that went from all-pass to zero-pass, with at
-   least 5 graded trials on each side. (Tightened from "≤1/5" by Spike 5,
-   whose false-alarm rate was 5–11%.)
-
-A drop of 5 points or more whose interval still crosses 0 is
-"inconclusive": exit 0, with the tasks that dropped named.
-
-Two gates (ADR-001, amended 2026-10-24):
-- **v1**, the bootstrap above: every comparison published before the
-  amendment was pre-registered with it, and stays pinned to it.
-- **v2**, the default for new comparisons: a pooled two-proportion z-test
-  on strict passes (one-sided, flag at z > 1.96) plus the same task rule.
-  In simulation it was as safe as v1 and caught more on every suite
-  (scripts/compare_rules.py), and it's a closed-form test: no seed.
-`compare` reports both verdicts; the exit code follows the chosen gate."""
-
-import math
-import random
 import statistics
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -36,17 +10,17 @@ from typing import Any
 
 from agent_eval.grading import grade_one, stored_spec
 from agent_eval.records import RecordError, Run, load_run
+from agent_eval.compare.gates import (
+    DEFAULT_GATE,
+    GATES,
+    INCONCLUSIVE_DROP,
+    Z_CRITICAL,
+    bootstrap_interval,
+    broken_tasks,
+    pooled_test,
+)
 
 EXIT_OK, EXIT_REGRESSION, EXIT_UNDECIDED = 0, 1, 2
-
-GATES = ("v1", "v2")
-DEFAULT_GATE = "v2"
-Z_CRITICAL = 1.96  # one-sided alpha = 0.025, the same tail as v1's 95% interval
-BOOTSTRAP_RESAMPLES = 10_000
-INTERVAL_LEVEL = 0.95  # both gates report a 95% interval
-BOOTSTRAP_SEED = 20261023  # fixed: the same two runs always get the same verdict
-INCONCLUSIVE_DROP = -0.05
-BROKEN_MIN_TRIALS = 5
 WARN_INCREASE = 0.25  # median cost or latency per trial up by 25%: a warning, not a gate
 
 # Provenance fields worth naming when they differ: any of them can explain
@@ -109,64 +83,6 @@ def task_counts(run: Run) -> dict[str, tuple[int, int]]:
         strict, _ = regrade(trial)
         by_task.setdefault(trial["task_id"], []).append(strict)
     return {task: (sum(v), len(v)) for task, v in by_task.items() if v}
-
-
-def bootstrap_interval(
-    base: dict[str, tuple[int, int]],
-    cand: dict[str, tuple[int, int]],
-    tasks: list[str],
-    *,
-    resamples: int = BOOTSTRAP_RESAMPLES,
-    seed: int = BOOTSTRAP_SEED,
-) -> tuple[float, float, float]:
-    """(low, high, point) for the mean per-task change in pass rate."""
-    point = statistics.fmean(cand[t][0] / cand[t][1] - base[t][0] / base[t][1] for t in tasks)
-    rng = random.Random(seed)
-    n = len(tasks)
-    means: list[float] = []
-    for _ in range(resamples):
-        total = 0.0
-        for _ in range(n):
-            task = tasks[rng.randrange(n)]
-            (bs, bn), (cs, cn) = base[task], cand[task]
-            total += rng.binomialvariate(cn, cs / cn) / cn - rng.binomialvariate(bn, bs / bn) / bn
-        means.append(total / n)
-    means.sort()
-    tail = (1 - INTERVAL_LEVEL) / 2
-    low = means[int(tail * resamples)]
-    high = means[min(resamples - 1, int((1 - tail) * resamples))]
-    return low, high, point
-
-
-def pooled_test(
-    base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]], tasks: list[str]
-) -> tuple[float, float, float]:
-    """Gate v2: (z, low, high). z for "the candidate passes less often",
-    with attempts pooled across the shared tasks; (low, high) is the 95%
-    Wald interval of the change in pooled pass rate. Pooling treats the
-    suite as fixed, the question a CI gate asks, and conditioning on the
-    same tasks on both sides makes it conservative rather than optimistic."""
-    bp, bn = sum(base[t][0] for t in tasks), sum(base[t][1] for t in tasks)
-    cp, cn = sum(cand[t][0] for t in tasks), sum(cand[t][1] for t in tasks)
-    rb, rc = bp / bn, cp / cn
-    pooled = (bp + cp) / (bn + cn)
-    se0 = math.sqrt(pooled * (1 - pooled) * (1 / bn + 1 / cn))
-    z = (rb - rc) / se0 if se0 > 0 else 0.0
-    se = math.sqrt(rb * (1 - rb) / bn + rc * (1 - rc) / cn)
-    return z, (rc - rb) - Z_CRITICAL * se, (rc - rb) + Z_CRITICAL * se
-
-
-def broken_tasks(
-    base: dict[str, tuple[int, int]], cand: dict[str, tuple[int, int]], tasks: list[str]
-) -> list[str]:
-    return [
-        t
-        for t in tasks
-        if base[t][1] >= BROKEN_MIN_TRIALS
-        and cand[t][1] >= BROKEN_MIN_TRIALS
-        and base[t][0] == base[t][1]
-        and cand[t][0] == 0
-    ]
 
 
 def _median_per_trial(run: Run, key: str) -> float | None:
