@@ -339,7 +339,7 @@ Run it with `uv sync --frozen --extra dev`, then `uv run agent-eval --help`.
 
 | Folder or file | What it holds |
 |---|---|
-| `agent_eval/` | The harness: the `agent-eval` CLI (`cli.py`), suites, targets, the Inspect task, graders, export, compare, report, publish |
+| `agent_eval/` | The harness: the `agent-eval` CLI (`cli/`, one module per group of commands), suites, targets, the Inspect task, graders, export, compare, report, publish |
 | `suites/` | The frozen task suites (YAML), and in `suites/fixtures/` the synthetic projects the filesystem suites read |
 | `runs/` | Committed run records: `meta.json`, `trials.jsonl`, `report.md` and Inspect's raw `inspect.eval` per run. CI checks them |
 | `results.yaml`, `RESULTS.md` | What's published, and the tables `agent-eval publish` generates from the records |
