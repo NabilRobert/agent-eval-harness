@@ -32,9 +32,9 @@ jobs:
       - name: Test (pytest)
         run: uv run --frozen pytest -v
 
-      # The gate CI exists for: comparing committed runs needs no API key
-      # and no network. (Slice D replaces this self-comparison with
-      # baseline-vs-candidate.)
+      # Comparing committed runs needs no API key and no network. CI runs no
+      # agent, so these check the records and the gate's plumbing, not a
+      # live candidate.
       - name: Committed reports match their records
         run: |
           for run in runs/*/; do uv run --frozen agent-eval report "$run" --check; done

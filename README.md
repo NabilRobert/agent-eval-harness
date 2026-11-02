@@ -2,9 +2,13 @@
 
 [![CI](https://github.com/NabilRobert/agent-eval-harness/actions/workflows/ci.yml/badge.svg)](https://github.com/NabilRobert/agent-eval-harness/actions/workflows/ci.yml)
 
-Measures whether an agent setup works, and fails CI when a change makes it
-worse by more than run-to-run noise. The numbers can be checked against
-committed run records.
+Measures whether an agent setup works. When a change makes it worse by more
+than run-to-run noise, `agent-eval compare` exits non-zero, so a CI job can
+fail on it. The numbers can be checked against committed run records.
+
+This repo's own CI runs no agent, because that would need keys and money.
+It checks the code and the committed records, and runs `compare` once as a
+smoke test.
 
 An *agent setup* here is a model, a system prompt and an MCP server's tools,
 run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent loop.
@@ -15,12 +19,13 @@ run in [Inspect AI](https://inspect.aisi.org.uk/)'s agent loop.
 | Repeats (epochs), turn/time/token/cost limits per trial, retries | **Comparison from committed run files**, with no API key and no network |
 | A mock model for offline tests | **Regrading** old runs with the current grader code |
 | Structured logs | **Provenance:** model served, server build, tool list, data fingerprint |
-| | Two frozen suites, deterministic graders, a budget guard, a **confirm** step for borderline results |
+| | Three frozen suites, deterministic graders, a budget guard, a **confirm** step for borderline results |
 
 Why build on Inspect rather than write a runner:
 [ADR-009](docs/planning/phase-5-architecture-decisions.md).
 
-Two suites, run against two targets:
+Four suites, run against two kinds of target. Pagila and the two filesystem
+suites are frozen:
 - **Pagila:** 40 SQL questions against
   [MCP-backbone](https://github.com/NabilRobert/MCP-backbone)'s live
   endpoint.
@@ -28,6 +33,9 @@ Two suites, run against two targets:
   synthetic project the model can't have seen. **Filesystem v2** extends it
   to 34 tasks, with joins across files; v1 is unchanged, and every
   published filesystem comparison uses v1.
+- **Attacks:** 12 prompt-injection tasks on the same kind of project, for
+  measuring [mcp-security-gateway](https://github.com/NabilRobert/mcp-security-gateway).
+  It isn't frozen, and none of the published results use it.
 
 ## Results
 
@@ -291,7 +299,8 @@ uv run agent-eval publish [--check]
 - Full runs refuse to start from a checkout with uncommitted changes, so
   every published run traces back to one commit.
 
-**Keys:** `run` reads keys from `.env`, which is gitignored:
+**Keys:** `run` reads keys from `.env`, which is gitignored (copy
+[`.env.example`](.env.example)), then from the environment:
 - `SUMOPOD_AI_API_KEY` and `SUMOPOD_BASE_URL` for Sumopod models, or your
   provider's own key;
 - `MCP_BACKBONE_EVAL_KEY` for the live Pagila endpoint.
