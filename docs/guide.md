@@ -44,13 +44,16 @@ flowchart TD
 2. **Pick the target and read the keys.**
    `agent_eval/cli/run_steps.py: choose_target` looks the MCP server up in
    `agent_eval/targets.py: TARGETS`. `read_env` and `check_keys` read the
-   `.env` file and stop early if a key is missing. `secrets_to_redact`
-   remembers every key's value, so step 10 can check none of them ended up
-   in the records.
+   `.env` file (or the environment) and stop early if a key is missing.
+   `secrets_to_redact` remembers the env file's key values and the
+   target's key, so step 10 can check none of them ended up in the
+   records. `new_run_dir` refuses a run id that already exists, so records
+   are never overwritten.
 3. **Plan the spend.** `agent_eval/cli/run_steps.py: plan_spend` looks the
    model's price up in `prices.yaml` (`agent_eval/budget.py: price_for`) and
    estimates the cost from earlier runs of the same suite and model
-   (`measured_tokens_per_trial`). `agent_eval/budget.py: plan` refuses a
+   (`measured_tokens_per_trial`), or from a pessimistic default if there
+   are none. `agent_eval/budget.py: plan` refuses a
    run whose estimate is over `--budget`, and splits the budget into a
    per-trial cap.
 4. **Stop here with `--plan-only`.** `print_plan` prints the trial count,
@@ -63,24 +66,30 @@ flowchart TD
    to the server, checks it has the tools the graders need, and
    fingerprints its data: hashes of the live tables for Pagila, a hash of
    every fixture file for the filesystem suites. Then
-   `agent_eval/suites.py: data_mismatch` refuses to run if the data isn't
-   what the suite's expected answers were made from.
+   `agent_eval/suites.py: data_mismatch` refuses to run if the data, or
+   the database's time zone, isn't what the suite's expected answers were
+   made from.
 7. **Build the Inspect task.** `agent_eval/inspect_tasks.py: build_task`
    turns every suite task into an Inspect sample. The solver is Inspect's
    `react` agent with the server's MCP tools, wrapped in
-   `agent_eval/tracing.py: traced_agent`. For a filesystem target, each
-   trial gets a fresh copy of the fixture (`agent_eval/fs_server.py: main`),
-   so one trial's writes can't reach the next.
+   `agent_eval/tracing.py: traced_agent`. For a filesystem target over
+   stdio, each trial gets a fresh copy of the fixture
+   (`agent_eval/fs_server.py: main`), so one trial's writes can't reach
+   the next. Through the gateway, the gateway does that copying.
 8. **Run the trials.** `agent_eval/cli/run_command.py: _run_trials` calls
    Inspect's `eval`. Inspect runs the agent loop: the model asks for a
    tool, the MCP server answers, and so on until the agent submits an
    answer or hits a limit (messages, time, tokens or its cost cap). It
-   repeats each task `--epochs` times, 5 by default.
+   repeats each task `--epochs` times, 5 by default. A trial that crashes
+   is retried twice, and the run stops if more than 10% of trials error.
 9. **Score each trial.** `agent_eval/inspect_tasks.py: suite_scorer` runs
    every grader the task lists, through
    `agent_eval/grading.py: grade_one`. It stores each grader's full input
-   (the rows the agent's last query returned, or its final answer) next to
-   the grade, so the trial can be regraded later from the record alone.
+   (the rows the agent's last query returned, its final answer, or the
+   tools it called) next to the grade, so the trial can be regraded later
+   from the record alone. It also notes a server refusal, such as a rate
+   limit (`infra_error_patterns` in `agent_eval/targets.py`), which later
+   makes the trial an `error`, not a `fail`.
 10. **Export the records.** `agent_eval/export.py: trial_from_sample`
     turns each Inspect sample into one trial record: its outcome (pass,
     fail or error), the tool calls, the tokens (cached ones included) and
@@ -92,7 +101,8 @@ flowchart TD
     hand-edited trials file is caught later. `write_report`
     (`agent_eval/cli/common.py`) renders `report.md` through
     `agent_eval/report/sections.py: render`. `_keep_inspect_log` copies
-    Inspect's raw log next to them, unless it contains a secret.
+    Inspect's raw log next to them, unless it contains a secret. If over
+    10% of trials errored, the run is `incomplete` and the command exits 2.
 12. **Compare.** `agent-eval compare BASELINE CANDIDATE` decides whether
     the candidate is worse; see the next section.
 
@@ -115,10 +125,14 @@ The output is a folder, `runs/<run id>/`, holding `meta.json`,
    (`agent_eval/compare/gates.py: pooled_test`), gate v1 a bootstrap
    (`bootstrap_interval`). Either gate also flags a task that went from
    passing every attempt to passing none (`broken_tasks`);
-5. returns a `Comparison`. The exit code is 0 (no regression), 1
-   (regression) or 2 (can't decide).
+5. returns a `Comparison`. The exit code is 0 (no regression, or
+   inconclusive), 1 (regression) or 2 (can't decide).
 
 `agent_eval/cli/gate_commands.py: compare` prints it.
+
+CI doesn't gate on scores yet. Its `compare` step compares
+`runs/smoke-b1` with itself: that proves the command works, but no pull
+request can fail on a score drop today.
 
 ### `agent-eval report --check` and `agent-eval publish --check`
 
@@ -163,7 +177,8 @@ These two keep the committed files honest, and CI runs both.
   check a canary didn't leak and which tools were called.
 - **Strict and lenient:** strict needs the same columns, in order, with
   exactly equal values; it's the headline number. Lenient allows rounding
-  and extra columns.
+  and extra columns. Both ignore column names and row order. For the
+  other graders, strict and lenient are the same.
 - **Fixture:** the made-up project the filesystem suites read, in
   `suites/fixtures/`. It's synthetic so no model can know it from
   training.
@@ -171,7 +186,8 @@ These two keep the committed files honest, and CI runs both.
   (`agent_eval/preflight.py: fingerprint`, `fixture_fingerprint`). Runs on
   different data are never compared.
 - **Frozen suite:** a suite whose hash is recorded in
-  `agent_eval/suites.py: FROZEN_SUITES`. A test fails if the file changes.
+  `agent_eval/suites.py: FROZEN_SUITES`: `pagila`, `filesystem` and
+  `filesystem-v2`, but not `attacks`. A test fails if the file changes.
 - **Task hash:** a hash of a task's prompt and graders
   (`agent_eval/records.py: task_hash`). A changed task stops two runs
   being compared.
@@ -190,6 +206,12 @@ These two keep the committed files honest, and CI runs both.
 - **Regression gate:** the rule that decides "worse by more than chance".
   Gate v2 (the default) is a pooled z-test; gate v1 a paired bootstrap.
   Both are in `agent_eval/compare/gates.py`.
+- **Pooled z-test:** adds up all attempts on each side and asks how many
+  standard errors apart the two pass rates are. Past 1.96, it's a
+  regression.
+- **Bootstrap:** redraws the tasks and attempts at random 10,000 times to
+  see how far the change could move by luck. If the whole 95% range is
+  below 0, it's a regression.
 - **Broken task:** a task that passed every attempt in the baseline and
   none in the candidate, with at least 5 attempts on each side
   (`agent_eval/compare/gates.py: broken_tasks`).
@@ -220,6 +242,11 @@ These two keep the committed files honest, and CI runs both.
   write went through, or the canary leaked). See `scripts/gullible_agent.py: attack_effect`.
 - **Canary:** a made-up secret string planted in a fixture; it must never
   appear in an answer (`answer_excludes`).
+- **Stdio, HTTP target:** stdio means the harness starts the server as a
+  child process; HTTP means it connects to a running server
+  (`agent_eval/targets.py`).
+- **Configuration:** how a run reaches the tools: `direct`, `gateway-off`
+  or `gateway-on`. Set with `--configuration` and recorded in `meta.json`.
 - **Trace, span:** OpenTelemetry's record of one run of work, and one
   step inside it. With `OTEL_EXPORTER_OTLP_ENDPOINT` set, each trial sends
   one trace (`agent_eval/tracing.py: traced_agent`).
@@ -229,15 +256,33 @@ These two keep the committed files honest, and CI runs both.
 - **ADR:** an architecture decision record, in
   `docs/planning/phase-5-architecture-decisions.md`.
 
+## Known gaps
+
+All reported as bugs to the project's session.
+
+- **Keys only in the environment:** `secrets_to_redact` reads only the env
+  file, so a model key that isn't in that file is never scanned for. The
+  same goes for `export_keys_for_inspect`, so Inspect doesn't get
+  `SUMOPOD_API_KEY`. The compose file passes keys this way.
+- **Exit codes:** a missing key, a missing `--prices` file or a missing
+  `--system-prompt-file` exits 1, the code for a regression. Exit 2 is the
+  documented code for bad config.
+- **Strict grading:** it compares `5` and `5.0` as different values, so a
+  right answer written another way fails strict.
+- **`NaN` in a row:** the lenient grader crashes on it, so the trial
+  errors instead of failing.
+
 ## Where to change things
 
-- **Add or change a task.** Suites are frozen, so a change means a new
-  suite version and a new hash in `agent_eval/suites.py: FROZEN_SUITES`.
+- **Add or change a task.** Frozen suites can't change in place: a change
+  means a new suite version and a new hash in
+  `agent_eval/suites.py: FROZEN_SUITES`.
   - Pagila: edit `suites/pagila.source.yaml`, then run
     `agent-eval generate-expected suites/pagila.source.yaml suites/pagila.yaml`
     (`agent_eval/expected.py: generate`). It needs the endpoint's key.
   - Filesystem: edit `scripts/build_filesystem_suite.py` and run it. It
-    rewrites the fixture and the suite.
+    rewrites the fixtures and both filesystem suites.
+  - Attacks: edit `scripts/build_attack_suite.py` and run it.
 - **Add a grader.** Write the check in `agent_eval/grading.py`, add its
   name to `GRADER_KINDS` and a branch in `grade_one`. Teach
   `agent_eval/suites.py: _grader_problem` to validate its spec, and
@@ -258,9 +303,11 @@ These two keep the committed files honest, and CI runs both.
 - **Run the checks** (the same ones CI runs):
 
   ```bash
-  uv sync --frozen --extra dev
+  uv sync --locked --extra dev
   uv run ruff check . && uv run ruff format --check .
   uv run pyright agent_eval/ tests/ scripts/
   uv run pytest
+  for run in runs/*/; do uv run agent-eval report "$run" --check; done
   uv run agent-eval publish --check
+  uv run agent-eval compare runs/smoke-b1 runs/smoke-b1
   ```
