@@ -484,3 +484,23 @@ charges those at the table's `cache_read` price. Every committed run was
 rebuilt from its saved log (`agent-eval reexport`); only token and cost
 fields changed. The total went from $4.45 to $4.52 (+1.5%), up to +3.8%
 on a filesystem run. No grade or verdict moved.
+
+## 2026-11-02 — The budget promise had a hole
+
+The budget guard said a run couldn't exceed its budget, because each trial
+is capped at its share. But a crashed trial was retried twice, and Inspect
+gives every retry a fresh cap. A mock run billed $0.027 for one trial
+against a $0.01 cap, so the worst case was three times the budget. Nothing
+published came close, and retries fired on only 3 of 1,777 trials.
+
+Dividing the cap by three would have kept retries, but 14 published trials
+cost more than that, so they would have become fails, and a change to the
+budget would have changed what's measured. So trials aren't retried now.
+Failed model calls still are, inside the trial, and the rare trial that
+crashes anyway is an error, outside the pass rates. The spend of those 3
+published retries was never recorded, because Inspect keeps only the last
+attempt's calls.
+
+The second limit is one to live with: Inspect checks the cap after each
+model call, so a trial can overshoot by its last call. One published trial
+did, at $0.0264 against $0.025.

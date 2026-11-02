@@ -78,7 +78,10 @@ def load_run(run_dir: Path) -> Run:
     meta_path, trials_path = run_dir / "meta.json", run_dir / "trials.jsonl"
     if not meta_path.is_file() or not trials_path.is_file():
         raise RecordError(f"{run_dir}: missing meta.json or trials.jsonl")
-    meta: dict[str, Any] = json.loads(meta_path.read_text(encoding="utf-8"))
+    try:
+        meta: dict[str, Any] = json.loads(meta_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RecordError(f"{run_dir}: meta.json isn't valid JSON: {exc}") from exc
     if meta.get("schema_version") != SCHEMA_VERSION:
         raise RecordError(
             f"{run_dir}: schema_version {meta.get('schema_version')!r}, "

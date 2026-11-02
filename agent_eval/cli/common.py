@@ -28,9 +28,6 @@ EXIT_OUT_OF_DATE = 1
 # is scored as a fail, not retried.
 TRIAL_TIME_LIMIT_S = 120
 TRIAL_TOKEN_LIMIT = 60_000
-# Provider hiccups: a failed trial is retried this many times, then
-# recorded as an error rather than aborting the run.
-RETRIES_PER_TRIAL = 2
 # The confirmation runs and default run ids are stamped with UTC time.
 STAMP_FORMAT = "%Y%m%dT%H%M%SZ"
 
@@ -62,12 +59,18 @@ def fail(message: str) -> NoReturn:
     raise typer.Exit(EXIT_UNDECIDED)
 
 
+def lookup_variable(env: dict[str, str], name: str) -> str | None:
+    """A value from the env file, else from the environment: the container
+    gets its keys in the environment, a laptop from .env."""
+    return env.get(name) or os.environ.get(name)
+
+
 def require_variable(env: dict[str, str], name: str) -> str:
-    """A value from the env file, else from the environment. Missing, it
-    stops the command with exit 1 and names the variable."""
-    value = env.get(name) or os.environ.get(name)
+    """`lookup_variable`, for a value the command can't go on without.
+    Missing, it stops the command with exit 2 and names the variable."""
+    value = lookup_variable(env, name)
     if not value:
-        raise SystemExit(f"error: {name} is not set (in the env file or the environment)")
+        fail(f"{name} is not set (in the env file or the environment)")
     return value
 
 

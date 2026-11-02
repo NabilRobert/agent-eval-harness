@@ -21,7 +21,6 @@ from agent_eval.cli.common import (
     RAW_LOG_DIR,
     TRIAL_TIME_LIMIT_S,
     TRIAL_TOKEN_LIMIT,
-    RETRIES_PER_TRIAL,
     EnvFile,
     Prices,
     app,
@@ -95,7 +94,10 @@ def _run_trials(  # noqa: PLR0913 -- keyword-only step inputs
             model_args=agent["model_args"],
             epochs=agent["epochs"],
             max_samples=max_samples,
-            retry_on_error=RETRIES_PER_TRIAL,
+            # No retry_on_error: Inspect gives a retried trial a fresh cost
+            # cap, so a run could spend several times its budget. Failed
+            # model calls are still retried inside the trial; a trial that
+            # crashes anyway is recorded as an error.
             # Past this share of errored trials the run is incomplete anyway,
             # so stop spending on it.
             fail_on_error=INCOMPLETE_ERROR_SHARE,

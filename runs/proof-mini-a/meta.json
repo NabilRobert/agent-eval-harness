@@ -266,8 +266,14 @@
       "from_export_version": 4,
       "to_export_version": 5,
       "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-11-02T06:44:31+00:00",
+      "from_export_version": 5,
+      "to_export_version": 5,
+      "price_checked": "2026-10-23"
     }
   ],
   "schema_version": 1,
-  "trials_sha256": "62288f25fde18dda38f4d86f05d36eebbb9dadc24af9a53d081e58f26ec4fa6e"
+  "trials_sha256": "b78261cb8f32dc99db994e92ccfd4ccf9f3f9f3eb1b5bde5acadccbb85a9c44d"
 }

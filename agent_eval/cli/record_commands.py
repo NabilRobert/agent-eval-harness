@@ -12,10 +12,7 @@ import typer
 import yaml
 
 from agent_eval import REPO_ROOT
-from agent_eval.budget import (
-    load_prices,
-    price_for,
-)
+from agent_eval.budget import BudgetError, load_prices, price_for
 from agent_eval.envfile import read_env_file
 from agent_eval.publish import apply_readme
 from agent_eval.publish import render as render_results
@@ -65,7 +62,10 @@ def reexport(run_dir: Path, prices_path: Prices = str(REPO_ROOT / "prices.yaml")
     log_path = run_dir / "inspect.eval"
     if not log_path.is_file():
         fail(f"{log_path} not found; nothing to rebuild from")
-    price = price_for(record.meta["agent"]["model"], load_prices(Path(prices_path)))
+    try:
+        price = price_for(record.meta["agent"]["model"], load_prices(Path(prices_path)))
+    except BudgetError as exc:
+        fail(str(exc))
     rebuilt_at = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
     meta, trials = rebuild_records(record.meta, log_path, price, rebuilt_at)
     write_run(run_dir, meta, trials)

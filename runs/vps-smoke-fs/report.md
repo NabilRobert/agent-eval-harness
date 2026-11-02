@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `filesystem`, 2 tasks × 1 attempts, suite sha256 `5a579afda013`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 2×
 - **Run at:** 2026-10-24T07:41:33+00:00
 
 ## Result
