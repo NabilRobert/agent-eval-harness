@@ -70,10 +70,10 @@ def lookup_variable(env: dict[str, str], name: str) -> str | None:
 
 def require_variable(env: dict[str, str], name: str) -> str:
     """`lookup_variable`, for a value the command can't go on without.
-    Missing, it stops the command with exit 1 and names the variable."""
+    Missing, it stops the command with exit 2 and names the variable."""
     value = lookup_variable(env, name)
     if not value:
-        raise SystemExit(f"error: {name} is not set (in the env file or the environment)")
+        fail(f"{name} is not set (in the env file or the environment)")
     return value
 
 

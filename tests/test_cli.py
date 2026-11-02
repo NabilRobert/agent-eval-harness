@@ -99,17 +99,6 @@ def test_main_returns_the_exit_code_instead_of_exiting() -> None:
     assert main([]) == 2
 
 
-def test_a_missing_key_exits_1_with_its_name(no_keys: None) -> None:
-    with pytest.raises(SystemExit) as exc:
-        main(
-            ["run", "--suite", FS_SUITE, "--tasks", "f01", "--env-file", "/dev/null", "--plan-only"]
-        )
-    assert (
-        exc.value.code
-        == "error: SUMOPOD_AI_API_KEY is not set (in the env file or the environment)"
-    )
-
-
 def test_importing_the_cli_doesnt_import_inspect() -> None:
     code = "import sys, agent_eval.cli; assert 'inspect_ai' not in sys.modules"
     subprocess.run([sys.executable, "-c", code], check=True)
@@ -168,7 +157,7 @@ def test_run_takes_its_options(no_keys: None, env_file: str) -> None:
 
 def test_run_reads_its_keys_from_the_env_file(no_keys: None, env_file: str) -> None:
     missing = plan("/dev/null")
-    assert missing.exit_code == 1
+    assert missing.exit_code == 2
     assert "SUMOPOD_AI_API_KEY is not set" in text(missing)
     assert plan(env_file).exit_code == 0
 
@@ -350,6 +339,6 @@ def test_generate_expected_needs_the_target_key(no_keys: None, tmp_path: Path) -
         "--env-file",
         "/dev/null",
     )
-    assert result.exit_code == 1
+    assert result.exit_code == 2
     assert "MCP_BACKBONE_EVAL_KEY is not set" in text(result)
     assert not (tmp_path / "out.yaml").exists()

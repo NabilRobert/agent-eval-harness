@@ -260,9 +260,6 @@ These two keep the committed files honest, and CI runs both.
 
 All reported as bugs to the project's session.
 
-- **Exit codes:** a missing key, a missing `--prices` file or a missing
-  `--system-prompt-file` exits 1, the code for a regression. Exit 2 is the
-  documented code for bad config.
 - **Strict grading:** it compares `5` and `5.0` as different values, so a
   right answer written another way fails strict.
 - **`NaN` in a row:** the lenient grader crashes on it, so the trial

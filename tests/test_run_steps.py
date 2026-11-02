@@ -1,12 +1,17 @@
 """The steps `agent-eval run` takes before anything is spent: where keys
 are read from, and what stops a run with exit 2."""
 
+import json
 import os
+import shutil
 from pathlib import Path
 
 import pytest
+import typer
 
-from agent_eval.cli import run_steps
+from agent_eval import REPO_ROOT as REPO
+from agent_eval.cli import main, run_steps
+from agent_eval.compare import EXIT_UNDECIDED
 
 ENVIRONMENT_KEY = "sk-from-the-environment"
 FILE_KEY = "sk-from-the-env-file"
@@ -68,3 +73,111 @@ def test_the_targets_key_is_scanned_for_whatever_its_name(clean_environment: Non
 
 def test_a_path_is_not_a_secret(clean_environment: None, tmp_path: Path) -> None:
     assert str(tmp_path) not in run_steps.secrets_to_redact({"PATH_TO_THINGS": str(tmp_path)}, "")
+
+
+FS_SUITE = str(REPO / "suites" / "filesystem.yaml")
+PLAN_ONLY_RUN = [
+    "run",
+    "--suite",
+    FS_SUITE,
+    "--tasks",
+    "f01",
+    "--model",
+    "openai/gpt-5-mini",
+    "--env-file",
+    "/dev/null",
+    "--plan-only",
+]
+
+
+def malformed_yaml(tmp_path: Path) -> Path:
+    path = tmp_path / "malformed.yaml"
+    path.write_text("a: [1\n", encoding="utf-8")
+    return path
+
+
+def test_a_missing_key_exits_2_and_names_it(
+    clean_environment: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(["run", "--suite", FS_SUITE, "--tasks", "f01", "--env-file", "/dev/null"])
+    assert code == EXIT_UNDECIDED
+    assert "SUMOPOD_AI_API_KEY is not set" in capsys.readouterr().err
+
+
+def test_a_missing_price_table_exits_2_without_a_traceback(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main([*PLAN_ONLY_RUN, "--prices", "/nonexistent.yaml"]) == EXIT_UNDECIDED
+    err = capsys.readouterr().err
+    assert "/nonexistent.yaml" in err
+    assert "Traceback" not in err
+
+
+def test_a_malformed_price_table_exits_2_without_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main([*PLAN_ONLY_RUN, "--prices", str(malformed_yaml(tmp_path))]) == EXIT_UNDECIDED
+    assert "Traceback" not in capsys.readouterr().err
+
+
+def test_reexport_with_a_missing_price_table_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["reexport", str(REPO / "runs" / "skeleton"), "--prices", "/nonexistent.yaml"])
+    assert code == EXIT_UNDECIDED
+    assert "Traceback" not in capsys.readouterr().err
+
+
+def test_a_missing_system_prompt_file_stops_the_run() -> None:
+    with pytest.raises(typer.Exit) as stopped:
+        run_steps.choose_system_prompt({}, None, "/nonexistent.txt")
+    assert stopped.value.exit_code == EXIT_UNDECIDED
+
+
+def test_a_binary_system_prompt_file_stops_the_run(tmp_path: Path) -> None:
+    binary = tmp_path / "prompt.txt"
+    binary.write_bytes(b"\xff\xfe")
+    with pytest.raises(typer.Exit) as stopped:
+        run_steps.choose_system_prompt({}, None, str(binary))
+    assert stopped.value.exit_code == EXIT_UNDECIDED
+
+
+def test_a_malformed_suite_exits_2_without_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code = main(["run", "--suite", str(malformed_yaml(tmp_path)), "--env-file", "/dev/null"])
+    assert code == EXIT_UNDECIDED
+    assert "Traceback" not in capsys.readouterr().err
+
+
+def test_an_empty_suite_exits_2_without_a_traceback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    empty = tmp_path / "empty.yaml"
+    empty.write_text("", encoding="utf-8")
+    assert main(["run", "--suite", str(empty), "--env-file", "/dev/null"]) == EXIT_UNDECIDED
+    assert "Traceback" not in capsys.readouterr().err
+
+
+def test_comparing_a_corrupt_run_exits_2_and_says_why(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    skeleton = REPO / "runs" / "skeleton"
+    corrupt = tmp_path / "corrupt"
+    shutil.copytree(skeleton, corrupt)
+    (corrupt / "meta.json").write_text("{not json", encoding="utf-8")
+    assert main(["compare", str(skeleton), str(corrupt)]) == EXIT_UNDECIDED
+    assert "meta.json isn't valid JSON" in capsys.readouterr().out
+
+
+def test_an_unexpected_crash_exits_2_not_the_regression_code(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A run file with valid JSON but a field missing: nothing handles it
+    by name, so the safety net in `main` has to."""
+    skeleton = REPO / "runs" / "skeleton"
+    edited = tmp_path / "edited"
+    shutil.copytree(skeleton, edited)
+    meta = json.loads((edited / "meta.json").read_text(encoding="utf-8"))
+    del meta["provenance"]
+    (edited / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    assert main(["compare", str(skeleton), str(edited)]) == EXIT_UNDECIDED
+    assert "KeyError" in capsys.readouterr().err

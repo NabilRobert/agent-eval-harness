@@ -136,7 +136,13 @@ def load_suite(path: Path, only: list[str] | None = None) -> dict[str, Any]:
     """Loads and validates a suite; `only` picks a subset of task ids (the
     smoke suite), refusing ids that don't exist rather than silently
     running fewer tasks."""
-    suite = cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")))
+    try:
+        loaded: Any = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise SuiteError(f"{path} isn't valid YAML: {exc}") from exc
+    if not isinstance(loaded, dict):
+        raise SuiteError(f"{path} doesn't hold a suite: it needs 'suite', 'target' and 'tasks'")
+    suite = cast(dict[str, Any], loaded)
     validate_suite(suite)
     if only:
         by_id = {t["id"]: t for t in suite["tasks"]}

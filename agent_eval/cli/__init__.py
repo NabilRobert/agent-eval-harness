@@ -21,6 +21,8 @@ when their module is imported:
 - gate_commands.py: `compare` and `confirm`.
 """
 
+import traceback
+
 # Imported for their side effect, in this order on purpose: each module
 # registers its commands on the app, and `agent-eval --help` lists them in
 # registration order, `run` first.
@@ -28,15 +30,18 @@ from agent_eval.cli.common import app  # noqa: I001
 from agent_eval.cli import run_command as run_command
 from agent_eval.cli import record_commands as record_commands
 from agent_eval.cli import gate_commands as gate_commands
+from agent_eval.compare import EXIT_UNDECIDED
 
 
 def main(argv: list[str] | None = None) -> int:
     """The `agent-eval` entry point. Returns the exit code instead of
-    exiting, so tests can call it in-process."""
+    exiting, so tests can call it in-process. An unexpected crash exits 2:
+    left alone, Python would exit 1, and CI reads 1 as a regression."""
     try:
         app(args=argv, prog_name="agent-eval")
     except SystemExit as exc:
-        if isinstance(exc.code, int):
-            return exc.code
-        raise  # `require_variable`'s message: Python prints it and exits 1
+        return int(exc.code or 0)
+    except Exception:  # see the docstring: a crash decides nothing
+        traceback.print_exc()
+        return EXIT_UNDECIDED
     return 0

@@ -178,7 +178,10 @@ def choose_system_prompt(
     if system_prompt:
         return system_prompt
     if system_prompt_file:
-        return Path(system_prompt_file).read_text(encoding="utf-8").strip()
+        try:
+            return Path(system_prompt_file).read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError) as exc:
+            fail(f"can't read the system prompt file {system_prompt_file}: {exc}")
     # A suite can carry its own prompt; Pagila uses MCP-backbone's.
     return suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
 

@@ -29,7 +29,11 @@ class BudgetError(Exception):
 
 
 def load_prices(path: Path) -> dict[str, dict[str, Any]]:
-    doc = cast(dict[str, Any], yaml.safe_load(path.read_text(encoding="utf-8")) or {})
+    try:
+        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, yaml.YAMLError) as exc:
+        raise BudgetError(f"can't read the price table {path}: {exc}") from exc
+    doc = cast(dict[str, Any], loaded or {})
     models = cast(dict[str, dict[str, Any]], doc.get("models") or {})
     for name, entry in models.items():
         for field in ("input", "output", "source", "checked"):
