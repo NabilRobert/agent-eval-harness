@@ -101,6 +101,12 @@
       "from_export_version": 4,
       "to_export_version": 5,
       "price_checked": "2026-10-23"
+    },
+    {
+      "at": "2026-11-02T06:44:47+00:00",
+      "from_export_version": 5,
+      "to_export_version": 5,
+      "price_checked": "2026-10-23"
     }
   ],
   "run_id": "smoke-b1",
@@ -146,5 +152,5 @@
     "checked": "2026-10-23"
   },
   "schema_version": 1,
-  "trials_sha256": "ac124dc8564c11df807e2cd7b0259bef94a40c12ee3ac73baca2784d26764807"
+  "trials_sha256": "07295967a070d0a8fd2360bc9a40cedc3f1ae5ce41e70e0cc686edc2de6b1fbd"
 }

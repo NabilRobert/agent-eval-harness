@@ -7,18 +7,23 @@ app/benchmark/grading.py, where they were built and tested against real
 benchmark runs; see that file's history for why each tolerance exists."""
 
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import MAX_EMAX, MAX_PREC, MIN_EMIN, Context, Decimal, InvalidOperation
 from typing import Any
 
 # Bump whenever an existing grader's behaviour changes (adding a new kind
 # doesn't change any stored grade, so it doesn't bump). Stored on every trial, so a
 # comparison can tell grades made by different grader code apart (and
 # `compare` regrades both runs with the current code anyway).
-GRADER_VERSION = 3  # v2: answer_match, forbidden_tools; v3: words may take a suffix
+# v2: answer_match, forbidden_tools; v3: words may take a suffix;
+# v4: strict compares numbers by value, and non-finite values stay text.
+GRADER_VERSION = 4
 
 # Absorbs an agent rounding a price-style value to 2 decimal places; a
 # genuinely different answer is off by far more than half a cent.
 _NUMERIC_TOLERANCE = Decimal("0.005")
+# Strict comparison rewrites a number without changing it, so it can't use
+# the default context, which rounds to 28 digits.
+_EXACT_CONTEXT = Context(prec=MAX_PREC, Emax=MAX_EMAX, Emin=MIN_EMIN)
 
 Row = dict[str, Any]
 
@@ -27,20 +32,27 @@ def _normalize_value(value: Any) -> Any:
     """Numbers can arrive as numbers or as numeric strings (JSON has no
     Decimal), so both are turned into Decimal before comparing.
     Tradeoff: a numeric-looking string (a zip code with a leading zero)
-    loses that distinction."""
+    loses that distinction. NaN and Infinity stay as they came: they aren't
+    numbers to compare, and Decimal arithmetic on them raises."""
+    number: Decimal | None = None
     if isinstance(value, (int, float, Decimal)) and not isinstance(value, bool):
-        return Decimal(str(value))
-    if isinstance(value, str):
+        number = Decimal(str(value))
+    elif isinstance(value, str):
         try:
-            return Decimal(value)
+            number = Decimal(value)
         except InvalidOperation:
             return value
+    if number is not None and number.is_finite():
+        return number
     return value
 
 
 def _values_match(expected_value: Any, actual_value: Any) -> bool:
     if isinstance(expected_value, Decimal) and isinstance(actual_value, Decimal):
-        return abs(expected_value - actual_value) < _NUMERIC_TOLERANCE
+        try:
+            return abs(expected_value - actual_value) < _NUMERIC_TOLERANCE
+        except ArithmeticError:  # too large for Decimal's default context
+            return False
     return expected_value == actual_value
 
 
@@ -75,15 +87,25 @@ def rows_equal(actual: list[Row], expected: list[Row]) -> bool:
     return True
 
 
+def _exact_key(value: Any) -> str:
+    """Text that's the same for two values exactly when they're equal, so
+    rows can be sorted and compared. 5, 5.0 and "5.00" are one number
+    written three ways; rewriting a Decimal in its shortest form is exact,
+    where dividing it into a fraction would build a huge integer for 1E+999999."""
+    normalized = _normalize_value(value)
+    if not isinstance(normalized, Decimal):
+        return repr(normalized)
+    if not normalized:  # -0 and 0 are the same number
+        return "0"
+    return str(normalized.normalize(_EXACT_CONTEXT))
+
+
 def rows_equal_strict(actual: list[Row], expected: list[Row]) -> bool:
     """Strict execution accuracy, the headline number: same columns in the
-    same order, exactly equal values, rows in any order. The only
-    normalisation is number-vs-numeric-string, which fixes how a value is
-    represented, not whether it's right."""
-    actual_rows = sorted(repr(tuple(_normalize_value(v) for v in row.values())) for row in actual)
-    expected_rows = sorted(
-        repr(tuple(_normalize_value(v) for v in row.values())) for row in expected
-    )
+    same order, exactly equal values, rows in any order. Normalising only
+    changes how a value is written, not whether it's right."""
+    actual_rows = sorted(repr([_exact_key(v) for v in row.values()]) for row in actual)
+    expected_rows = sorted(repr([_exact_key(v) for v in row.values()]) for row in expected)
     return actual_rows == expected_rows
 
 

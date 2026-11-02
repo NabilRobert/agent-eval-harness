@@ -29,7 +29,7 @@ from agent_eval.suites import (
 from agent_eval.targets import TARGETS
 from agent_eval.version import harness_git as current_harness_git
 
-from agent_eval.cli.common import fail, require_variable
+from agent_eval.cli.common import fail, lookup_variable, require_variable
 
 
 def load_suite_or_exit(suite_path: str, tasks: str | None) -> dict[str, Any]:
@@ -98,15 +98,20 @@ def export_keys_for_inspect(env: dict[str, str]) -> None:
     <SERVICE>_BASE_URL, the native ones OPENAI_API_KEY and so on."""
     for name, value in env.items():
         os.environ.setdefault(name, value)
-    if "SUMOPOD_AI_API_KEY" in env:
-        os.environ["SUMOPOD_API_KEY"] = env["SUMOPOD_AI_API_KEY"]
+    sumopod_key = lookup_variable(env, "SUMOPOD_AI_API_KEY")
+    if sumopod_key:
+        os.environ["SUMOPOD_API_KEY"] = sumopod_key
     os.environ.setdefault("INSPECT_DISPLAY", "none")
 
 
 def secrets_to_redact(env: dict[str, str], auth_token: str) -> list[str]:
-    """Every secret-looking value from the env file, plus the target's key:
-    none may appear in the run records."""
-    secrets = [value for name, value in env.items() if value and is_secret_name(name)]
+    """Every secret-looking value from the env file and the environment,
+    plus the target's key: none may appear in the run records. Both places
+    are read because a key can arrive through either, and they can differ.
+    A variable that only looks secret can refuse a clean run; the raw log
+    stays in .inspect-logs, which beats publishing a key."""
+    candidates = [*env.items(), *os.environ.items()]
+    secrets = [value for name, value in candidates if value and is_secret_name(name)]
     if auth_token:
         secrets.append(auth_token)
     return secrets
@@ -173,7 +178,10 @@ def choose_system_prompt(
     if system_prompt:
         return system_prompt
     if system_prompt_file:
-        return Path(system_prompt_file).read_text(encoding="utf-8").strip()
+        try:
+            return Path(system_prompt_file).read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeDecodeError) as exc:
+            fail(f"can't read the system prompt file {system_prompt_file}: {exc}")
     # A suite can carry its own prompt; Pagila uses MCP-backbone's.
     return suite.get("system_prompt") or PAGILA_SYSTEM_PROMPT
 

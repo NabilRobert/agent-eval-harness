@@ -294,8 +294,11 @@ uv run agent-eval publish [--check]
 **Budget guard:**
 - Each run is capped at `--budget` (default $5).
 - Each trial is capped at budget ÷ trials through Inspect's per-trial
-  `cost_limit`, so even if every trial hit its cap, the run couldn't exceed
-  the budget.
+  `cost_limit`, so even if every trial hit its cap, the run would stay at
+  the budget. The cap is checked after each model call, so a trial can
+  overshoot by its last call.
+- A trial that crashes isn't retried, because a retry would get a fresh
+  cap. Failed model calls are still retried inside the trial.
 - Full runs refuse to start from a checkout with uncommitted changes, so
   every published run traces back to one commit.
 

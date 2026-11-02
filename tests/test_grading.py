@@ -4,6 +4,8 @@ numbers may be numbers or numeric strings."""
 
 from decimal import Decimal
 
+import pytest
+
 from agent_eval.grading import grade_result_match, rows_equal, rows_equal_strict
 
 
@@ -111,3 +113,48 @@ def test_answer_match_alternatives_any_one_counts() -> None:
     # Mixed: a plain item and an alternatives item must both be present.
     assert grade_answer_match("shipping, 12 s", ["shipping", ["12", "twelve"]]) == (True, True)
     assert grade_answer_match("shipping", ["shipping", ["12", "twelve"]]) == (False, False)
+
+
+@pytest.mark.parametrize(
+    ("actual", "expected"),
+    [
+        (5.0, 5),
+        ("5.00", 5),
+        ("1.50", 1.5),
+        ("1e3", 1000),
+        ("-0.0", 0),
+    ],
+)
+def test_strict_compares_numbers_by_value_not_by_how_they_are_written(
+    actual: object, expected: object
+) -> None:
+    assert rows_equal_strict([{"a": actual}], [{"a": expected}])
+
+
+@pytest.mark.parametrize(
+    ("actual", "expected"),
+    [
+        (1.5, 1.51),
+        (5, 50),
+        ("1.000000000000000000000000000000000001", 1),
+    ],
+)
+def test_strict_still_fails_a_different_number(actual: object, expected: object) -> None:
+    assert not rows_equal_strict([{"a": actual}], [{"a": expected}])
+
+
+@pytest.mark.parametrize(
+    "not_a_number",
+    ["NaN", "nan", "sNaN", "Infinity", "-Infinity", float("nan"), float("inf")],
+)
+def test_a_non_finite_value_fails_instead_of_crashing(not_a_number: object) -> None:
+    assert grade_result_match([{"a": not_a_number}], [{"a": 1}]) == (False, False)
+
+
+def test_nan_text_matches_the_same_text() -> None:
+    assert grade_result_match([{"a": "NaN"}], [{"a": "NaN"}]) == (True, True)
+
+
+@pytest.mark.parametrize("huge", ["1E+999999", "1E+9999999", "-1E+9999999", "9.9E+999999"])
+def test_a_huge_number_fails_instead_of_crashing(huge: str) -> None:
+    assert grade_result_match([{"a": huge}], [{"a": -1}]) == (False, False)

@@ -45,9 +45,9 @@ flowchart TD
    `agent_eval/cli/run_steps.py: choose_target` looks the MCP server up in
    `agent_eval/targets.py: TARGETS`. `read_env` and `check_keys` read the
    `.env` file (or the environment) and stop early if a key is missing.
-   `secrets_to_redact` remembers the env file's key values and the
-   target's key, so step 10 can check none of them ended up in the
-   records. `new_run_dir` refuses a run id that already exists, so records
+   `secrets_to_redact` remembers the key values from the env file and the
+   environment, and the target's key, so step 10 can check none of them
+   ended up in the records. `new_run_dir` refuses a run id that already exists, so records
    are never overwritten.
 3. **Plan the spend.** `agent_eval/cli/run_steps.py: plan_spend` looks the
    model's price up in `prices.yaml` (`agent_eval/budget.py: price_for`) and
@@ -80,8 +80,10 @@ flowchart TD
    Inspect's `eval`. Inspect runs the agent loop: the model asks for a
    tool, the MCP server answers, and so on until the agent submits an
    answer or hits a limit (messages, time, tokens or its cost cap). It
-   repeats each task `--epochs` times, 5 by default. A trial that crashes
-   is retried twice, and the run stops if more than 10% of trials error.
+   repeats each task `--epochs` times, 5 by default. A failed model call
+   is retried inside the trial, but a trial that crashes isn't rerun: a
+   rerun would get a fresh cost cap. The run stops if more than 10% of
+   trials error.
 9. **Score each trial.** `agent_eval/inspect_tasks.py: suite_scorer` runs
    every grader the task lists, through
    `agent_eval/grading.py: grade_one`. It stores each grader's full input
@@ -255,22 +257,6 @@ These two keep the committed files honest, and CI runs both.
   `scripts/scripted_pagila_agent.py`).
 - **ADR:** an architecture decision record, in
   `docs/planning/phase-5-architecture-decisions.md`.
-
-## Known gaps
-
-All reported as bugs to the project's session.
-
-- **Keys only in the environment:** `secrets_to_redact` reads only the env
-  file, so a model key that isn't in that file is never scanned for. The
-  same goes for `export_keys_for_inspect`, so Inspect doesn't get
-  `SUMOPOD_API_KEY`. The compose file passes keys this way.
-- **Exit codes:** a missing key, a missing `--prices` file or a missing
-  `--system-prompt-file` exits 1, the code for a regression. Exit 2 is the
-  documented code for bad config.
-- **Strict grading:** it compares `5` and `5.0` as different values, so a
-  right answer written another way fails strict.
-- **`NaN` in a row:** the lenient grader crashes on it, so the trial
-  errors instead of failing.
 
 ## Where to change things
 
