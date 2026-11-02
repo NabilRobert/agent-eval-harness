@@ -5,12 +5,18 @@ import json
 import os
 import shutil
 from pathlib import Path
+from typing import Any
 
 import pytest
 import typer
+from inspect_ai import Task
+from inspect_ai import eval as inspect_eval  # pyright: ignore[reportUnknownVariableType]
+from inspect_ai.dataset import Sample
+from inspect_ai.model import ModelOutput, get_model
+from inspect_ai.solver import generate
 
 from agent_eval import REPO_ROOT as REPO
-from agent_eval.cli import main, run_steps
+from agent_eval.cli import main, run_command, run_steps
 from agent_eval.compare import EXIT_UNDECIDED
 
 ENVIRONMENT_KEY = "sk-from-the-environment"
@@ -181,3 +187,39 @@ def test_an_unexpected_crash_exits_2_not_the_regression_code(
     (edited / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
     assert main(["compare", str(skeleton), str(edited)]) == EXIT_UNDECIDED
     assert "KeyError" in capsys.readouterr().err
+
+
+def test_a_crashed_trial_isnt_retried_so_its_cost_cap_cant_reset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Inspect gives every retry a fresh cost cap, so one retry would let a
+    trial spend its share of the budget twice. Runs real Inspect."""
+    calls: list[int] = []
+
+    def crash(*_: object) -> ModelOutput:
+        calls.append(1)
+        raise RuntimeError("the provider crashed")
+
+    def task_that_generates(*_: object) -> Task:
+        return Task(dataset=[Sample(id="t1", input="q")], solver=[generate()])
+
+    monkeypatch.setattr("agent_eval.inspect_tasks.build_task", task_that_generates)
+    monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
+
+    def spy(task: Task, **options: Any) -> Any:
+        options["model"] = get_model("mockllm/model", custom_outputs=crash)
+        return inspect_eval(task, **options)
+
+    monkeypatch.setattr("inspect_ai.eval", spy)
+    agent: dict[str, Any] = {"model": "mockllm/model", "model_args": {}, "epochs": 1}
+    run_command._run_trials(  # pyright: ignore[reportPrivateUsage]
+        suite={},
+        target={},
+        agent=agent,
+        auth_token="",
+        max_samples=1,
+        price=None,
+        budget={},
+        harness_git="abc123",
+    )
+    assert len(calls) == 1

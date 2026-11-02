@@ -28,9 +28,6 @@ EXIT_OUT_OF_DATE = 1
 # is scored as a fail, not retried.
 TRIAL_TIME_LIMIT_S = 120
 TRIAL_TOKEN_LIMIT = 60_000
-# Provider hiccups: a failed trial is retried this many times, then
-# recorded as an error rather than aborting the run.
-RETRIES_PER_TRIAL = 2
 # The confirmation runs and default run ids are stamped with UTC time.
 STAMP_FORMAT = "%Y%m%dT%H%M%SZ"
 

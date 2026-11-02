@@ -80,8 +80,10 @@ flowchart TD
    Inspect's `eval`. Inspect runs the agent loop: the model asks for a
    tool, the MCP server answers, and so on until the agent submits an
    answer or hits a limit (messages, time, tokens or its cost cap). It
-   repeats each task `--epochs` times, 5 by default. A trial that crashes
-   is retried twice, and the run stops if more than 10% of trials error.
+   repeats each task `--epochs` times, 5 by default. A failed model call
+   is retried inside the trial, but a trial that crashes isn't rerun: a
+   rerun would get a fresh cost cap. The run stops if more than 10% of
+   trials error.
 9. **Score each trial.** `agent_eval/inspect_tasks.py: suite_scorer` runs
    every grader the task lists, through
    `agent_eval/grading.py: grade_one`. It stores each grader's full input

@@ -5,8 +5,13 @@ conservative). Two layers:
    budget.
 2. During it: each trial gets a cost cap of budget / number of trials
    (Inspect's per-sample `cost_limit`), so even if every trial ran to its
-   cap, the run can't exceed the budget. That closes the gap Phase 4
-   flagged (trials already in flight overshooting a run-level check).
+   cap, the run stays at the budget. That closes the gap Phase 4 flagged
+   (trials already in flight overshooting a run-level check).
+
+Two limits on that promise. Inspect checks the cap after each model call,
+so a trial can overshoot by its last call (1 of 1,777 published trials
+did: $0.0264 against $0.025). And it only holds without trial retries,
+which is why `run` has none: each retry would get a fresh cap.
 
 A model with no price can't be capped in dollars, so it may only run
 smoke-sized runs, still bounded by the per-trial token limit."""
