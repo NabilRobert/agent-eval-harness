@@ -11,6 +11,7 @@ dependencies = [
     "inspect-ai==0.3.283",
     "openai==3.37.0",
     "mcp==2.3.0",
+    "httpx==0.28.1",
     "pyyaml==6.0.3",
     "typer==0.27.3",
     # Tracing, off unless an OTLP endpoint is set (ADR-012). The same
