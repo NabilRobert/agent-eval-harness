@@ -256,15 +256,6 @@ These two keep the committed files honest, and CI runs both.
 - **ADR:** an architecture decision record, in
   `docs/planning/phase-5-architecture-decisions.md`.
 
-## Known gaps
-
-All reported as bugs to the project's session.
-
-- **Strict grading:** it compares `5` and `5.0` as different values, so a
-  right answer written another way fails strict.
-- **`NaN` in a row:** the lenient grader crashes on it, so the trial
-  errors instead of failing.
-
 ## Where to change things
 
 - **Add or change a task.** Frozen suites can't change in place: a change

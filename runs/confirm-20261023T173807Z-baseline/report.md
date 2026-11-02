@@ -2,7 +2,7 @@
 
 - **Model:** `openai-api/sumopod/gpt-5-mini` (provider reported: gpt-5-mini)
 - **Suite:** `pagila`, 8 tasks × 10 attempts, suite sha256 `97a277530313`, not the frozen suite (subset or unfrozen)
-- **Status:** complete (Inspect: success); rebuilt from its Inspect log 1×
+- **Status:** complete (Inspect: success); rebuilt from its Inspect log 2×
 - **Run at:** 2026-10-23T17:38:11+00:00
 
 ## Result
