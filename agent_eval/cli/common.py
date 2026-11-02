@@ -62,10 +62,16 @@ def fail(message: str) -> NoReturn:
     raise typer.Exit(EXIT_UNDECIDED)
 
 
+def lookup_variable(env: dict[str, str], name: str) -> str | None:
+    """A value from the env file, else from the environment: the container
+    gets its keys in the environment, a laptop from .env."""
+    return env.get(name) or os.environ.get(name)
+
+
 def require_variable(env: dict[str, str], name: str) -> str:
-    """A value from the env file, else from the environment. Missing, it
-    stops the command with exit 1 and names the variable."""
-    value = env.get(name) or os.environ.get(name)
+    """`lookup_variable`, for a value the command can't go on without.
+    Missing, it stops the command with exit 1 and names the variable."""
+    value = lookup_variable(env, name)
     if not value:
         raise SystemExit(f"error: {name} is not set (in the env file or the environment)")
     return value
