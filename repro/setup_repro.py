@@ -64,6 +64,9 @@ def main() -> int:
     subprocess.run(["alembic", "upgrade", "head"], cwd="/app", env=env, check=True)
 
     print("== seeding the eval workspace")
+    # The positional seed() of the pinned commit. MCP-backbone's 3f5ae59
+    # replaced it with seed(WorkspaceSpec); tests/test_repro_pin.py fails
+    # when the pin moves, so this call gets rechecked then.
     key = (
         subprocess.run(
             [
