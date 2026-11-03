@@ -284,6 +284,11 @@ These two keep the committed files honest, and CI runs both.
   tokens per trial: `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and
   `TRIAL_TOKEN_LIMIT`. The gate's thresholds: the constants at the top of
   `agent_eval/compare/gates.py` and `agent_eval/compare/comparison.py`.
+- **Move the local MCP-backbone pin.** Change `MCP_BACKBONE_COMMIT` in
+  `repro/Dockerfile`. `tests/test_repro_pin.py` then fails on purpose:
+  check `repro/setup_repro.py`'s calls into MCP-backbone against the new
+  commit (past MCP-backbone's 3f5ae59, `seed` takes a `WorkspaceSpec`),
+  rebuild the image, and update the test's pin.
 - **Publish a new run.** Add it to `results.yaml`, then run
   `agent-eval publish`.
 - **Run the checks** (the same ones CI runs):
