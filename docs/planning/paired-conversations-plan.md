@@ -1,7 +1,8 @@
 # Paired multi-turn comparisons: the pilot slice (proposed)
 
-*2026-11-04. Proposed, not built. It waits for Arthur's OK and for
-Project 10's answer on the interface. Once accepted, the three ADRs below
+*2026-11-04. Proposed, not built. It waits for Arthur's OK. The
+interface is agreed with Project 10 (AI Flight School,
+`docs/planning/thesis-pilot.md` there). Once accepted, the ADRs below
 move to the Phase 5 doc.*
 
 ## Why
@@ -10,8 +11,8 @@ Arthur's master's thesis asks (RQ3) whether a simulator-plus-judge
 evaluation ranks agent versions correctly, using deliberately degraded
 agents as ground truth, and how many conversations each decision needs.
 This is part D of Project 15 (`id-chat-research`). Its pieces are:
-- Project 10 (AI Flight School) supplies the simulated customers;
-- Project 15 supplies the judge's noise estimates;
+- Project 10 supplies the simulated customers and runs the agents;
+- Project 15 supplies the rubric judge and its noise estimates;
 - this harness compares the runs.
 
 What the harness has today doesn't fit as is:
@@ -19,56 +20,82 @@ What the harness has today doesn't fit as is:
   tasks; gate v2 pools trials. Neither uses the fact that run A and run
   B met the *same* simulated customer with the same seed. That pairing
   is where the power comes from.
-- **It regrades every stored grade.** It can't re-run a model judge, so
-  a judge's verdict needs its own grader kind.
+- **It doesn't treat the customer as part of the instrument.** If the
+  customer model or its settings change between runs, the change would
+  show up as an agent change.
 - **Its power estimates are scripts** (`scripts/simulate_gate.py`,
   `scripts/compare_rules.py`), run after the fact. RQ3 needs the sample
   size *before* the run.
+
+## The interface (agreed with Project 10)
+
+Project 10 writes normal harness run records, one run per agent variant,
+with `export.trial_from_sample` and `records.write_run`.
+- **Pair key: `(task_id, attempt)`.**
+  - `task_id` is the scenario: persona × goal × tactic, plus a seed.
+  - `attempt` is the epoch.
+  - There's no separate `pair_id`.
+- **Extra trial fields:**
+  - `customer_seed` and `scenario` (`{persona_id, goal_id, tactic_id}`);
+  - `stop_marker`: `###DONE###`, `###GAVE_UP###` or `###GHOSTED###`;
+  - `divergence_turn`: the first turn where the two arms' agents replied
+    differently, for the thesis analysis (the gate doesn't use it).
+
+  Checked on main (199657b): `write_run` and `load_run` keep these
+  fields, the trials hash covers them, and `compare` accepts the runs.
+- **The task hash covers the scenario:** the persona card, goal and
+  tactic text go in the task's `prompt`.
+- **The meta's `customer` block** holds the customer model and its
+  generation settings.
+- **The harness reads run records only.** The `ChatRecord` JSONL export
+  stays Flight School's.
 
 ## The slice
 
 Pilot scale only. It shows the pipeline works end to end; it doesn't
 answer RQ3.
 
-1. **Input: harness run records** (proposed to Project 10, answer
-   pending). Project 10 already writes them through
-   `export.trial_from_sample` and `records.write_run`. There's one run
-   per agent variant:
-   - `task_id` is the persona id and `attempt` is the seed. The same
-     (persona, seed) in both runs is one pair.
-   - Each trial's transcript is a Project 15 `ChatRecord`
-     (`source: synthetic`).
-2. **Grader `judge_verdict`** (ADR-013).
-3. **Gate v3, paired** (ADR-014): `agent-eval compare --gate v3`.
-4. **`agent-eval plan-pairs`** (ADR-015): the pairs needed before a run.
-5. **The pilot runs**, pre-registered below. They run on local models
+1. **Grader `customer_outcome`** and the customer check (ADR-013).
+2. **Gate v3, paired** (ADR-014): `agent-eval compare --gate v3`.
+3. **`agent-eval plan-pairs`** (ADR-015): the pairs needed before a run.
+4. **The pilot runs**, pre-registered below. They run on local models
    through Project 10, at $0.
 
-Estimated size: code about 150 lines (grader 20, gate 60, `plan-pairs`
-50, CLI wiring 20), plus about 200 lines of tests and a guide update.
+Estimated size: code about 150 lines (grader and customer check 30, gate
+60, `plan-pairs` 50, CLI wiring 10), plus about 200 lines of tests and a
+guide update.
 
 ## Decisions (proposed)
 
-### ADR-013: A judge's verdict is a stored grade, pinned to its judge
+### ADR-013: Grades come from stored inputs; the customer is pinned
 
-**Decision:** a new grader kind, `judge_verdict`:
-- spec: `{judge_model, codebook_hash}`;
-- input: `{verdict: bool, reasons: str}`.
+**Decision:**
+- **Pass in the pilot is a grader with a stored input:**
+  `customer_outcome`, with spec `{pass_markers: ["###DONE###"]}` and
+  input `{stop_marker}`.
+  - Gave up, ghosted, or a hit turn limit is a fail. A hit limit is
+    already failed by `regrade`.
+  - It regrades like `result_match`, with no model call.
+- **A different `customer` block between two runs is incomparable**
+  (exit 2), as a different task hash is.
+- **Later, once Project 15's rubric judge exists:** each per-construct
+  score is its own grader with a stored input. A model judge's grade is
+  read back, not re-run. It's pinned the same way: its spec carries the
+  judge model and codebook hash, and two runs judged differently are
+  incomparable. A plain `scores` dict on the trial is rejected because
+  it couldn't be regraded or pinned.
 
-`grade_one` returns the stored verdict, so a regrade reads it back rather
-than re-running the judge. `compare` treats a different `judge_model` or
-`codebook_hash` between the two runs as incomparable (exit 2), just as it
-treats a different task hash.
-
-**Why:** the gate's promise is that a stored grade and a regrade agree.
-For a model judge, that holds only if the judge is pinned. A judge change
-between runs would otherwise show up as an agent change.
+**Why:** the gate's promise is that a stored grade and a regrade agree,
+and that only the agent differs between the runs. The simulated customer
+and any judge are part of the instrument, so they're pinned like the
+task.
 
 **Rejected:**
+- *A model judge for the pilot's pass:* it adds judge noise and spend
+  before Project 15's judge has been validated against humans. The stop
+  marker is already a pass/fail.
 - *Re-judging inside `compare`:* model spend and non-determinism in the
   step that has to be reproducible.
-- *Storing the verdict as a plain pass/fail with no grader:* it loses
-  which judge made it.
 
 ### ADR-014: Gate v3 compares paired conversations
 
@@ -76,25 +103,29 @@ between runs would otherwise show up as an agent change.
 - **The pairs:** each pair's difference is candidate pass minus baseline
   pass (−1, 0 or +1). The point estimate is their mean.
 - **The interval:** the 95% interval comes from a bootstrap over
-  personas, with all of a persona's seeds resampled together. It uses
-  `BOOTSTRAP_RESAMPLES` and the fixed `BOOTSTRAP_SEED`, as gate v1 does.
+  scenarios (`task_id`), with all of a scenario's attempts resampled
+  together. It uses `BOOTSTRAP_RESAMPLES` and the fixed `BOOTSTRAP_SEED`,
+  as gate v1 does.
 - **The verdict:** the same rules as v1 and v2, the same exit codes, and
   the same "inconclusive" band (`INCONCLUSIVE_DROP`).
 - **Dropped pairs:** a pair whose trial is an error on either side, or
   that's missing from one run, is left out and counted in the report.
   The pilot doesn't apply the "task went from all-pass to none" rule:
-  with one seed per persona, it would fire on single conversations.
+  with one attempt per scenario, it would fire on single conversations.
 
 **Why:** pairing removes the difficulty both agents share, which is what
-the pilot's power simulation credits it with. The bootstrap over personas
-is gate v1's method one level down, so it's the same arithmetic and seed
-discipline. Resampling personas (not single conversations) keeps the
-interval honest when a persona has several seeds.
+the pilot's power simulation credits it with. The bootstrap over
+scenarios is gate v1's method one level down, so it's the same arithmetic
+and seed discipline. Resampling scenarios (not single conversations)
+keeps the interval honest when a scenario has several attempts. A pair
+is identical only until the agents first reply differently; after that,
+the customer reacts to different text. That's why the pair correlation
+is measured, not assumed.
 
 **Rejected:**
 - *McNemar's exact test* (statsmodels): it gives a p-value, not the
   interval the report leads with, and it assumes the pairs are
-  independent, which several seeds per persona break.
+  independent, which several attempts per scenario break.
 - *scipy's `bootstrap(paired=True)`:* about 40 MB of dependency for one
   resampling loop the harness already writes in plain Python. scipy may
   still be added as a dev-only dependency, so a test can cross-check
@@ -103,13 +134,14 @@ interval honest when a persona has several seeds.
 ### ADR-015: The sample size is planned by simulating gate v3 itself
 
 **Decision:** `agent-eval plan-pairs --baseline 0.8 --drop 0.10
---judge-error 0.10 --pair-correlation 0.5` reports how many pairs give
+--grader-error 0.0 --pair-correlation 0.5` reports how many pairs give
 80% power, and how often the A/A pair would be falsely flagged.
 - **The method:** it simulates the shipped gate v3 on synthetic pairs,
   the habit of `scripts/simulate_gate.py`. A textbook formula's
   assumptions would differ from the real gate's.
-- **Judge error:** taken from `--judge-error`, or from Project 15's
-  noise file once it exists (its format is to be agreed with Project 15).
+- **Grader error:** 0 for the stop marker. For a judged score, it comes
+  from Project 15's noise file once it exists (its format is to be
+  agreed with Project 15).
 - **Pair correlation:** assumed until the pilot measures it.
 - **The search:** pair counts in steps of 10, not by ×1.25.
 
@@ -125,31 +157,37 @@ because it simulates a z-test, not the bootstrap the gate uses.
 
 ## Pilot pre-registration (fixed before running)
 
-- **Runs:** three runs of 50 personas × 1 seed, on local models, at $0:
+- **Runs:** three runs of 50 scenarios × 1 attempt, on local models, at
+  $0:
   - H1: the healthy agent;
   - H2: the healthy agent again;
   - D: one seeded degradation, chosen with Project 10.
+
+  50 × 1 rather than 25 × 2, because the interval resamples scenarios
+  and 25 would make it wider.
 - **Comparisons:** H1 vs H2 (A/A) and H1 vs D.
 - **What 50 pairs can see**, from `power_simulation.py` at 80% baseline
-  and pair correlation 0.5:
+  and pair correlation 0.5. The stop-marker pass has no judge, so the
+  first column applies. The customer's own randomness is in the outcome
+  and in the correlation.
 
-  | Drop | Perfect judge | Judge wrong 10% of the time |
+  | Drop | Perfect grader | Judge wrong 10% of the time (later) |
   |---|---|---|
   | 10 points | 0.32 | 0.18 |
   | 20 points | 0.78 | 0.47 |
   | 30 points | 0.96 | 0.79 |
   | 40 points | 1.00 | 0.94 |
 
-  So the degradation should drop the pass rate by about 30 points or
+  So the degradation should drop the pass rate by about 20–30 points or
   more. A milder one will most likely come back "inconclusive", and that
   is what gets published.
 - **Expected:**
   - H1 vs H2 is not flagged.
-  - H1 vs D is flagged if its drop is 30 points or more.
+  - H1 vs D is flagged if its drop is 25 points or more.
   - Whatever the gate says is published, as for the earlier proofs.
 - **Measured, for the next run's plan:**
   - the pair correlation, from H1 and H2;
-  - how often the judge disagrees with itself, by judging H1 twice;
+  - the divergence turns;
   - minutes per conversation.
 
   Then `plan-pairs` is re-run with these numbers in place of the
@@ -158,17 +196,15 @@ because it simulates a z-test, not the bootstrap the gate uses.
   of pairs per comparison. Nothing about real customers either: the data
   is synthetic only.
 
-## Interfaces and open questions
+## Open questions
 
-- **Project 10:** the proposal above was sent 2026-11-04. Its questions
-  are the run-record fit, whether a customer is reproducible from
-  (persona, seed), time per conversation, and which degradation.
 - **Project 15:** the format of the judge-noise file. Its measurement
   plan has D reading the judge's test–retest SD and the judge–human gap.
-  The pilot is binary pass/fail. Gating on the continuous per-construct
-  scores is a later slice, after Project 15's rubric results exist.
+  It's needed for the later slice that gates on judged scores, not for
+  the pilot.
 - **For Arthur:**
-  - OK this slice: the new grader kind, gate v3 and `plan-pairs`.
-  - OK the size of the degradation: about 30 points or more, or accept
+  - OK this slice: `customer_outcome`, the customer check, gate v3 and
+    `plan-pairs`.
+  - OK a degradation of about 20–30 points or more, or accept
     "inconclusive" as the likely outcome.
 - **Spend:** $0. Local models only; a paid run needs Arthur's OK.
