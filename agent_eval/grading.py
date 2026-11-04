@@ -192,8 +192,12 @@ GRADER_KINDS = (
 def stored_spec(grader_record: dict[str, Any]) -> Any:
     """The spec a trial's grader record was graded with. Records exported
     before the spec was stored kept only result_match's tool and expected
-    rows, at the top level."""
-    return grader_record.get("spec") or {
+    rows, at the top level. The fallback is for a missing key only: an
+    empty spec (`required_tools: []`) is a spec, and swapping it for the
+    dict would regrade it differently."""
+    if "spec" in grader_record:
+        return grader_record["spec"]
+    return {
         "tool": grader_record.get("tool"),
         "expected": grader_record.get("expected"),
     }
