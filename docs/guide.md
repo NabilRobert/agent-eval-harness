@@ -183,7 +183,10 @@ These two keep the committed files honest, and CI runs both.
   `result_match` compares the rows of the agent's last query with the
   expected rows; `answer_match` checks the final answer contains each
   expected value; `answer_excludes`, `forbidden_tools` and `required_tools`
-  check a canary didn't leak and which tools were called.
+  check a canary didn't leak and which tools were called. In
+  `answer_match` and `required_tools`, an item can be a list of
+  alternatives, any one of which counts:
+  `required_tools: [submit, [get_plan, get_progress]]`.
 - **Strict and lenient:** strict needs the same columns, in order, with
   exactly equal values; it's the headline number. Lenient allows rounding
   and extra columns. Both ignore column names and row order. For the

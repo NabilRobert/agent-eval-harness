@@ -110,6 +110,21 @@ def test_required_tools_must_all_be_called() -> None:
     )
 
 
+def test_required_tools_alternatives_any_one_counts() -> None:
+    """Juku's c03 and c04: `get_plan` or `get_progress` are both right."""
+    from agent_eval.grading import grade_one, grade_required_tools
+
+    either: list[str | list[str]] = ["submit", ["get_plan", "get_progress"]]
+    assert grade_required_tools(["get_progress", "submit"], either) == (True, True)
+    assert grade_required_tools(["get_plan", "submit"], either) == (True, True)
+    assert grade_required_tools(["submit"], either) == (False, False)
+    assert grade_required_tools(["get_plan"], either) == (False, False)
+    assert grade_one("required_tools", either, {"tools_called": ["get_plan", "submit"]}) == (
+        True,
+        True,
+    )
+
+
 def test_answer_match_alternatives_any_one_counts() -> None:
     from agent_eval.grading import grade_answer_match
 
