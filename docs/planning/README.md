@@ -13,7 +13,7 @@ and the reason. The build log is [JOURNEY.md](../../JOURNEY.md).
 | [Phase 5: architecture and decisions](phase-5-architecture-decisions.md) | The stack and every decision record (ADR-001 onwards), with the options each one beat |
 | [Phase 6: risks, spikes and the walking skeleton](phase-6-risks-skeleton.md) | Ranked risks, a pre-mortem, Spikes 1–7 and their results |
 | [Phase 7: slices and plan](phase-7-slices-plan.md) | The build slices, the spend plan, and every proof's pre-registration, written before it ran |
-| [Paired conversations (proposed)](paired-conversations-plan.md) | The thesis pilot: a paired gate over simulated customers, a judge-verdict grader and planning the sample size, waiting for Arthur's OK |
+| [Paired conversations](paired-conversations-plan.md) | The thesis pilot: a paired gate over simulated customers, a stop-marker grader and planning the sample size. Accepted; building waits for Project 10 |
 | [Evaluation](evaluation.md) | The finished project measured against Phases 1 and 2, the grader audit, and the follow-up simulations |
 
 **Where the decisions are:** the ADRs live in the Phase 5 doc, under

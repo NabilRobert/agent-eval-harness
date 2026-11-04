@@ -1,9 +1,10 @@
-# Paired multi-turn comparisons: the pilot slice (proposed)
+# Paired multi-turn comparisons: the pilot slice (accepted)
 
-*2026-11-04. Proposed, not built. It waits for Arthur's OK. The
-interface is agreed with Project 10 (AI Flight School,
-`docs/planning/thesis-pilot.md` there). Once accepted, the ADRs below
-move to the Phase 5 doc.*
+*2026-11-04. Arthur accepted the slice ("OK the slice") and picked a
+large degradation ("Large, ~30+ points"). Building waits for Project 10
+(AI Flight School, `docs/planning/thesis-pilot.md` there) to confirm the
+interface below. The pilot runs after Flight School's slice 4. The ADRs
+below move to the Phase 5 doc when the slice is built.*
 
 ## Why
 
@@ -27,7 +28,7 @@ What the harness has today doesn't fit as is:
   `scripts/compare_rules.py`), run after the fact. RQ3 needs the sample
   size *before* the run.
 
-## The interface (agreed with Project 10)
+## The interface (Project 10's proposal, with the harness's requests)
 
 Project 10 writes normal harness run records, one run per agent variant,
 with `export.trial_from_sample` and `records.write_run`.
@@ -65,7 +66,7 @@ Estimated size: code about 150 lines (grader and customer check 30, gate
 60, `plan-pairs` 50, CLI wiring 10), plus about 200 lines of tests and a
 guide update.
 
-## Decisions (proposed)
+## Decisions (accepted 2026-11-04)
 
 ### ADR-013: Grades come from stored inputs; the customer is pinned
 
@@ -76,14 +77,20 @@ guide update.
   - Gave up, ghosted, or a hit turn limit is a fail. A hit limit is
     already failed by `regrade`.
   - It regrades like `result_match`, with no model call.
+  - It's a placeholder until Project 15's rubric judge exists (Arthur,
+    2026-11-04). The report labels it "the simulator grading itself".
 - **A different `customer` block between two runs is incomparable**
   (exit 2), as a different task hash is.
 - **Later, once Project 15's rubric judge exists:** each per-construct
   score is its own grader with a stored input. A model judge's grade is
   read back, not re-run. It's pinned the same way: its spec carries the
   judge model and codebook hash, and two runs judged differently are
-  incomparable. A plain `scores` dict on the trial is rejected because
-  it couldn't be regraded or pinned.
+  incomparable. The judge must come from a different model family than
+  the simulated customer, to avoid self-preference bias (Arthur, e.g.
+  Sailor2-8B and Qwen3.5-9B). A plain `scores` dict on the trial is
+  rejected because it couldn't be regraded or pinned.
+- **Not built in this slice:** the judge's grader. It waits for the
+  judge, so there's no speculative code.
 
 **Why:** the gate's promise is that a stored grade and a regrade agree,
 and that only the agent differs between the runs. The simulated customer
@@ -178,12 +185,13 @@ because it simulates a z-test, not the bootstrap the gate uses.
   | 30 points | 0.96 | 0.79 |
   | 40 points | 1.00 | 0.94 |
 
-  So the degradation should drop the pass rate by about 20–30 points or
-  more. A milder one will most likely come back "inconclusive", and that
-  is what gets published.
+  Arthur's pick: a large degradation of about 30 points or more, such as
+  taking away the agent's price and stock information so it can't
+  answer most buying questions. Project 10 builds it. The pilot tests the
+  pipeline end to end; detection limits come in the full study.
 - **Expected:**
   - H1 vs H2 is not flagged.
-  - H1 vs D is flagged if its drop is 25 points or more.
+  - H1 vs D is flagged (power 0.96 at a 30-point drop).
   - Whatever the gate says is published, as for the earlier proofs.
 - **Measured, for the next run's plan:**
   - the pair correlation, from H1 and H2;
@@ -202,9 +210,5 @@ because it simulates a z-test, not the bootstrap the gate uses.
   plan has D reading the judge's test–retest SD and the judge–human gap.
   It's needed for the later slice that gates on judged scores, not for
   the pilot.
-- **For Arthur:**
-  - OK this slice: `customer_outcome`, the customer check, gate v3 and
-    `plan-pairs`.
-  - OK a degradation of about 20–30 points or more, or accept
-    "inconclusive" as the likely outcome.
+- **Project 10:** confirming the interface above (sent 2026-11-04).
 - **Spend:** $0. Local models only; a paid run needs Arthur's OK.
