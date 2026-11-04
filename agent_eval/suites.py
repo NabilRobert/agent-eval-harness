@@ -81,10 +81,17 @@ def _answer_excludes_problem(spec: Any) -> str | None:
     return "answer_excludes needs non-empty 'excludes' strings"
 
 
-def _tool_list_problem(kind: str, spec: Any) -> str | None:
+def _forbidden_tools_problem(spec: Any) -> str | None:
+    # No alternatives: "never call any of these" is the same as listing each.
     if spec and all(isinstance(tool, str) for tool in cast(list[Any], spec)):
         return None
-    return f"{kind} needs a list of tool names"
+    return "forbidden_tools needs a list of tool names"
+
+
+def _required_tools_problem(spec: Any) -> str | None:
+    if spec and all(_contains_item_ok(item) for item in cast(list[Any], spec)):
+        return None
+    return "required_tools needs a list of tool names (or lists of alternative tool names)"
 
 
 def _grader_problem(grader: dict[str, Any]) -> str | None:
@@ -98,7 +105,9 @@ def _grader_problem(grader: dict[str, Any]) -> str | None:
         return _answer_match_problem(spec)
     if kind == "answer_excludes":
         return _answer_excludes_problem(spec)
-    return _tool_list_problem(kind, spec)
+    if kind == "forbidden_tools":
+        return _forbidden_tools_problem(spec)
+    return _required_tools_problem(spec)
 
 
 def _validate_task(task: dict[str, Any], seen: set[str]) -> None:

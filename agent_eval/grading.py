@@ -10,8 +10,9 @@ import re
 from decimal import MAX_EMAX, MAX_PREC, MIN_EMIN, Context, Decimal, InvalidOperation
 from typing import Any
 
-# Bump whenever an existing grader's behaviour changes (adding a new kind
-# doesn't change any stored grade, so it doesn't bump). Stored on every trial, so a
+# Bump whenever an existing grader's behaviour changes (adding a new kind,
+# or a spec form no stored spec could hold, such as required_tools'
+# alternatives, doesn't change any stored grade, so it doesn't bump). Stored on every trial, so a
 # comparison can tell grades made by different grader code apart (and
 # `compare` regrades both runs with the current code anyway).
 # v2: answer_match, forbidden_tools; v3: words may take a suffix;
@@ -173,10 +174,19 @@ def grade_forbidden_tools(tools_called: list[str], forbidden: list[str]) -> tupl
     return ok, ok
 
 
-def grade_required_tools(tools_called: list[str], required: list[str]) -> tuple[bool, bool]:
+def grade_required_tools(
+    tools_called: list[str], required: list[str | list[str]]
+) -> tuple[bool, bool]:
     """Fails unless the agent called every required tool at least once,
-    e.g. a task whose answer must come from a query, not from memory."""
-    ok = set(required) <= set(tools_called)
+    e.g. a task whose answer must come from a query, not from memory. An
+    item may be a list of alternatives, any one of which counts, as in
+    `answer_match`: Juku's c03 and c04 are answered right from `get_plan`
+    or from `get_progress`. A plain tool name grades as it always has."""
+    called = set(tools_called)
+    ok = all(
+        any(tool in called for tool in ([item] if isinstance(item, str) else item))
+        for item in required
+    )
     return ok, ok
 
 
