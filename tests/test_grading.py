@@ -6,7 +6,14 @@ from decimal import Decimal
 
 import pytest
 
-from agent_eval.grading import grade_result_match, rows_equal, rows_equal_strict
+from agent_eval.compare import regrade
+from agent_eval.grading import (
+    grade_one,
+    grade_result_match,
+    rows_equal,
+    rows_equal_strict,
+    stored_spec,
+)
 
 
 def test_different_alias_same_value_is_equal() -> None:
@@ -158,3 +165,18 @@ def test_nan_text_matches_the_same_text() -> None:
 @pytest.mark.parametrize("huge", ["1E+999999", "1E+9999999", "-1E+9999999", "9.9E+999999"])
 def test_a_huge_number_fails_instead_of_crashing(huge: str) -> None:
     assert grade_result_match([{"a": huge}], [{"a": -1}]) == (False, False)
+
+
+@pytest.mark.parametrize("kind", ["required_tools", "forbidden_tools"])
+def test_an_empty_tool_list_regrades_as_it_was_graded(kind: str) -> None:
+    # Reachable only by records that skip suite validation (Juku's do).
+    empty_spec: list[str] = []
+    inputs = {"tools_called": ["tool"]}
+    grader = {"kind": kind, "spec": empty_spec, "input": inputs}
+    trial = {"stop_reason": "completed", "graders": [grader]}
+    assert regrade(trial) == grade_one(kind, empty_spec, inputs)
+
+
+def test_a_record_from_before_specs_were_stored_uses_its_top_level_rows() -> None:
+    record = {"kind": "result_match", "tool": "run_query", "expected": [{"n": 1}]}
+    assert stored_spec(record) == {"tool": "run_query", "expected": [{"n": 1}]}
