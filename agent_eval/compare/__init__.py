@@ -27,7 +27,14 @@ Two gates (ADR-001, amended 2026-10-24):
   (scripts/compare_rules.py), and it's a closed-form test: no seed.
 `compare` reports both verdicts; the exit code follows the chosen gate.
 
-gates.py holds the statistics; comparison.py loads, checks and decides.
+- **v3**, on request only (ADR-014): paired conversations, for simulated
+  customers (AI Flight School). Each (task_id, attempt) met by both agents
+  is a pair; the 95% interval of the mean paired change is a bootstrap
+  over tasks, each with all its pairs. Regression if the whole interval is
+  below 0, the same inconclusive band, and no task rule.
+
+gates.py holds the statistics, paired.py gate v3's pairing; comparison.py
+loads, checks and decides.
 Everything other modules and the scripts use is importable from here."""
 
 from agent_eval.compare.comparison import (
@@ -43,9 +50,12 @@ from agent_eval.compare.gates import (
     DEFAULT_GATE,
     GATES,
     INCONCLUSIVE_DROP,
+    PAIRED_GATE,
+    TASK_GATES,
     Z_CRITICAL,
     bootstrap_interval,
     broken_tasks,
+    paired_bootstrap_interval,
     pooled_test,
 )
 
@@ -56,11 +66,14 @@ __all__ = [
     "EXIT_UNDECIDED",
     "GATES",
     "INCONCLUSIVE_DROP",
+    "PAIRED_GATE",
+    "TASK_GATES",
     "Z_CRITICAL",
     "Comparison",
     "bootstrap_interval",
     "broken_tasks",
     "compare_runs",
+    "paired_bootstrap_interval",
     "pooled_test",
     "regrade",
     "task_counts",

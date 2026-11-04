@@ -1,6 +1,7 @@
 """The regression gate's commands: `compare` (a candidate run against a
-baseline, exit 0/1/2) and `confirm` (fresh trials for an inconclusive
-comparison)."""
+baseline, exit 0/1/2), `confirm` (fresh trials for an inconclusive
+comparison) and `plan-pairs` (how many conversation pairs gate v3 needs,
+before a run)."""
 
 import json
 import subprocess
@@ -14,8 +15,9 @@ from agent_eval import REPO_ROOT
 from agent_eval.compare import Comparison, compare_runs
 from agent_eval.confirm import ConfirmError
 from agent_eval.confirm import plan as plan_confirmation
+from agent_eval.pair_planning import MAX_PAIRS, PairModel, detection_rate, pairs_needed
 
-from agent_eval.cli.common import Gate, app, fail, utc_stamp
+from agent_eval.cli.common import Gate, TaskGate, app, fail, utc_stamp
 
 
 def _start_confirmation_run(
@@ -66,7 +68,7 @@ def confirm(  # noqa: PLR0913 -- each parameter is one of the command's CLI opti
     baseline: Path,
     candidate: Path,
     epochs: Annotated[int, typer.Option()] = 10,
-    gate: Annotated[Gate, typer.Option()] = "v2",
+    gate: Annotated[TaskGate, typer.Option()] = "v2",
     budget: Annotated[float, typer.Option(help="US dollars per confirmation run")] = 5.0,
     out: Annotated[str, typer.Option()] = "runs",
 ) -> None:
@@ -111,8 +113,18 @@ def _print_comparison(result: Comparison) -> None:
         )
     for line in result.warnings:
         print(f"  warning: {line}")
+    _print_left_out(result)
+    _print_explanations(result)
+
+
+def _print_left_out(result: Comparison) -> None:
     if result.missing:
         print(f"  only in one run (not compared): {result.missing}")
+    if result.unpaired:
+        print(f"  pairs left out (an error or missing on one side): {result.unpaired}")
+
+
+def _print_explanations(result: Comparison) -> None:
     for line in result.reasons:
         print(f"  reason: {line}")
     for line in result.differences:
@@ -130,9 +142,62 @@ def compare(
     candidate: Path,
     gate: Annotated[
         Gate,
-        typer.Option(help="decision rule (ADR-001); v1 for comparisons pre-registered with it"),
+        typer.Option(
+            help="decision rule (ADR-001); v1 for comparisons pre-registered with it, "
+            "v3 for paired conversations (ADR-014)"
+        ),
     ] = "v2",
 ) -> None:
     result = compare_runs(baseline, candidate, gate)
     _print_comparison(result)
     raise typer.Exit(result.exit_code)
+
+
+def _check_pair_model(model: PairModel, power: float) -> None:
+    if not 0 < model.baseline <= 1:
+        fail(f"--baseline must be a pass rate above 0 and at most 1, not {model.baseline}")
+    if not 0 <= model.drop <= model.baseline:
+        fail(f"--drop must be between 0 and --baseline ({model.baseline}), not {model.drop}")
+    if not 0 <= model.grader_error < 0.5:
+        fail(f"--grader-error must be at least 0 and below 0.5, not {model.grader_error}")
+    if not 0 <= model.pair_correlation <= 1:
+        fail(f"--pair-correlation must be between 0 and 1, not {model.pair_correlation}")
+    if not 0 < power < 1:
+        fail(f"--power must be between 0 and 1, not {power}")
+
+
+@app.command("plan-pairs", help="how many conversation pairs gate v3 needs to catch a drop")
+def plan_pairs(
+    baseline: Annotated[float, typer.Option(help="the healthy agent's expected pass rate")],
+    drop: Annotated[float, typer.Option(help="the drop to catch, e.g. 0.10 for 10 points")],
+    grader_error: Annotated[
+        float, typer.Option(help="how often the grader flips a verdict; 0 for a stop marker")
+    ] = 0.0,
+    pair_correlation: Annotated[
+        float, typer.Option(help="assumed until an A/A run measures it")
+    ] = 0.5,
+    power: Annotated[float, typer.Option(help="how often the drop must be caught")] = 0.8,
+) -> None:
+    """Simulates gate v3 under the thesis pilot's model of a pair
+    (agent_eval/pair_planning.py) and prints the pairs needed."""
+    model = PairModel(baseline, drop, grader_error, pair_correlation)
+    _check_pair_model(model, power)
+    needed = pairs_needed(model, power)
+    assumptions = (
+        f"  assumed: baseline {baseline:.0%}, grader error {grader_error:.0%}, "
+        f"pair correlation {pair_correlation:.2f}"
+    )
+    if needed is None:
+        print(
+            f"pairs needed: more than {MAX_PAIRS:,} to catch a {drop * 100:.0f}-point drop "
+            f"{power:.0%} of the time"
+        )
+        print(assumptions)
+        return
+    no_drop = PairModel(baseline, 0.0, grader_error, pair_correlation)
+    print(
+        f"pairs needed: {needed} (gate v3 catches a {drop * 100:.0f}-point drop in "
+        f"{detection_rate(model, needed):.1%} of simulated runs)"
+    )
+    print(assumptions)
+    print(f"  false alarms at {needed} pairs with no drop: {detection_rate(no_drop, needed):.1%}")

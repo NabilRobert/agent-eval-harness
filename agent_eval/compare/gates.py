@@ -1,19 +1,23 @@
 """The regression gate's statistics: pure arithmetic on per-task
 (passes, trials) counts, with no run records and no I/O. Gate v1 is the
 paired bootstrap, gate v2 the pooled two-proportion z-test; both share the
-task-level "went from all-pass to none" rule. comparison.py decides a
-verdict with them; the scripts/ simulations call them directly."""
+task-level "went from all-pass to none" rule. Gate v3 pairs single
+conversations instead of tasks (ADR-014): the same simulated customer met
+by both agents. comparison.py decides a verdict with them; the scripts/
+simulations and pair_planning.py call them directly."""
 
 import math
 import random
 import statistics
 
 
-GATES = ("v1", "v2")
+TASK_GATES = ("v1", "v2")  # compare reports both verdicts side by side
+PAIRED_GATE = "v3"  # only meaningful when attempts are paired, so only on request
+GATES = (*TASK_GATES, PAIRED_GATE)
 DEFAULT_GATE = "v2"
 Z_CRITICAL = 1.96  # one-sided alpha = 0.025, the same tail as v1's 95% interval
 BOOTSTRAP_RESAMPLES = 10_000
-INTERVAL_LEVEL = 0.95  # both gates report a 95% interval
+INTERVAL_LEVEL = 0.95  # every gate reports a 95% interval
 BOOTSTRAP_SEED = 20261023  # fixed: the same two runs always get the same verdict
 INCONCLUSIVE_DROP = -0.05
 BROKEN_MIN_TRIALS = 5
@@ -39,11 +43,42 @@ def bootstrap_interval(
             (bs, bn), (cs, cn) = base[task], cand[task]
             total += rng.binomialvariate(cn, cs / cn) / cn - rng.binomialvariate(bn, bs / bn) / bn
         means.append(total / n)
-    means.sort()
-    tail = (1 - INTERVAL_LEVEL) / 2
-    low = means[int(tail * resamples)]
-    high = means[min(resamples - 1, int((1 - tail) * resamples))]
+    low, high = _percentile_interval(means)
     return low, high, point
+
+
+def paired_bootstrap_interval(
+    differences: dict[str, list[int]],
+    *,
+    resamples: int = BOOTSTRAP_RESAMPLES,
+    seed: int = BOOTSTRAP_SEED,
+) -> tuple[float, float, float]:
+    """Gate v3: (low, high, point) for the mean paired change, where each
+    pair contributes candidate pass minus baseline pass (-1, 0 or +1),
+    grouped by task (scenario). Resamples scenarios, each with all of its
+    pairs: a scenario's attempts share its difficulty, and resampling single
+    pairs would make the interval too narrow."""
+    tasks = sorted(differences)
+    totals = [sum(differences[t]) for t in tasks]
+    sizes = [len(differences[t]) for t in tasks]
+    point = sum(totals) / sum(sizes)
+    rng = random.Random(seed)
+    n = len(tasks)
+    means: list[float] = []
+    for _ in range(resamples):
+        drawn = [rng.randrange(n) for _ in range(n)]
+        means.append(sum(totals[i] for i in drawn) / sum(sizes[i] for i in drawn))
+    low, high = _percentile_interval(means)
+    return low, high, point
+
+
+def _percentile_interval(means: list[float]) -> tuple[float, float]:
+    """The 95% percentile interval of bootstrap resample means."""
+    means = sorted(means)
+    tail = (1 - INTERVAL_LEVEL) / 2
+    low = means[int(tail * len(means))]
+    high = means[min(len(means) - 1, int((1 - tail) * len(means)))]
+    return low, high
 
 
 def pooled_test(

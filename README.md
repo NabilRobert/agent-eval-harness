@@ -143,6 +143,16 @@ alone. Validated by simulation before use: no false alarms, and it raised
 detection of a nano-shaped drop from 27% to 45%
 ([`scripts/simulate_confirm.py`](scripts/simulate_confirm.py)).
 
+**Gate v3, for paired conversations.** For runs whose attempts are
+paired, `compare --gate v3` compares single conversations. These are
+simulated customers, each with the same scenario and seed for both
+agents, from AI Flight School. The 95% interval is a bootstrap over
+scenarios, and the verdict rules are the same. `agent-eval plan-pairs
+--baseline 0.8 --drop 0.10` says how many pairs it needs before the run
+(190 here). It's built for a master's-thesis pilot and hasn't run on real
+pairs yet
+([plan](docs/planning/paired-conversations-plan.md)).
+
 **Increases in cost and latency** (+25% per trial, median) are warnings,
 not regressions.
 
