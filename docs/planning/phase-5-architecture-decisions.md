@@ -15,7 +15,8 @@ and `report` are pure and never import `targets` or `agent`, so CI can run
 - **Agent loop, repeats, limits and MCP client:** Inspect AI, pinned exactly
   (ADR-009; it superseded pydantic-ai, ADR-003).
 - **Statistics:** standard library + `random.Random(seed)`. The bootstrap is
-  about 20 lines, so pulling in numpy/scipy isn't worth it.
+  about 20 lines, so pulling in numpy/scipy isn't worth it. The same holds
+  for gate v3's paired bootstrap and `plan-pairs` (ADR-014, ADR-015).
 - **Tooling:** ruff, pyright (strict), pytest, GitHub Actions, the same as
   MCP-backbone.
 - **Tracing (optional):** the OpenTelemetry SDK and its OTLP/HTTP
@@ -405,3 +406,95 @@ requests, so the server's spans could never join the agent's trace;
 install its whole stack, and its module reads its own settings.
 **Revisit if:** Inspect gains OpenTelemetry support, or the MCP SDK's
 span names change with the conventions.
+
+### ADR-013: Paired conversations are graded from stored inputs, with the customer pinned
+**Context:** Arthur's master's thesis pilot (Project 15 part D) compares
+two sales agents on the same simulated customers from AI Flight School
+(Project 10). Until Project 15's rubric judge exists, a conversation
+passes if the customer ended it `###DONE###` (Arthur, 2026-11-04). The
+simulated customer is a model, so changing its model, build or settings
+between runs would look like an agent change.
+**Options:** (a) a new grader kind for the stop marker, plus a new
+`customer` block in the meta that `compare` checks; (b) `result_match`
+over one `{stop_marker}` row, with the customer folded into
+`provenance.data_fingerprint`; (c) a model judge for the pass.
+**Decision:** (b), Project 10's suggestion. It regrades exactly, and
+`compare` already refuses runs whose data fingerprints differ.
+**Consequences:**
+- No harness code for the pass or the pin.
+- The fingerprint is Flight School's: a hash over the persona cards, the
+  customer model file's hash, the llama-server build and the generation
+  settings.
+- The incomparable message says "graded against different data", which
+  for a simulator means a different customer.
+- Once the rubric judge exists, each construct gets its own grader with
+  a stored input. Its spec carries the judge model and codebook hash,
+  runs judged differently are incomparable, and the judge must be a
+  different model family from the customer (Arthur).
+**Rejected:** (a) is two pieces of code for what existing ones do; (c)
+adds judge noise and spend before the judge is validated against humans,
+and re-judging inside `compare` would make the reproducible step
+non-deterministic.
+
+### ADR-014: Gate v3 compares paired conversations
+**Context:** gate v1 bootstraps over tasks and gate v2 pools trials.
+Neither uses the fact that both agents met the same simulated customer
+with the same seed, which is where a paired design gets its power.
+**Options:** (a) a paired bootstrap over tasks; (b) McNemar's exact test
+(statsmodels); (c) scipy's `bootstrap(paired=True)`.
+**Decision:** (a), `compare --gate v3`.
+- A pair is one `(task_id, attempt)` in both runs. Its difference is
+  candidate pass minus baseline pass (−1, 0 or +1), and the point is
+  their mean.
+- The 95% interval resamples tasks, each with all its pairs, with v1's
+  resample count and fixed seed
+  (`agent_eval/compare/gates.py: paired_bootstrap_interval`).
+- Regression if the interval is entirely below 0, inconclusive at a
+  drop of 5 points or more otherwise (`agent_eval/compare/paired.py`).
+- A pair that errored or is missing on one side is left out and listed.
+- There's no broken-task rule: with one attempt per scenario it would
+  fire on a single conversation.
+- It runs only on request: on unpaired suites it would mean nothing, so
+  `compare` keeps reporting v1 and v2 side by side and v3 alone.
+  `confirm` refuses it.
+**Consequences:** a scenario's attempts share its difficulty, so
+resampling them together keeps the interval honest. A test checks it's
+wider than treating each pair as independent. A pair matches only until
+the agents first reply differently, so the pair correlation is measured
+by an A/A run, not assumed.
+**Rejected:** (b) gives a p-value, not the interval the report leads
+with, and assumes independent pairs, which several attempts per scenario
+break; (c) is about 40 MB of dependency for one loop the harness already
+writes.
+
+### ADR-015: The sample size is planned by simulating gate v3
+**Context:** RQ3 asks how many conversations each decision needs, so the
+pair count has to be known before a run. The thesis pilot's
+`power_simulation.py` (Arthur's, `~/Desktop/S2 Proposals/pilot/`)
+simulates a z-test, not the shipped gate, and steps its search by ×1.25.
+**Options:** (a) copy `power_simulation.py`; (b) a textbook McNemar
+sample-size formula; (c) simulate gate v3's decision under the same
+model of a pair.
+**Decision:** (c), `agent-eval plan-pairs` (`agent_eval/pair_planning.py`).
+- The model is the pilot's: shared difficulty with probability
+  `pair_correlation`, and a grader that flips verdicts at
+  `grader_error`.
+- Each pair's difference has an exact distribution under it, so a
+  simulated run is two binomial draws.
+- The decision uses the normal form of gate v3's interval. With one
+  attempt per scenario it matches the bootstrap: a test checks them to
+  within a point. Simulating the bootstrap itself would take minutes per
+  plan.
+- 4,000 simulated runs per pair count, a fixed seed, and a binary search
+  in steps of 10 pairs up to 20,000.
+**Consequences:** a plan takes under half a second. For a 10-point drop
+from 80% at correlation 0.5, it gives 190 pairs with a perfect grader
+and 410 with a 10% grader error. `power_simulation.py` gives 206 and 404
+on its coarser grid, so the two agree. The false-alarm rate at the
+planned size is printed too: 2.8–2.9%, slightly above the one-sided
+2.5%, because the interval is approximate at these sizes.
+**Rejected:** (a) would plan for a different statistic than the one the
+run is judged by; (b) carries assumptions the real gate doesn't share,
+such as no clustering by scenario.
+**Revisit if:** the pilot's runs use several attempts per scenario, when
+the normal form stops matching the clustered bootstrap.
