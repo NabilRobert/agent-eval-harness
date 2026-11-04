@@ -127,6 +127,13 @@ The output is a folder, `runs/<run id>/`, holding `meta.json`,
    (`agent_eval/compare/gates.py: pooled_test`), gate v1 a bootstrap
    (`bootstrap_interval`). Either gate also flags a task that went from
    passing every attempt to passing none (`broken_tasks`);
+   - with `--gate v3`, it pairs single conversations instead
+     (`_compare_paired`). The same `(task_id, attempt)` in both runs is
+     one pair, and each pair's difference is candidate pass minus baseline
+     pass (`agent_eval/compare/paired.py: pair_differences`). The interval
+     is a bootstrap over tasks, each with all its pairs
+     (`gates.py: paired_bootstrap_interval`), and the verdict is
+     `paired.py: paired_verdict`. There's no broken-task rule;
 5. returns a `Comparison`. The exit code is 0 (no regression, or
    inconclusive), 1 (regression) or 2 (can't decide).
 
@@ -208,6 +215,19 @@ These two keep the committed files honest, and CI runs both.
 - **Regression gate:** the rule that decides "worse by more than chance".
   Gate v2 (the default) is a pooled z-test; gate v1 a paired bootstrap.
   Both are in `agent_eval/compare/gates.py`.
+- **Pair (gate v3):** the same simulated customer, scenario and seed,
+  met by both agents: one `(task_id, attempt)` in both runs. For AI
+  Flight School's runs, built for the thesis pilot.
+- **Paired gate (v3):** `compare --gate v3`. It only means something when
+  attempts are paired, so it runs only on request
+  (`agent_eval/compare/paired.py`).
+- **`plan-pairs`:** says how many pairs gate v3 needs to catch a drop,
+  before a run is spent, by simulating the gate
+  (`agent_eval/pair_planning.py: pairs_needed`). Its inputs are the
+  expected pass rate, the drop, the grader's error rate and the pair
+  correlation.
+- **Pair correlation:** how alike the two arms' outcomes are on the same
+  scenario. It's assumed (0.5) until an A/A run measures it.
 - **Pooled z-test:** adds up all attempts on each side and asks how many
   standard errors apart the two pass rates are. Past 1.96, it's a
   regression.
@@ -284,6 +304,8 @@ These two keep the committed files honest, and CI runs both.
   tokens per trial: `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and
   `TRIAL_TOKEN_LIMIT`. The gate's thresholds: the constants at the top of
   `agent_eval/compare/gates.py` and `agent_eval/compare/comparison.py`.
+  How `plan-pairs` searches: the constants at the top of
+  `agent_eval/pair_planning.py`.
 - **Move the local MCP-backbone pin.** Change `MCP_BACKBONE_COMMIT` in
   `repro/Dockerfile`. `tests/test_repro_pin.py` then fails on purpose:
   check `repro/setup_repro.py`'s calls into MCP-backbone against the new

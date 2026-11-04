@@ -39,7 +39,8 @@ couldn't decide (bad config, unreachable target, incomparable runs)."""
 
 # Options shared by several commands. Defaults inside the checkout are
 # shown relative to it, not as this machine's absolute path.
-Gate = Literal["v1", "v2"]
+Gate = Literal["v1", "v2", "v3"]
+TaskGate = Literal["v1", "v2"]  # `confirm` reruns dropped tasks, which v3 doesn't have
 EnvFile = Annotated[str, typer.Option(show_default="<repo>/.env")]
 Prices = Annotated[str, typer.Option("--prices", show_default="<repo>/prices.yaml")]
 

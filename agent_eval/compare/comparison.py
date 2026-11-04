@@ -1,7 +1,9 @@
 """Compares a candidate run with a baseline from the run records: refuses
 runs that can't be compared (exit 2), regrades both with the current
 graders, lists what differs between them, then decides the verdict under
-each gate (gates.py) and returns it as a Comparison."""
+each gate (gates.py) and returns it as a Comparison. Gates v1 and v2 work
+on per-task counts; gate v3 pairs single conversations by
+(task_id, attempt)."""
 
 import statistics
 from dataclasses import dataclass, field
@@ -14,11 +16,14 @@ from agent_eval.compare.gates import (
     DEFAULT_GATE,
     GATES,
     INCONCLUSIVE_DROP,
+    PAIRED_GATE,
+    TASK_GATES,
     Z_CRITICAL,
     bootstrap_interval,
     broken_tasks,
     pooled_test,
 )
+from agent_eval.compare.paired import PairPasses, pair_differences, paired_verdict
 
 EXIT_OK, EXIT_REGRESSION, EXIT_UNDECIDED = 0, 1, 2
 WARN_INCREASE = 0.25  # median cost or latency per trial up by 25%: a warning, not a gate
@@ -56,6 +61,8 @@ class Comparison:
     dropped: list[str] = field(default_factory=lambda: list[str]())
     warnings: list[str] = field(default_factory=lambda: list[str]())
     missing: list[str] = field(default_factory=lambda: list[str]())
+    # Gate v3 only: "task#attempt" pairs left out, errored or missing on one side.
+    unpaired: list[str] = field(default_factory=lambda: list[str]())
 
 
 def regrade(trial: dict[str, Any]) -> tuple[bool, bool]:
@@ -83,6 +90,16 @@ def task_counts(run: Run) -> dict[str, tuple[int, int]]:
         strict, _ = regrade(trial)
         by_task.setdefault(trial["task_id"], []).append(strict)
     return {task: (sum(v), len(v)) for task, v in by_task.items() if v}
+
+
+def _strict_by_pair(run: Run) -> PairPasses:
+    """Each trial's regraded strict pass, keyed by (task_id, attempt); None
+    for an errored trial, which says nothing about the agent."""
+    by_pair: PairPasses = {}
+    for trial in run.trials:
+        key = (trial["task_id"], trial["attempt"])
+        by_pair[key] = None if trial["outcome"] == "error" else regrade(trial)[0]
+    return by_pair
 
 
 def _median_per_trial(run: Run, key: str) -> float | None:
@@ -200,6 +217,37 @@ def _decide(gate: str, counts: _SharedCounts) -> tuple[int, str, list[str], tupl
     return EXIT_OK, "no regression", [], (low, high)
 
 
+def _compare_paired(
+    baseline: Run, candidate: Run, differences: list[str], regrade_mismatches: list[str]
+) -> Comparison:
+    by_task, unpaired = pair_differences(_strict_by_pair(baseline), _strict_by_pair(candidate))
+    if not by_task:
+        why = ["no conversation pairs in common"]
+        return Comparison(
+            EXIT_UNDECIDED,
+            "undecided",
+            why,
+            differences,
+            regrade_mismatches,
+            gate=PAIRED_GATE,
+            unpaired=unpaired,
+        )
+    verdict, why, interval, point = paired_verdict(by_task)
+    return Comparison(
+        EXIT_REGRESSION if verdict == "regression" else EXIT_OK,
+        verdict,
+        why,
+        differences,
+        regrade_mismatches,
+        interval=interval,
+        point=point,
+        gate=PAIRED_GATE,
+        gate_verdicts={PAIRED_GATE: verdict},
+        warnings=_warnings(baseline, candidate),
+        unpaired=unpaired,
+    )
+
+
 def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GATE) -> Comparison:
     if gate not in GATES:
         raise ValueError(f"unknown gate {gate!r}; one of {GATES}")
@@ -213,6 +261,8 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GA
     differences = _differences(baseline, candidate)
     if reasons:
         return Comparison(EXIT_UNDECIDED, "undecided", reasons, differences, regrade_mismatches)
+    if gate == PAIRED_GATE:
+        return _compare_paired(baseline, candidate, differences, regrade_mismatches)
 
     base, cand = task_counts(baseline), task_counts(candidate)
     shared = sorted(set(base) & set(cand))
@@ -222,7 +272,7 @@ def compare_runs(baseline_dir: Path, candidate_dir: Path, gate: str = DEFAULT_GA
     point = statistics.fmean(per_task[t][1] - per_task[t][0] for t in shared)
     counts = _SharedCounts(base, cand, shared, point, broken_tasks(base, cand, shared))
 
-    decisions = {g: _decide(g, counts) for g in GATES}
+    decisions = {g: _decide(g, counts) for g in TASK_GATES}
     exit_code, verdict, why, interval = decisions[gate]
     return Comparison(
         exit_code,

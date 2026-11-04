@@ -95,7 +95,7 @@ def test_defaults_in_the_checkout_are_shown_relative_to_it(command: str) -> None
 
 def test_main_returns_the_exit_code_instead_of_exiting() -> None:
     assert main(["compare", str(RUN), str(RUN)]) == 0
-    assert main(["compare", str(RUN), str(RUN), "--gate", "v3"]) == 2
+    assert main(["compare", str(RUN), str(RUN), "--gate", "v9"]) == 2
     assert main([]) == 2
 
 
@@ -275,7 +275,7 @@ def test_compare_takes_the_v1_gate() -> None:
     assert "gate v1" in text(result)
 
 
-@pytest.mark.parametrize("args", [[str(RUN)], [str(RUN), str(RUN), "--gate", "v3"]])
+@pytest.mark.parametrize("args", [[str(RUN)], [str(RUN), str(RUN), "--gate", "v9"]])
 def test_compare_rejects_bad_arguments(args: list[str]) -> None:
     result = invoke("compare", *args)
     assert result.exit_code == 2
