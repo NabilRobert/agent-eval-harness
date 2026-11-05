@@ -27,16 +27,12 @@ DEFAULT_SERVER = "http://127.0.0.1:11434"
 SERVER_TIMEOUT_S = 300
 
 # Each model's own recommended sampling, sent with every request, and where
-# it comes from. Only models Arthur has approved and pulled are listed.
+# it comes from. Only the benchmark's model is listed: Arthur chose
+# qwen3.5:4b alone (2026-11-05).
 SAMPLING: dict[str, tuple[dict[str, float], str]] = {
-    "qwen3:1.7b": ({"temperature": 0.6, "top_p": 0.95}, "Qwen3 model card, thinking mode"),
     "qwen3.5:4b": (
         {"temperature": 1.0, "top_p": 0.95, "presence_penalty": 1.5},
         "Qwen3.5 model card, thinking mode, general tasks",
-    ),
-    "llama3.2:3b": (
-        {"temperature": 0.6, "top_p": 0.9},
-        "Llama 3.2 3B Instruct generation_config.json",
     ),
 }
 

@@ -31,19 +31,9 @@ models:
     output: 9.00
     source: Sumopod model pricing table (screenshot supplied by Arthur)
     checked: 2026-10-25
-  # Local models through Ollama (agent_eval/ollama.py): no API cost. $0
+  # A local model through Ollama (agent_eval/ollama.py): no API cost. $0
   # doesn't count the Mac's hardware or power.
-  ollama/qwen3:1.7b:
-    input: 0
-    output: 0
-    source: runs locally
-    checked: 2026-11-05
   ollama/qwen3.5:4b:
-    input: 0
-    output: 0
-    source: runs locally
-    checked: 2026-11-05
-  ollama/llama3.2:3b:
     input: 0
     output: 0
     source: runs locally

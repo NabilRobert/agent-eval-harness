@@ -276,7 +276,7 @@ def test_an_ollama_models_sampling_and_reply_cap_reach_inspect(
     monkeypatch.setattr("agent_eval.inspect_tasks.build_task", tiny_task)
     monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
     monkeypatch.setattr("inspect_ai.eval", spy)
-    settings = run_steps.generation_settings_or_exit("ollama/qwen3:1.7b")
+    settings = run_steps.generation_settings_or_exit("ollama/qwen3.5:4b")
     agent: dict[str, Any] = {
         "model": "mockllm/model",
         "model_args": {},
@@ -293,7 +293,7 @@ def test_an_ollama_models_sampling_and_reply_cap_reach_inspect(
         budget={},
         harness_git="abc123",
     )
-    assert (options_seen["temperature"], options_seen["max_tokens"]) == (0.6, 4096)
+    assert (options_seen["temperature"], options_seen["max_tokens"]) == (1.0, 4096)
 
 
 def test_an_ollama_model_without_settings_stops_the_run(
