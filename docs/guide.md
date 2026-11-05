@@ -300,6 +300,15 @@ These two keep the committed files honest, and CI runs both.
   - Filesystem: edit `scripts/build_filesystem_suite.py` and run it. It
     rewrites the fixtures and both filesystem suites.
   - Attacks: edit `scripts/build_attack_suite.py` and run it.
+  - sql-analyst-env's 70 public tasks (the accuracy benchmark): move
+    `PINNED_COMMIT` in `agent_eval/analyst_env.py`, run
+    `scripts/build_analyst_env_source.py` to rewrite
+    `suites/analyst-env.source.yaml`, then `agent-eval generate-expected`
+    against copy A. It records the commit and the file's sha256, keeps
+    the canary, refuses any task outside the train and dev splits, and
+    refuses to write the suite unless each `alternative_sql` grades right
+    and each `wrong_sql` grades wrong (`agent_eval/expected.py:
+    suite_task`).
 - **Add a grader.** Write the check in `agent_eval/grading.py`, add its
   name to `GRADER_KINDS` and a branch in `grade_one`. Teach
   `agent_eval/suites.py: _grader_problem` to validate its spec, and
