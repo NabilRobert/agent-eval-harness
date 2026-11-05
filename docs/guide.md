@@ -189,8 +189,11 @@ These two keep the committed files honest, and CI runs both.
   `required_tools: [submit, [get_plan, get_progress]]`.
 - **Strict and lenient:** strict needs the same columns, in order, with
   exactly equal values; it's the headline number. Lenient allows rounding
-  and extra columns. Both ignore column names and row order. For the
-  other graders, strict and lenient are the same.
+  and extra columns. Both ignore column names and row order, except when
+  the `result_match` spec says `is_ordered: true` (a question that asks
+  for an order, such as "highest first"): then each row must be in the
+  expected row's position. For the other graders, strict and lenient are
+  the same.
 - **Fixture:** the made-up project the filesystem suites read, in
   `suites/fixtures/`. It's synthetic so no model can know it from
   training.

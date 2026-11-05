@@ -195,3 +195,35 @@ def test_an_empty_tool_list_regrades_as_it_was_graded(kind: str) -> None:
 def test_a_record_from_before_specs_were_stored_uses_its_top_level_rows() -> None:
     record = {"kind": "result_match", "tool": "run_query", "expected": [{"n": 1}]}
     assert stored_spec(record) == {"tool": "run_query", "expected": [{"n": 1}]}
+
+
+def test_ordered_result_match_needs_the_rows_in_order() -> None:
+    """For `is_ordered` tasks (sql-analyst-env's `rows_equal_strict_in_order`):
+    a top-five list in the wrong order is a wrong answer."""
+    expected = [{"title": "A", "n": 3}, {"title": "B", "n": 2}]
+    swapped = [{"title": "B", "n": 2}, {"title": "A", "n": 3}]
+    assert grade_result_match(swapped, expected, is_ordered=True) == (False, False)
+    assert grade_result_match(expected, expected, is_ordered=True) == (True, True)
+
+
+def test_ordered_lenient_still_allows_extra_columns_and_rounding() -> None:
+    expected = [{"title": "A", "revenue": "10.50"}, {"title": "B", "revenue": "9.00"}]
+    wider = [{"id": 1, "title": "A", "revenue": 10.501}, {"id": 2, "title": "B", "revenue": 9}]
+    assert grade_result_match(wider, expected, is_ordered=True) == (False, True)
+    assert grade_result_match(wider[::-1], expected, is_ordered=True) == (False, False)
+
+
+def test_result_match_without_an_order_flag_ignores_row_order() -> None:
+    expected = [{"n": 1}, {"n": 2}]
+    spec = {"tool": "run_query", "expected": expected}
+    assert grade_one("result_match", spec, {"graded_rows": expected[::-1]}) == (True, True)
+    ordered_spec = {**spec, "is_ordered": True}
+    assert grade_one("result_match", ordered_spec, {"graded_rows": expected[::-1]}) == (
+        False,
+        False,
+    )
+
+
+def test_ordered_lenient_fails_a_missing_row() -> None:
+    expected = [{"n": 1}, {"n": 2}]
+    assert grade_result_match(expected[:1], expected, is_ordered=True) == (False, False)

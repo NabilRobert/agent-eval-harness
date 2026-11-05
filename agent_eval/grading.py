@@ -12,7 +12,8 @@ from typing import Any
 
 # Bump whenever an existing grader's behaviour changes (adding a new kind,
 # or a spec form no stored spec could hold, such as required_tools'
-# alternatives, doesn't change any stored grade, so it doesn't bump). Stored on every trial, so a
+# alternatives or result_match's `is_ordered`, doesn't change any stored
+# grade, so it doesn't bump). Stored on every trial, so a
 # comparison can tell grades made by different grader code apart (and
 # `compare` regrades both runs with the current code anyway).
 # v2: answer_match, forbidden_tools; v3: words may take a suffix;
@@ -101,21 +102,47 @@ def _exact_key(value: Any) -> str:
     return str(normalized.normalize(_EXACT_CONTEXT))
 
 
+def _row_keys(rows: list[Row]) -> list[str]:
+    return [repr([_exact_key(v) for v in row.values()]) for row in rows]
+
+
 def rows_equal_strict(actual: list[Row], expected: list[Row]) -> bool:
     """Strict execution accuracy, the headline number: same columns in the
     same order, exactly equal values, rows in any order. Normalising only
     changes how a value is written, not whether it's right."""
-    actual_rows = sorted(repr([_exact_key(v) for v in row.values()]) for row in actual)
-    expected_rows = sorted(repr([_exact_key(v) for v in row.values()]) for row in expected)
-    return actual_rows == expected_rows
+    return sorted(_row_keys(actual)) == sorted(_row_keys(expected))
 
 
-def grade_result_match(graded_rows: list[Row] | None, expected: list[Row]) -> tuple[bool, bool]:
+def rows_equal_strict_in_order(actual: list[Row], expected: list[Row]) -> bool:
+    """`rows_equal_strict`, but the rows must also come in the same order:
+    for questions that ask for one ("the top five, highest first"). The
+    same rule as sql-analyst-env's grader of the same name."""
+    return _row_keys(actual) == _row_keys(expected)
+
+
+def rows_equal_in_order(actual: list[Row], expected: list[Row]) -> bool:
+    """`rows_equal`'s tolerances (rounding, extra columns), with each row
+    matched to the expected row in the same position."""
+    actual_rows = [tuple(_normalize_value(v) for v in row.values()) for row in actual]
+    expected_rows = [tuple(_normalize_value(v) for v in row.values()) for row in expected]
+    if len(actual_rows) != len(expected_rows):
+        return False
+    return all(_is_subsequence_match(e, a) for e, a in zip(expected_rows, actual_rows))
+
+
+def grade_result_match(
+    graded_rows: list[Row] | None, expected: list[Row], *, is_ordered: bool = False
+) -> tuple[bool, bool]:
     """(strict, lenient) for a `result_match` grader. `graded_rows` is None
     when the agent never got a successful result from the graded tool,
-    which fails both."""
+    which fails both. `is_ordered` makes row order count in both."""
     if graded_rows is None:
         return False, False
+    if is_ordered:
+        return (
+            rows_equal_strict_in_order(graded_rows, expected),
+            rows_equal_in_order(graded_rows, expected),
+        )
     return rows_equal_strict(graded_rows, expected), rows_equal(graded_rows, expected)
 
 
@@ -218,7 +245,9 @@ def grade_one(kind: str, spec: Any, inputs: dict[str, Any]) -> tuple[bool, bool]
     scorer stored. The scorer and `compare`'s regrade both call this, so a
     stored grade and a regrade can only differ if the grader code changed."""
     if kind == "result_match":
-        return grade_result_match(inputs["graded_rows"], spec["expected"])
+        return grade_result_match(
+            inputs["graded_rows"], spec["expected"], is_ordered=spec.get("is_ordered", False)
+        )
     if kind == "answer_match":
         return grade_answer_match(inputs["final_answer"], spec["contains"])
     if kind == "answer_excludes":
