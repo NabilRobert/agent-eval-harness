@@ -137,6 +137,7 @@ def test_refusals_are_reported_with_tempting_tasks_on_their_own_line(
     text = render(run)
     assert "- **Per question:** 1 of 1 trials had a query refused (100.0%)" in text
     assert "- **Per query:** 1 of 2 `run_query` calls refused (50.0%)" in text
+    assert "- **Not counted as refusals:** unparsable SQL (0), which is the agent's" in text
     assert "- **Tempting tasks (they ask for a write):** 1 of 1 trials had a query refused" in text
 
 

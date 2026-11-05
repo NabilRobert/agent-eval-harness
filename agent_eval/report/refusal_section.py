@@ -35,8 +35,8 @@ def refusal_lines(run: Run) -> list[str]:
         _trials_line("Per question", counts),
         f"- **Per query:** {_share(counts.refused, counts.queries, '`run_query` calls refused')}",
         f"- **By reason:** {reasons}",
-        f"- **Not counted as refusals:** {counts.unparsed} queries the server couldn't parse "
-        "(the agent's syntax), and rate limits, which make the trial an error.",
+        f"- **Not counted as refusals:** unparsable SQL ({counts.unparsed}), which is the "
+        "agent's syntax, and rate limits, which make the trial an error.",
     ]
     tags: dict[str, list[str]] = run.meta["suite"].get("task_tags") or {}
     tempting: list[dict[str, Any]] = [
