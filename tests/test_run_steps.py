@@ -258,3 +258,47 @@ def test_a_stopped_stack_says_how_to_start_it(
     with pytest.raises(typer.Exit):
         run_steps.read_env(TARGETS[COPY_A], "/dev/null")
     assert "docker compose up -d --wait" in capsys.readouterr().err
+
+
+def test_an_ollama_models_sampling_and_reply_cap_reach_inspect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    options_seen: dict[str, Any] = {}
+
+    def spy(task: Task, **options: Any) -> Any:
+        options_seen.update(options)
+        options["model"] = get_model("mockllm/model")
+        return inspect_eval(task, **options)
+
+    def tiny_task(*_: object) -> Task:
+        return Task(dataset=[Sample(id="t1", input="q")], solver=[generate()])
+
+    monkeypatch.setattr("agent_eval.inspect_tasks.build_task", tiny_task)
+    monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
+    monkeypatch.setattr("inspect_ai.eval", spy)
+    settings = run_steps.generation_settings_or_exit("ollama/qwen3:1.7b")
+    agent: dict[str, Any] = {
+        "model": "mockllm/model",
+        "model_args": {},
+        "epochs": 1,
+        "generate_config": settings,
+    }
+    run_command._run_trials(  # pyright: ignore[reportPrivateUsage]
+        suite={},
+        target={},
+        agent=agent,
+        auth_token="",
+        max_samples=1,
+        price=None,
+        budget={},
+        harness_git="abc123",
+    )
+    assert (options_seen["temperature"], options_seen["max_tokens"]) == (0.6, 4096)
+
+
+def test_an_ollama_model_without_settings_stops_the_run(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(typer.Exit):
+        run_steps.generation_settings_or_exit("ollama/unknown:1b")
+    assert "no sampling settings for ollama/unknown:1b" in capsys.readouterr().err

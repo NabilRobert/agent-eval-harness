@@ -1,6 +1,7 @@
 """The steps of `agent-eval run` that come before any money is spent, in
 the order the command takes them: load the suite, pick the target, read
-the keys, plan the budget, check the commit, preflight the target."""
+the keys and the model's settings, plan the budget, check the commit,
+preflight the target and, for a local model, Ollama."""
 
 import asyncio
 import os
@@ -8,6 +9,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+import httpx
 
 from agent_eval.budget import (
     SMOKE_MAX_TRIALS,
@@ -18,6 +20,14 @@ from agent_eval.budget import (
 )
 from agent_eval.budget import plan as plan_budget
 from agent_eval.envfile import parse_env_text, read_env_file
+from agent_eval.ollama import (
+    SERVER_TIMEOUT_S,
+    OllamaError,
+    generation_settings,
+    is_ollama,
+    served_model_info,
+    server_url,
+)
 from agent_eval.providers import is_secret_name, required_env
 from agent_eval.suites import (
     PAGILA_SYSTEM_PROMPT,
@@ -77,6 +87,26 @@ def read_env(target: dict[str, Any], env_file: str) -> dict[str, str]:
     except (OSError, subprocess.SubprocessError):
         fail(f"couldn't read the {target['name']} key; is it running? ({target['start_hint']})")
     return {**env, **parse_env_text(out)}
+
+
+def generation_settings_or_exit(model: str) -> dict[str, float]:
+    """The model's sampling and reply cap (agent_eval/ollama.py), or exit 2."""
+    try:
+        return generation_settings(model)
+    except OllamaError as exc:
+        fail(str(exc))
+
+
+def served_model_or_exit(model: str) -> dict[str, Any] | None:
+    """For a local model, what Ollama serves under its name, checked
+    against the context the benchmark needs; None for other providers."""
+    if not is_ollama(model):
+        return None
+    try:
+        with httpx.Client(base_url=server_url(), timeout=SERVER_TIMEOUT_S) as client:
+            return served_model_info(model, client)
+    except OllamaError as exc:
+        fail(str(exc))
 
 
 def check_keys(env: dict[str, str], target: dict[str, Any], model: str) -> str:

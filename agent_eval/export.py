@@ -213,6 +213,7 @@ def build_meta(  # noqa: PLR0913 -- keyword-only, one per meta.json section
             # comparing two runs should be able to see what changed.
             "system_prompt": agent["system_prompt"],
             "tool_allowlist": agent.get("tool_allowlist"),
+            "generate_config": agent.get("generate_config"),
             "limits": {
                 "message_limit": agent["message_limit"],
                 "time_limit": agent["time_limit"],

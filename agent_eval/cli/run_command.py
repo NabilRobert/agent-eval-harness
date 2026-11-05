@@ -42,6 +42,8 @@ from agent_eval.cli.run_steps import (
     choose_system_prompt,
     preflight_target,
     tool_allowlist,
+    generation_settings_or_exit,
+    served_model_or_exit,
 )
 
 if TYPE_CHECKING:  # for the type checker only: importing Inspect is slow
@@ -92,6 +94,7 @@ def _run_trials(  # noqa: PLR0913 -- keyword-only step inputs
             build_task(suite, target, agent, auth_token),
             model=agent["model"],
             model_args=agent["model_args"],
+            **agent.get("generate_config", {}),
             epochs=agent["epochs"],
             max_samples=max_samples,
             # No retry_on_error: Inspect gives a retried trial a fresh cost
@@ -178,6 +181,7 @@ def run(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
     target = choose_target(suite, target_name, configuration)
     env = read_env(target, env_file)
     auth_token = check_keys(env, target, model)
+    generate_config = generation_settings_or_exit(model)
     export_keys_for_inspect(env)
     secrets = secrets_to_redact(env, auth_token)
     run_id = run_id or f"{utc_stamp()}-{model.rsplit('/', 1)[-1]}"
@@ -208,10 +212,16 @@ def run(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
         "time_limit": TRIAL_TIME_LIMIT_S,
         "token_limit": TRIAL_TOKEN_LIMIT,
         "epochs": epochs,
+        # Sampling and reply cap for a local model (agent_eval/ollama.py);
+        # empty for other providers, which run at their defaults.
+        "generate_config": generate_config,
     }
 
     # 3. Preflight the target: tools, versions, data fingerprint.
     info = preflight_target(target, auth_token, suite)
+    served_model = served_model_or_exit(model)
+    if served_model is not None:
+        info["served_model"] = served_model
     if exclude_tools:
         agent["tool_allowlist"] = tool_allowlist(exclude_tools, info["tool_names"], suite)
 

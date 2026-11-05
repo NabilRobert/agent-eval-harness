@@ -319,6 +319,13 @@ These two keep the committed files honest, and CI runs both.
   full model id, with `input`, `output`, `source` and `checked` (and
   `cache_read` if the provider has one). A provider that needs its own
   key goes in `agent_eval/providers.py: required_env`.
+  - A local model through Ollama (`ollama/<model>`) also needs its model
+    card's sampling in `agent_eval/ollama.py: SAMPLING`, and a $0 entry
+    with source "runs locally". Start Ollama as
+    `OLLAMA_CONTEXT_LENGTH=24576 OLLAMA_NUM_PARALLEL=1 ollama serve` and
+    run with `--max-samples 1`: before any trial, the run checks the
+    context Ollama gives the model and records the model's digest and
+    settings in `meta.json` (`served_model`, `generate_config`).
 - **Add a target.** Add an entry to `agent_eval/targets.py: TARGETS`.
 - **Change a limit.** Messages per trial: `--message-limit`. Time and
   tokens per trial: `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and
