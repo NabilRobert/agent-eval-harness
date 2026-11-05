@@ -35,6 +35,23 @@ def _tool_payload(message: ChatMessageTool) -> dict[str, Any] | None:
     return cast(dict[str, Any], payload)
 
 
+def _query_results(
+    messages: list[ChatMessageTool], query_tool: str | None
+) -> list[dict[str, Any]] | None:
+    """The status and error of every call to the target's query tool, for
+    the refusal counts (agent_eval/refusals.py). None for a target with no
+    query tool."""
+    if query_tool is None:
+        return None
+    results: list[dict[str, Any]] = []
+    for message in messages:
+        if message.function != query_tool:
+            continue
+        payload = _tool_payload(message) or {}
+        results.append({"status": payload.get("status"), "error": payload.get("error")})
+    return results
+
+
 def _infra_error(messages: list[ChatMessageTool], patterns: list[str]) -> str | None:
     for message in messages:
         text = message.text.lower()
@@ -45,7 +62,7 @@ def _infra_error(messages: list[ChatMessageTool], patterns: list[str]) -> str | 
 
 
 @scorer(metrics={"strict": [mean()], "lenient": [mean()]})
-def suite_scorer(infra_error_patterns: list[str]):  # pyright: ignore[reportUnknownParameterType]
+def suite_scorer(infra_error_patterns: list[str], query_tool: str | None = None):  # pyright: ignore[reportUnknownParameterType]
     """Grades a finished trial with every grader its task lists. A trial
     passes strictly only if every grader passes strictly (Phase 3)."""
 
@@ -93,6 +110,7 @@ def suite_scorer(infra_error_patterns: list[str]):  # pyright: ignore[reportUnkn
                 "grader_version": GRADER_VERSION,
                 "graders": grader_results,
                 "infra_error": _infra_error(tool_messages, infra_error_patterns),
+                "queries": _query_results(tool_messages, query_tool),
             },
         )
 
@@ -144,7 +162,7 @@ def build_task(
             task_name=suite["suite"],
             agent_name=AGENT_NAME,
         ),
-        scorer=suite_scorer(target["infra_error_patterns"]),
+        scorer=suite_scorer(target["infra_error_patterns"], target.get("query_tool")),
         message_limit=agent["message_limit"],
         time_limit=agent["time_limit"],
         token_limit=agent["token_limit"],
