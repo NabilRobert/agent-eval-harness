@@ -54,10 +54,15 @@ def _cost_limits(
     model: str, price: dict[str, Any] | None, budget: dict[str, Any]
 ) -> dict[str, Any]:
     """Inspect's per-trial cost cap and prices; none for an unpriced model."""
-    from inspect_ai.model import ModelCost
+    from inspect_ai.model import ModelCost, ModelInfo, get_model_info, set_model_info
 
     if price is None:
         return {}
+    # Inspect takes a price only for a model in its own database, and a
+    # local model (ollama/...) isn't in it: register it first, or the $0
+    # price stops the run before its first trial (found by the dry run).
+    if get_model_info(model) is None:
+        set_model_info(model, ModelInfo(model=model))
     cost = ModelCost(
         input=float(price["input"]),
         output=float(price["output"]),

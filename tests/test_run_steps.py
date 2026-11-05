@@ -302,3 +302,34 @@ def test_an_ollama_model_without_settings_stops_the_run(
     with pytest.raises(typer.Exit):
         run_steps.generation_settings_or_exit("ollama/unknown:1b")
     assert "no sampling settings for ollama/unknown:1b" in capsys.readouterr().err
+
+
+def test_a_priced_model_inspect_doesnt_know_still_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Inspect only takes a price for a model in its own database, and a
+    local model isn't in it: found by the accuracy benchmark's dry run,
+    where a $0 price stopped the run before its first trial."""
+
+    def spy(task: Task, **options: Any) -> Any:
+        options["model"] = get_model("mockllm/model")
+        return inspect_eval(task, **options)
+
+    def tiny_task(*_: object) -> Task:
+        return Task(dataset=[Sample(id="t1", input="q")], solver=[generate()])
+
+    monkeypatch.setattr("agent_eval.inspect_tasks.build_task", tiny_task)
+    monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
+    monkeypatch.setattr("inspect_ai.eval", spy)
+    free = {"input": 0, "output": 0, "source": "runs locally", "checked": "2026-11-05"}
+    log = run_command._run_trials(  # pyright: ignore[reportPrivateUsage]
+        suite={},
+        target={},
+        agent={"model": "mockllm/model", "model_args": {}, "epochs": 1},
+        auth_token="",
+        max_samples=1,
+        price=free,
+        budget={"per_trial_cap_usd": 0.01},
+        harness_git="abc123",
+    )
+    assert log.status == "success"
