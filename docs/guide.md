@@ -328,8 +328,18 @@ These two keep the committed files honest, and CI runs both.
     settings in `meta.json` (`served_model`, `generate_config`).
 - **Add a target.** Add an entry to `agent_eval/targets.py: TARGETS`.
 - **Change a limit.** Messages per trial: `--message-limit`. Time and
-  tokens per trial: `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and
-  `TRIAL_TOKEN_LIMIT`. The gate's thresholds: the constants at the top of
+  tokens per trial: `--time-limit` and `--token-limit`, whose defaults
+  (120 s, 60,000 tokens, every published run's) are
+  `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and `TRIAL_TOKEN_LIMIT`.
+  A trial that hits one fails, and `confirm` reruns with the limits the
+  run recorded.
+  - The accuracy benchmark runs qwen3.5:4b with `--time-limit 600
+    --token-limit 250000` (Arthur, 2026-11-05). It's a slow local model
+    at $0: sql-analyst-env measured about 1.7 minutes a try for the
+    smaller qwen3:1.7b, and its prompts reach about 14,000 tokens by the
+    16th turn, so the defaults would fail trials for running out of time
+    or tokens, not for a wrong answer. The longer limits cost nothing,
+    and both are recorded in `meta.json` (`agent.limits`). The gate's thresholds: the constants at the top of
   `agent_eval/compare/gates.py` and `agent_eval/compare/comparison.py`.
   How `plan-pairs` searches: the constants at the top of
   `agent_eval/pair_planning.py`.

@@ -177,6 +177,14 @@ def run(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
     message_limit: Annotated[
         int, typer.Option(help="messages per trial before the trial stops as a fail (default 20)")
     ] = 20,
+    # Longer for a slow local model at $0: the accuracy benchmark runs
+    # qwen3.5:4b with 600 s and 250,000 tokens (see the guide).
+    time_limit: Annotated[
+        int, typer.Option(min=1, help="seconds per trial before it stops as a fail")
+    ] = TRIAL_TIME_LIMIT_S,
+    token_limit: Annotated[
+        int, typer.Option(min=1, help="tokens per trial before it stops as a fail")
+    ] = TRIAL_TOKEN_LIMIT,
     out: Annotated[str, typer.Option()] = "runs",
     run_id: Annotated[str | None, typer.Option()] = None,
     env_file: EnvFile = str(REPO_ROOT / ".env"),
@@ -214,8 +222,8 @@ def run(  # noqa: PLR0913 -- each parameter is one of the command's CLI options
         "system_prompt": choose_system_prompt(suite, system_prompt, system_prompt_file),
         "tool_allowlist": None,
         "message_limit": message_limit,
-        "time_limit": TRIAL_TIME_LIMIT_S,
-        "token_limit": TRIAL_TOKEN_LIMIT,
+        "time_limit": time_limit,
+        "token_limit": token_limit,
         "epochs": epochs,
         # Sampling and reply cap for a local model (agent_eval/ollama.py);
         # empty for other providers, which run at their defaults.

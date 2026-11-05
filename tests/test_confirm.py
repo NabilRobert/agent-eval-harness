@@ -45,3 +45,15 @@ def test_the_message_limit_is_reproduced() -> None:
 
     args = agent_args(load_run(RUNS / "proof-mini-a"), REPO / "suites" / "pagila.yaml", ["e01"], 10)
     assert args[args.index("--message-limit") + 1] == "20"
+
+
+def test_the_time_and_token_limits_are_reproduced() -> None:
+    """A confirmation reruns the same agent, so a benchmark run's longer
+    limits (600 s, 250,000 tokens for a local model) must carry over."""
+    from agent_eval.confirm import agent_args
+
+    run = load_run(RUNS / "proof-mini-a")
+    run.meta["agent"]["limits"].update({"time_limit": 600, "token_limit": 250_000})
+    args = agent_args(run, REPO / "suites" / "pagila.yaml", ["e01"], 10)
+    assert args[args.index("--time-limit") + 1] == "600"
+    assert args[args.index("--token-limit") + 1] == "250000"

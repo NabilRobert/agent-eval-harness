@@ -8,8 +8,10 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
+import typer
 from typer.testing import CliRunner, Result
 
 from agent_eval import REPO_ROOT
@@ -361,3 +363,43 @@ def test_generate_expected_reads_a_container_key_from_the_container(
     )
     assert result.exit_code == 2
     assert "couldn't read the analyst-env-copy-a key" in text(result)
+
+
+def _agent_of_a_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, *extra: str) -> dict[str, Any]:
+    """The agent settings `run` hands to Inspect, stopped just before any
+    trial (preflight faked: the filesystem target needs no key)."""
+    from agent_eval.cli import run_command
+
+    seen: dict[str, Any] = {}
+
+    def stop_before_trials(**kwargs: Any) -> None:
+        seen.update(kwargs["agent"])
+        raise typer.Exit(0)
+
+    def fake_preflight(*_: object) -> dict[str, Any]:
+        return {"tool_names": []}
+
+    monkeypatch.setattr(run_command, "preflight_target", fake_preflight)
+    monkeypatch.setattr(run_command, "_run_trials", stop_before_trials)
+    args = ["run", "--suite", FS_SUITE, "--tasks", "f01", "--epochs", "1", "--out", str(tmp_path)]
+    result = invoke(*args, "--model", "openai/gpt-5-mini", "--env-file", "/dev/null", *extra)
+    assert result.exit_code == 0, text(result)
+    return seen
+
+
+def test_a_slow_local_model_can_be_given_longer_trial_limits(
+    no_keys: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    agent = _agent_of_a_run(monkeypatch, tmp_path, "--time-limit", "600", "--token-limit", "250000")
+    assert (agent["time_limit"], agent["token_limit"]) == (600, 250_000)
+
+
+def test_trial_limits_default_to_the_published_runs(
+    no_keys: None, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    agent = _agent_of_a_run(monkeypatch, tmp_path)
+    assert (agent["time_limit"], agent["token_limit"]) == (120, 60_000)
+
+
+def test_a_trial_limit_below_one_is_refused(no_keys: None, env_file: str) -> None:
+    assert plan(env_file, "--time-limit", "0").exit_code == 2
