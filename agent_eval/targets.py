@@ -63,6 +63,7 @@ TARGETS: dict[str, dict[str, Any]] = {
         "url": "http://127.0.0.1:8765/mcp/",
         "healthz_url": "http://127.0.0.1:8765/healthz",
         "auth_env": "MCP_BACKBONE_LOCAL_KEY",
+        "start_hint": "docker compose -f repro/compose.yaml up -d",
         # Read from the running container, never from a host file.
         "auth_env_command": [
             "docker",
@@ -74,6 +75,35 @@ TARGETS: dict[str, dict[str, Any]] = {
             "mcp",
             "cat",
             "/out/repro.env",
+        ],
+        "infra_error_patterns": ["rate limit of"],
+        "query_tool": "run_query",
+        "fingerprint_queries": _PAGILA_FINGERPRINT,
+        "utc_offset_query": _SESSION_UTC_OFFSET,
+    },
+    # Copy A of sql-analyst-env's stack (Project 13): Pagila perturbed by a
+    # seeded script, so a remembered answer is wrong and a right one means
+    # the agent used the server (MCP-backbone's accuracy-benchmark-plan.md,
+    # D2). Same server and tools as above, so the same fingerprint queries
+    # apply; the suite records copy A's fingerprint. Port and service are
+    # from sql-analyst-env's compose.yaml (af10678).
+    "analyst-env-copy-a": {
+        "name": "analyst-env-copy-a",
+        "url": "http://127.0.0.1:8766/mcp/",
+        "healthz_url": "http://127.0.0.1:8766/healthz",
+        "auth_env": "ANALYST_ENV_COPY_A_KEY",
+        "start_hint": "docker compose up -d --wait, in sql-analyst-env",
+        # The stack writes every workspace's key to /out/keys.json; this
+        # prints copy A's as an env line, from inside the container (compose
+        # project "analyst-env", service "mcp"), never via a host file.
+        "auth_env_command": [
+            "docker",
+            "exec",
+            "analyst-env-mcp-1",
+            "python",
+            "-c",
+            "import json; "
+            "print('ANALYST_ENV_COPY_A_KEY=' + json.load(open('/out/keys.json'))['copy_a'])",
         ],
         "infra_error_patterns": ["rate limit of"],
         "query_tool": "run_query",

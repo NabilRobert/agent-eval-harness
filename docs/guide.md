@@ -273,6 +273,11 @@ These two keep the committed files honest, and CI runs both.
 - **Stdio, HTTP target:** stdio means the harness starts the server as a
   child process; HTTP means it connects to a running server
   (`agent_eval/targets.py`).
+- **Copy A:** sql-analyst-env's perturbed Pagila (Project 13), served by
+  its own stack on port 8766 as the `analyst-env-copy-a` target. A
+  remembered answer is wrong on it, so a right one means the agent used
+  the server. Its key is read from inside the running stack
+  (`agent_eval/targets.py`, `auth_env_command`), never from a host file.
 - **Configuration:** how a run reaches the tools: `direct`, `gateway-off`
   or `gateway-on`. Set with `--configuration` and recorded in `meta.json`.
 - **Trace, span:** OpenTelemetry's record of one run of work, and one

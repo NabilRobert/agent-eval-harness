@@ -13,7 +13,6 @@ import yaml
 
 from agent_eval import REPO_ROOT
 from agent_eval.budget import BudgetError, load_prices, price_for
-from agent_eval.envfile import read_env_file
 from agent_eval.publish import apply_readme
 from agent_eval.publish import render as render_results
 from agent_eval.records import RecordError, load_run, write_run
@@ -23,6 +22,7 @@ from agent_eval.suites import (
 )
 from agent_eval.targets import TARGETS
 
+from agent_eval.cli.run_steps import read_env
 from agent_eval.cli.common import (
     EXIT_OUT_OF_DATE,
     EnvFile,
@@ -42,7 +42,8 @@ def generate_expected(
 
     source_path = Path(source)
     target = TARGETS[yaml.safe_load(source_path.read_text(encoding="utf-8"))["target"]]
-    auth_token = require_variable(read_env_file(Path(env_file)), target["auth_env"])
+    # read_env: a local stack hands its key out from inside the container.
+    auth_token = require_variable(read_env(target, env_file), target["auth_env"])
     try:
         suite = asyncio.run(generate(source_path, target, auth_token))
     except ExpectedError as exc:

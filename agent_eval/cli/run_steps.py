@@ -75,10 +75,7 @@ def read_env(target: dict[str, Any], env_file: str) -> dict[str, str]:
             target["auth_env_command"], capture_output=True, text=True, timeout=30, check=True
         ).stdout
     except (OSError, subprocess.SubprocessError):
-        fail(
-            f"couldn't read the {target['name']} key; is it running? "
-            "(docker compose -f repro/compose.yaml up -d)"
-        )
+        fail(f"couldn't read the {target['name']} key; is it running? ({target['start_hint']})")
     return {**env, **parse_env_text(out)}
 
 

@@ -342,3 +342,22 @@ def test_generate_expected_needs_the_target_key(no_keys: None, tmp_path: Path) -
     assert result.exit_code == 2
     assert "MCP_BACKBONE_EVAL_KEY is not set" in text(result)
     assert not (tmp_path / "out.yaml").exists()
+
+
+def test_generate_expected_reads_a_container_key_from_the_container(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Copy A's key lives only inside sql-analyst-env's stack, as the run's does."""
+    from agent_eval.cli import run_steps
+
+    def no_container(command: list[str], **_: object) -> object:
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run_steps.subprocess, "run", no_container)
+    source = tmp_path / "source.yaml"
+    source.write_text("target: analyst-env-copy-a\n", encoding="utf-8")
+    result = invoke(
+        "generate-expected", str(source), str(tmp_path / "out.yaml"), "--env-file", "/dev/null"
+    )
+    assert result.exit_code == 2
+    assert "couldn't read the analyst-env-copy-a key" in text(result)
