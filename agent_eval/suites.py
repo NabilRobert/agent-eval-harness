@@ -58,6 +58,8 @@ def _string_list(spec: Any, key: str) -> list[Any]:
 
 def _result_match_problem(spec: Any) -> str | None:
     expected = spec.get("expected")
+    if not isinstance(spec.get("is_ordered", False), bool):
+        return "result_match's is_ordered must be true or false"
     if (
         spec.get("tool")
         and isinstance(expected, list)

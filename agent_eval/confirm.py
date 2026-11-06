@@ -48,6 +48,7 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
     changed = [t for t in tasks if current[t] != recorded.get(t)]
     if changed:
         raise ConfirmError(f"{run.meta['run_id']}: tasks changed since the run: {changed}")
+    limits: dict[str, Any] = agent.get("limits", {})
     args = [
         "--suite",
         str(suite_path),
@@ -58,8 +59,13 @@ def agent_args(run: Run, suite_path: Path, tasks: list[str], epochs: int) -> lis
         "--model",
         agent["model"],
         "--message-limit",
-        str(agent.get("limits", {}).get("message_limit", 20)),
+        str(limits.get("message_limit", 20)),
     ]
+    # Every run records its time and token limits; `run`'s defaults are
+    # what a run recorded without them used.
+    for name in ("time_limit", "token_limit"):
+        if name in limits:
+            args += [f"--{name.replace('_', '-')}", str(limits[name])]
     allowlist = agent.get("tool_allowlist")
     if allowlist is not None:
         excluded = sorted(set(prov["tool_names"]) - set(allowlist))

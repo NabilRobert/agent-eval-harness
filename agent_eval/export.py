@@ -22,8 +22,9 @@ INCOMPLETE_ERROR_SHARE = 0.10
 # Bump when export output changes; `reexport` records which version
 # rebuilt a run's trials.
 # v2: column order, attachments; v3: task tags; v4: grades recomputed at
-# export; v5: cached input tokens counted, and costed at the cached price.
-EXPORT_VERSION = 5
+# export; v5: cached input tokens counted, and costed at the cached price;
+# v6: each query's status and error, for the refusal counts.
+EXPORT_VERSION = 6
 
 
 class SecretLeakError(Exception):
@@ -134,7 +135,7 @@ def trial_from_sample(
     cached_input_tokens = sum(c["cached_input_tokens"] or 0 for c in model_calls)
     output_tokens = sum(c["output_tokens"] or 0 for c in model_calls)
     task_id = str(sample.id)
-    return {
+    trial: dict[str, Any] = {
         "task_id": task_id,
         "task_hash": task_hashes[task_id],
         "attempt": sample.epoch,
@@ -156,6 +157,11 @@ def trial_from_sample(
         "cost_usd": cost_usd(input_tokens, output_tokens, price, cached_input_tokens),
         "seconds": round(sample.total_time, 3) if sample.total_time else None,
     }
+    # Each query's status and error, for agent_eval/refusals.py. Only logs
+    # scored since export v6 have them; an older log re-exports as it was.
+    if "queries" in score_meta:
+        trial["queries"] = score_meta["queries"]
+    return trial
 
 
 def build_meta(  # noqa: PLR0913 -- keyword-only, one per meta.json section
@@ -213,6 +219,7 @@ def build_meta(  # noqa: PLR0913 -- keyword-only, one per meta.json section
             # comparing two runs should be able to see what changed.
             "system_prompt": agent["system_prompt"],
             "tool_allowlist": agent.get("tool_allowlist"),
+            "generate_config": agent.get("generate_config"),
             "limits": {
                 "message_limit": agent["message_limit"],
                 "time_limit": agent["time_limit"],

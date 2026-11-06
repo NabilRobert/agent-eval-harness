@@ -4,6 +4,7 @@ are read from, and what stops a run with exit 2."""
 import json
 import os
 import shutil
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,7 @@ from inspect_ai.solver import generate
 from agent_eval import REPO_ROOT as REPO
 from agent_eval.cli import main, run_command, run_steps
 from agent_eval.compare import EXIT_UNDECIDED
+from agent_eval.targets import TARGETS
 
 ENVIRONMENT_KEY = "sk-from-the-environment"
 FILE_KEY = "sk-from-the-env-file"
@@ -223,3 +225,111 @@ def test_a_crashed_trial_isnt_retried_so_its_cost_cap_cant_reset(
         harness_git="abc123",
     )
     assert len(calls) == 1
+
+
+COPY_A = "analyst-env-copy-a"
+
+
+def test_copy_a_key_is_read_from_the_running_container(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """sql-analyst-env writes its keys to /out/keys.json inside the stack;
+    the harness reads it there, never from a file on the host."""
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **_: Any) -> Any:
+        commands.append(command)
+        return subprocess.CompletedProcess(command, 0, stdout="ANALYST_ENV_COPY_A_KEY=k-a\n")
+
+    monkeypatch.setattr(run_steps.subprocess, "run", fake_run)
+    env = run_steps.read_env(TARGETS[COPY_A], "/dev/null")
+    assert env["ANALYST_ENV_COPY_A_KEY"] == "k-a"
+    [command] = commands
+    assert command[:2] == ["docker", "exec"] and "/out/keys.json" in " ".join(command)
+
+
+def test_a_stopped_stack_says_how_to_start_it(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def no_container(command: list[str], **_: Any) -> Any:
+        raise subprocess.CalledProcessError(1, command)
+
+    monkeypatch.setattr(run_steps.subprocess, "run", no_container)
+    with pytest.raises(typer.Exit):
+        run_steps.read_env(TARGETS[COPY_A], "/dev/null")
+    assert "docker compose up -d --wait" in capsys.readouterr().err
+
+
+def test_an_ollama_models_sampling_and_reply_cap_reach_inspect(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    options_seen: dict[str, Any] = {}
+
+    def spy(task: Task, **options: Any) -> Any:
+        options_seen.update(options)
+        options["model"] = get_model("mockllm/model")
+        return inspect_eval(task, **options)
+
+    def tiny_task(*_: object) -> Task:
+        return Task(dataset=[Sample(id="t1", input="q")], solver=[generate()])
+
+    monkeypatch.setattr("agent_eval.inspect_tasks.build_task", tiny_task)
+    monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
+    monkeypatch.setattr("inspect_ai.eval", spy)
+    settings = run_steps.generation_settings_or_exit("ollama/qwen3.5:4b")
+    agent: dict[str, Any] = {
+        "model": "mockllm/model",
+        "model_args": {},
+        "epochs": 1,
+        "generate_config": settings,
+    }
+    run_command._run_trials(  # pyright: ignore[reportPrivateUsage]
+        suite={},
+        target={},
+        agent=agent,
+        auth_token="",
+        max_samples=1,
+        price=None,
+        budget={},
+        harness_git="abc123",
+    )
+    assert (options_seen["temperature"], options_seen["max_tokens"]) == (1.0, 4096)
+
+
+def test_an_ollama_model_without_settings_stops_the_run(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(typer.Exit):
+        run_steps.generation_settings_or_exit("ollama/unknown:1b")
+    assert "no sampling settings for ollama/unknown:1b" in capsys.readouterr().err
+
+
+def test_a_priced_model_inspect_doesnt_know_still_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Inspect only takes a price for a model in its own database, and a
+    local model isn't in it: found by the accuracy benchmark's dry run,
+    where a $0 price stopped the run before its first trial."""
+
+    def spy(task: Task, **options: Any) -> Any:
+        options["model"] = get_model("mockllm/model")
+        return inspect_eval(task, **options)
+
+    def tiny_task(*_: object) -> Task:
+        return Task(dataset=[Sample(id="t1", input="q")], solver=[generate()])
+
+    monkeypatch.setattr("agent_eval.inspect_tasks.build_task", tiny_task)
+    monkeypatch.setattr(run_command, "RAW_LOG_DIR", tmp_path)
+    monkeypatch.setattr("inspect_ai.eval", spy)
+    free = {"input": 0, "output": 0, "source": "runs locally", "checked": "2026-11-05"}
+    log = run_command._run_trials(  # pyright: ignore[reportPrivateUsage]
+        suite={},
+        target={},
+        agent={"model": "mockllm/model", "model_args": {}, "epochs": 1},
+        auth_token="",
+        max_samples=1,
+        price=free,
+        budget={"per_trial_cap_usd": 0.01},
+        harness_git="abc123",
+    )
+    assert log.status == "success"

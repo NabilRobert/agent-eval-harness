@@ -91,11 +91,13 @@ flowchart TD
    tools it called) next to the grade, so the trial can be regraded later
    from the record alone. It also notes a server refusal, such as a rate
    limit (`infra_error_patterns` in `agent_eval/targets.py`), which later
-   makes the trial an `error`, not a `fail`.
+   makes the trial an `error`, not a `fail`. For a target with a query
+   tool, it also keeps the `status` and `error` of every `run_query`
+   result (`_query_results`), for the refusal counts.
 10. **Export the records.** `agent_eval/export.py: trial_from_sample`
     turns each Inspect sample into one trial record: its outcome (pass,
-    fail or error), the tool calls, the tokens (cached ones included) and
-    the cost. `build_meta` writes the run's summary: the suite and its
+    fail or error), the tool calls, each query's status (`queries`), the
+    tokens (cached ones included) and the cost. `build_meta` writes the run's summary: the suite and its
     hashes, the agent settings, what preflight found, and the totals.
     `assert_no_secrets` refuses to write anything that contains a key.
 11. **Write the files.** `agent_eval/records.py: write_run` writes
@@ -189,8 +191,11 @@ These two keep the committed files honest, and CI runs both.
   `required_tools: [submit, [get_plan, get_progress]]`.
 - **Strict and lenient:** strict needs the same columns, in order, with
   exactly equal values; it's the headline number. Lenient allows rounding
-  and extra columns. Both ignore column names and row order. For the
-  other graders, strict and lenient are the same.
+  and extra columns. Both ignore column names and row order, except when
+  the `result_match` spec says `is_ordered: true` (a question that asks
+  for an order, such as "highest first"): then each row must be in the
+  expected row's position. For the other graders, strict and lenient are
+  the same.
 - **Fixture:** the made-up project the filesystem suites read, in
   `suites/fixtures/`. It's synthetic so no model can know it from
   training.
@@ -265,11 +270,24 @@ These two keep the committed files honest, and CI runs both.
   attack *succeeded* when the agent obeyed it (it called a write tool or
   leaked a canary), and had an *effect* when harm actually happened (the
   write went through, or the canary leaked). See `scripts/gullible_agent.py: attack_effect`.
+- **Refusal:** MCP-backbone declining one of the agent's queries:
+  `rejected` by its validator (a write, several statements, a forbidden
+  function) or its cost check, or `timed_out`. Counted per trial ("had a
+  query refused") and per query, by reason, in `report.md` and RESULTS.md
+  (`agent_eval/refusals.py: count_refusals`). Unparsable SQL is counted on
+  its own (the agent's syntax), and a rate limit is an `error`, not a
+  refusal. On a *tempting* task, one that asks for a write, a refusal is
+  the right answer, so those tasks get their own line.
 - **Canary:** a made-up secret string planted in a fixture; it must never
   appear in an answer (`answer_excludes`).
 - **Stdio, HTTP target:** stdio means the harness starts the server as a
   child process; HTTP means it connects to a running server
   (`agent_eval/targets.py`).
+- **Copy A:** sql-analyst-env's perturbed Pagila (Project 13), served by
+  its own stack on port 8766 as the `analyst-env-copy-a` target. A
+  remembered answer is wrong on it, so a right one means the agent used
+  the server. Its key is read from inside the running stack
+  (`agent_eval/targets.py`, `auth_env_command`), never from a host file.
 - **Configuration:** how a run reaches the tools: `direct`, `gateway-off`
   or `gateway-on`. Set with `--configuration` and recorded in `meta.json`.
 - **Trace, span:** OpenTelemetry's record of one run of work, and one
@@ -292,20 +310,50 @@ These two keep the committed files honest, and CI runs both.
   - Filesystem: edit `scripts/build_filesystem_suite.py` and run it. It
     rewrites the fixtures and both filesystem suites.
   - Attacks: edit `scripts/build_attack_suite.py` and run it.
+  - sql-analyst-env's 70 public tasks (the accuracy benchmark): move
+    `PINNED_COMMIT` in `agent_eval/analyst_env.py`, run
+    `scripts/build_analyst_env_source.py` to rewrite
+    `suites/analyst-env.source.yaml`, then `agent-eval generate-expected`
+    against copy A. It records the commit and the file's sha256, keeps
+    the canary, refuses any task outside the train and dev splits, and
+    refuses to write the suite unless each `alternative_sql` grades right
+    and each `wrong_sql` grades wrong (`agent_eval/expected.py:
+    suite_task`).
 - **Add a grader.** Write the check in `agent_eval/grading.py`, add its
   name to `GRADER_KINDS` and a branch in `grade_one`. Teach
   `agent_eval/suites.py: _grader_problem` to validate its spec, and
   `agent_eval/inspect_tasks.py: suite_scorer` what input to store. Add how
   a failure reads in `agent_eval/report/sections.py: _grader_lines`. Bump
   `GRADER_VERSION` only if an existing grader's behaviour changes.
+- **Change how refusals are classified.** `agent_eval/refusals.py:
+  refusal_reason` matches MCP-backbone's exact error messages; keep it in
+  step with that server's `app/query/` when they change. It reads the
+  recorded statuses, so a change reaches every run that recorded them.
 - **Add a model or a price.** Add an entry to `prices.yaml`, keyed by the
   full model id, with `input`, `output`, `source` and `checked` (and
   `cache_read` if the provider has one). A provider that needs its own
   key goes in `agent_eval/providers.py: required_env`.
+  - A local model through Ollama (`ollama/<model>`) also needs its model
+    card's sampling in `agent_eval/ollama.py: SAMPLING`, and a $0 entry
+    with source "runs locally". Start Ollama as
+    `OLLAMA_CONTEXT_LENGTH=24576 OLLAMA_NUM_PARALLEL=1 ollama serve` and
+    run with `--max-samples 1`: before any trial, the run checks the
+    context Ollama gives the model and records the model's digest and
+    settings in `meta.json` (`served_model`, `generate_config`).
 - **Add a target.** Add an entry to `agent_eval/targets.py: TARGETS`.
 - **Change a limit.** Messages per trial: `--message-limit`. Time and
-  tokens per trial: `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and
-  `TRIAL_TOKEN_LIMIT`. The gate's thresholds: the constants at the top of
+  tokens per trial: `--time-limit` and `--token-limit`, whose defaults
+  (120 s, 60,000 tokens, every published run's) are
+  `agent_eval/cli/common.py: TRIAL_TIME_LIMIT_S` and `TRIAL_TOKEN_LIMIT`.
+  A trial that hits one fails, and `confirm` reruns with the limits the
+  run recorded.
+  - The accuracy benchmark runs qwen3.5:4b with `--time-limit 600
+    --token-limit 250000` (Arthur, 2026-11-05). It's a slow local model
+    at $0: sql-analyst-env measured about 1.7 minutes a try for the
+    smaller qwen3:1.7b, and its prompts reach about 14,000 tokens by the
+    16th turn, so the defaults would fail trials for running out of time
+    or tokens, not for a wrong answer. The longer limits cost nothing,
+    and both are recorded in `meta.json` (`agent.limits`). The gate's thresholds: the constants at the top of
   `agent_eval/compare/gates.py` and `agent_eval/compare/comparison.py`.
   How `plan-pairs` searches: the constants at the top of
   `agent_eval/pair_planning.py`.

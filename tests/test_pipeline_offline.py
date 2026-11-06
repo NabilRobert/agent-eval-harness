@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from inspect_ai import eval as inspect_eval  # pyright: ignore[reportUnknownVariableType]
+from inspect_ai.log import read_eval_log
 from inspect_ai.model import ModelOutput, get_model
 from inspect_ai.tool import Tool, tool
 
@@ -81,6 +82,7 @@ def run_offline(tmp_path: Path, payload: dict[str, Any], outputs: Any) -> dict[s
     )
     [sample] = log.samples or []
     trial = trial_from_sample(sample, suite_task_hashes(SUITE))
+    trial["_log"] = log.location
     trial["_meta"] = build_meta(
         log,
         [trial],
@@ -93,6 +95,24 @@ def run_offline(tmp_path: Path, payload: dict[str, Any], outputs: Any) -> dict[s
         system_prompt_sha256="p",
     )
     return trial
+
+
+def test_the_generation_settings_are_recorded_with_the_agent(tmp_path: Path) -> None:
+    settings = {"temperature": 0.6, "top_p": 0.95, "max_tokens": 4096}
+    agent = {**AGENT, "generate_config": settings}
+    trial = run_offline(tmp_path, {"status": "succeeded", "rows": []}, query_then_submit())
+    meta = build_meta(
+        read_eval_log(trial["_log"]),
+        [trial],
+        run_id="r",
+        suite=SUITE,
+        task_hashes=suite_task_hashes(SUITE),
+        agent=agent,
+        preflight_info={},
+        harness_git="x",
+        system_prompt_sha256="p",
+    )
+    assert meta["agent"]["generate_config"] == settings
 
 
 def test_correct_answer_passes(tmp_path: Path) -> None:
@@ -119,6 +139,18 @@ def test_rejected_query_fails_as_the_agents_fault(tmp_path: Path) -> None:
     )
     assert trial["outcome"] == "fail"
     assert trial["graders"][0]["input"]["graded_rows"] is None
+
+
+def test_each_query_result_status_is_recorded_for_the_refusal_counts(tmp_path: Path) -> None:
+    payload: dict[str, Any] = {
+        "status": "rejected",
+        "rows": [],
+        "error": "estimated cost 9001 exceeds threshold 1",
+    }
+    # A call to another tool isn't a query, so it isn't counted.
+    other_tool = ModelOutput.for_tool_call("mockllm/model", "list_tables", {})
+    trial = run_offline(tmp_path, payload, [other_tool, *query_then_submit()])
+    assert trial["queries"] == [{"status": "rejected", "error": payload["error"]}]
 
 
 def test_rate_limited_query_is_an_error_never_a_fail(tmp_path: Path) -> None:

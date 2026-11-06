@@ -1,5 +1,5 @@
 """report.md, one section at a time: header, result, difficulty table,
-cost and latency, per task, the trials that didn't pass, provenance.
+cost and latency, refusals (refusal_section.py), per task, the trials that didn't pass, provenance.
 `render` joins them. Model and tool text is fenced and clipped so nothing
 an agent writes can break the Markdown."""
 
@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Any
 
 from agent_eval.records import Run
+from agent_eval.report.refusal_section import refusal_lines
 from agent_eval.report.stats import headline, median_or_none, per_task_stats
 
 _MAX_ROWS_SHOWN = 6
@@ -271,6 +272,7 @@ def render(run: Run) -> str:
         _result(h, run.meta["agent"]["epochs"]),
         _difficulty_table(stats, tags),
         _cost_and_latency(run),
+        refusal_lines(run),
         _per_task(stats, tags),
         _failures(run),
         _provenance(run.meta),

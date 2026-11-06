@@ -118,6 +118,11 @@ UNGRADABLE: list[dict[str, object]] = [
     {"id": "a", "prompt": "q"},
     {"id": "a", "prompt": "q", "graders": [{"llm_judge": {}}]},
     {"id": "a", "prompt": "q", "graders": [{"result_match": {"tool": "run_query", "expected": 5}}]},
+    {
+        "id": "a",
+        "prompt": "q",
+        "graders": [{"result_match": {"tool": "run_query", "expected": [], "is_ordered": "yes"}}],
+    },
     {"id": "a", "prompt": "q", "graders": [{"required_tools": [[]]}]},
     {"id": "a", "prompt": "q", "graders": [{"required_tools": [["get_plan", 3]]}]},
     # "Don't call any of these" is the same as listing each one.

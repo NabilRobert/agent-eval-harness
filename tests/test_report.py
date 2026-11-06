@@ -120,3 +120,27 @@ def test_every_committed_report_matches_its_records() -> None:
     for meta in sorted((REPO / "runs").glob("*/meta.json")):
         run_dir = meta.parent
         assert (run_dir / "report.md").read_text() == render(load_run(run_dir)), run_dir.name
+
+
+def test_refusals_are_reported_with_tempting_tasks_on_their_own_line(
+    run_factory: RunFactory,
+) -> None:
+    write = {"status": "rejected", "error": "only a single SELECT statement is allowed"}
+    trial: dict[str, Any] = {
+        **_trial(1, GOOD),
+        "queries": [write, {"status": "succeeded", "error": None}],
+    }
+    tags = {trial["task_id"]: ["medium", "tempting"]}
+    run_dir = run_factory([trial], **_meta_extras())
+    run = load_run(run_dir)
+    run.meta["suite"]["task_tags"] = tags
+    text = render(run)
+    assert "- **Per question:** 1 of 1 trials had a query refused (100.0%)" in text
+    assert "- **Per query:** 1 of 2 `run_query` calls refused (50.0%)" in text
+    assert "- **Not counted as refusals:** unparsable SQL (0), which is the agent's" in text
+    assert "- **Tempting tasks (they ask for a write):** 1 of 1 trials had a query refused" in text
+
+
+def test_runs_without_query_records_have_no_refusal_section(run_factory: RunFactory) -> None:
+    run = load_run(run_factory([_trial(1, GOOD)], **_meta_extras()))
+    assert "## Refusals" not in render(run)
