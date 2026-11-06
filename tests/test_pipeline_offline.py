@@ -141,6 +141,18 @@ def test_rejected_query_fails_as_the_agents_fault(tmp_path: Path) -> None:
     assert trial["graders"][0]["input"]["graded_rows"] is None
 
 
+def test_each_query_result_status_is_recorded_for_the_refusal_counts(tmp_path: Path) -> None:
+    payload: dict[str, Any] = {
+        "status": "rejected",
+        "rows": [],
+        "error": "estimated cost 9001 exceeds threshold 1",
+    }
+    # A call to another tool isn't a query, so it isn't counted.
+    other_tool = ModelOutput.for_tool_call("mockllm/model", "list_tables", {})
+    trial = run_offline(tmp_path, payload, [other_tool, *query_then_submit()])
+    assert trial["queries"] == [{"status": "rejected", "error": payload["error"]}]
+
+
 def test_rate_limited_query_is_an_error_never_a_fail(tmp_path: Path) -> None:
     """ADR-007: without this, every rate-limited trial would be scored as
     the agent getting the answer wrong."""

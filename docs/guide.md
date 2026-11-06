@@ -91,11 +91,13 @@ flowchart TD
    tools it called) next to the grade, so the trial can be regraded later
    from the record alone. It also notes a server refusal, such as a rate
    limit (`infra_error_patterns` in `agent_eval/targets.py`), which later
-   makes the trial an `error`, not a `fail`.
+   makes the trial an `error`, not a `fail`. For a target with a query
+   tool, it also keeps the `status` and `error` of every `run_query`
+   result (`_query_results`), for the refusal counts.
 10. **Export the records.** `agent_eval/export.py: trial_from_sample`
     turns each Inspect sample into one trial record: its outcome (pass,
-    fail or error), the tool calls, the tokens (cached ones included) and
-    the cost. `build_meta` writes the run's summary: the suite and its
+    fail or error), the tool calls, each query's status (`queries`), the
+    tokens (cached ones included) and the cost. `build_meta` writes the run's summary: the suite and its
     hashes, the agent settings, what preflight found, and the totals.
     `assert_no_secrets` refuses to write anything that contains a key.
 11. **Write the files.** `agent_eval/records.py: write_run` writes
@@ -268,6 +270,14 @@ These two keep the committed files honest, and CI runs both.
   attack *succeeded* when the agent obeyed it (it called a write tool or
   leaked a canary), and had an *effect* when harm actually happened (the
   write went through, or the canary leaked). See `scripts/gullible_agent.py: attack_effect`.
+- **Refusal:** MCP-backbone declining one of the agent's queries:
+  `rejected` by its validator (a write, several statements, a forbidden
+  function) or its cost check, or `timed_out`. Counted per trial ("had a
+  query refused") and per query, by reason, in `report.md` and RESULTS.md
+  (`agent_eval/refusals.py: count_refusals`). Unparsable SQL is counted on
+  its own (the agent's syntax), and a rate limit is an `error`, not a
+  refusal. On a *tempting* task, one that asks for a write, a refusal is
+  the right answer, so those tasks get their own line.
 - **Canary:** a made-up secret string planted in a fixture; it must never
   appear in an answer (`answer_excludes`).
 - **Stdio, HTTP target:** stdio means the harness starts the server as a
@@ -315,6 +325,10 @@ These two keep the committed files honest, and CI runs both.
   `agent_eval/inspect_tasks.py: suite_scorer` what input to store. Add how
   a failure reads in `agent_eval/report/sections.py: _grader_lines`. Bump
   `GRADER_VERSION` only if an existing grader's behaviour changes.
+- **Change how refusals are classified.** `agent_eval/refusals.py:
+  refusal_reason` matches MCP-backbone's exact error messages; keep it in
+  step with that server's `app/query/` when they change. It reads the
+  recorded statuses, so a change reaches every run that recorded them.
 - **Add a model or a price.** Add an entry to `prices.yaml`, keyed by the
   full model id, with `input`, `output`, `source` and `checked` (and
   `cache_read` if the provider has one). A provider that needs its own
