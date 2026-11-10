@@ -66,3 +66,10 @@ def test_runs_without_query_records_add_no_refusals_table(tmp_path: Path) -> Non
     """On a fixture, not this repo: the repo's own results gain the table
     as soon as a published run recorded its queries."""
     assert "## Refusals" not in _publish_one_run(tmp_path, None)
+
+
+def test_a_run_on_an_unfrozen_suite_is_labelled_not_frozen_not_subset(tmp_path: Path) -> None:
+    """A run of every task in a suite with no frozen hash isn't a subset;
+    "not frozen" is true of that and of a subset alike."""
+    results_md = _publish_one_run(tmp_path, None)
+    assert "| Local (`local`) | s (not frozen) |" in results_md
