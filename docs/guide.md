@@ -205,6 +205,8 @@ These two keep the committed files honest, and CI runs both.
 - **Frozen suite:** a suite whose hash is recorded in
   `agent_eval/suites.py: FROZEN_SUITES`: `pagila`, `filesystem` and
   `filesystem-v2`, but not `attacks`. A test fails if the file changes.
+  RESULTS.md labels a run on any other suite, or on a subset of one,
+  "(not frozen)" (`agent_eval/publish.py: render`).
 - **Task hash:** a hash of a task's prompt and graders
   (`agent_eval/records.py: task_hash`). A changed task stops two runs
   being compared.

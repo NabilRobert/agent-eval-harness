@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from agent_eval.publish import README_END, README_START, apply_readme, render
 from agent_eval.records import write_run
@@ -32,26 +33,43 @@ def test_readme_block_is_replaced_not_duplicated() -> None:
     assert out == f"intro\n{README_START}\nnew\n{README_END}\noutro\n"
 
 
-def test_runs_that_recorded_their_queries_get_a_refusals_table(tmp_path: Path) -> None:
-    write = {"status": "rejected", "error": "only a single SELECT statement is allowed"}
-    trial = {
+def _publish_one_run(repo: Path, queries: list[dict[str, Any]] | None) -> str:
+    """RESULTS.md for a repo holding one run, with or without the queries
+    each trial sent (runs before EXPORT_VERSION 6 have none)."""
+    trial: dict[str, Any] = {
         **make_trial(1, [{"count": 1000}]),
-        "queries": [write, {"status": "succeeded", "error": None}],
         "cost_usd": 0.0,
         "seconds": 1.0,
         "input_tokens": 100,
         "output_tokens": 10,
     }
+    if queries is not None:
+        trial["queries"] = queries
     meta = make_meta(created_at="2026-11-05", totals={"cost_usd": {"usd": 0.0}})
     meta["agent"]["epochs"] = 1
-    write_run(tmp_path / "runs" / "local", meta, [trial])
-    (tmp_path / "results.yaml").write_text(
+    write_run(repo / "runs" / "local", meta, [trial])
+    (repo / "results.yaml").write_text(
         "runs: [{run: local, label: Local}]\ncomparisons: []\n", encoding="utf-8"
     )
-    results_md, _ = render(tmp_path)
+    results_md, _ = render(repo)
+    return results_md
+
+
+def test_runs_that_recorded_their_queries_get_a_refusals_table(tmp_path: Path) -> None:
+    write = {"status": "rejected", "error": "only a single SELECT statement is allowed"}
+    results_md = _publish_one_run(tmp_path, [write, {"status": "succeeded", "error": None}])
+    assert "## Refusals" in results_md
     assert "| Local (`local`) | 1 of 1 | 1 of 2 | 1 | 0 | 0 | 0 |" in results_md
 
 
-def test_runs_without_query_records_add_no_refusals_table() -> None:
-    results_md, _ = render(REPO)
-    assert "## Refusals" not in results_md
+def test_runs_without_query_records_add_no_refusals_table(tmp_path: Path) -> None:
+    """On a fixture, not this repo: the repo's own results gain the table
+    as soon as a published run recorded its queries."""
+    assert "## Refusals" not in _publish_one_run(tmp_path, None)
+
+
+def test_a_run_on_an_unfrozen_suite_is_labelled_not_frozen_not_subset(tmp_path: Path) -> None:
+    """A run of every task in a suite with no frozen hash isn't a subset;
+    "not frozen" is true of that and of a subset alike."""
+    results_md = _publish_one_run(tmp_path, None)
+    assert "| Local (`local`) | s (not frozen) |" in results_md
