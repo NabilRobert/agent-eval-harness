@@ -14,6 +14,8 @@ runs:
   - {run: fs-mini-base2, label: "Filesystem, gpt-5-mini, run 2"}
   - {run: fs-mini-cap12, label: "Filesystem, gpt-5-mini, message cap 12"}
   - {run: fs2-mini-base, label: "Filesystem v2 (34 tasks), gpt-5-mini"}
+  - {run: bench-dev-qwen3.5-4b, label: "analyst-env v2, qwen3.5:4b, dev check (10 tasks x 1)"}
+  - {run: bench-qwen3.5-4b, label: "analyst-env v2 (70 tasks), qwen3.5:4b"}
 
 # gate: the decision rule each comparison was pre-registered with
 # (ADR-001). Everything here predates gate v2, so all are v1.
