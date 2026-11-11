@@ -135,7 +135,7 @@ def render(repo: Path) -> tuple[str, str]:
     ]
     for r in runs:
         out.append(
-            f"| {r['label']} (`{r['run']}`) | {r['suite']}{'' if r['frozen'] else ' (subset)'} | "
+            f"| {r['label']} (`{r['run']}`) | {r['suite']}{'' if r['frozen'] else ' (not frozen)'} | "
             f"{r['model']} | {r['strict']} | {r['lenient']} | {r['pass_k']} | {r['errors']} | "
             f"{r['cost']} | {r['latency']} | {r['date']} |"
         )

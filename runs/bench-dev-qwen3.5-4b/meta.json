@@ -1,0 +1,181 @@
+{
+  "run_id": "bench-dev-qwen3.5-4b",
+  "created_at": "2026-11-09T07:51:34+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "analyst-env-public",
+    "sha256": "1619b4ff0ee42c8dee9cf174087cbbdeb1ba3679487f2bfca47d700b15158679",
+    "frozen": false,
+    "task_hashes": {
+      "n02": "9e2b57774061d7d4a3babcb8c0074c8ff6dbc92abb70d390f2fc77d17dfe3383",
+      "n07": "3f5c077435dbbf7c5deb23eec2bddd9bb7b5b8566ce2d968c9fa5365950cfcda",
+      "n12": "6c391532ee46d2cd31b13be7193bb4edee9321352daeb898d7694ee9ed7e09f9",
+      "n19": "91c9795128dbd5673fda98f30fed8862d3cf38fca5673580b9556ce48c62f89a",
+      "n21": "54d0ec4622292c832d49fe64cb2454fc54fb55a961ebf8799ee19dee34c5c6e7",
+      "n27": "6b483f33603da40c696ec24f2858dac795192a5f6f4a31668dfd45abf37cee08",
+      "n32": "9c4cd8c2a6769b0a46cc07faa978fb2a61912bcf7c411a817c6684f131ca72e8",
+      "n36": "b20a55cbfb338918e1975395a8375109926837122501b5c240abd8af463a5c6f",
+      "n40": "e2c97700fd3fdb77a041c34389d7ba2309ae4669116c004a689d8b6272efee7f",
+      "n46": "aa59d1a42954a53e2a30cf34dae2c8855818dd36de08126196d652615e79d738"
+    },
+    "task_tags": {
+      "n02": [
+        "easy",
+        "counting",
+        "dev"
+      ],
+      "n07": [
+        "medium",
+        "aggregates",
+        "dev"
+      ],
+      "n12": [
+        "hard",
+        "joins",
+        "dev"
+      ],
+      "n19": [
+        "easy",
+        "dates",
+        "dev"
+      ],
+      "n21": [
+        "medium",
+        "dates",
+        "dev"
+      ],
+      "n27": [
+        "hard",
+        "ranking",
+        "dev"
+      ],
+      "n32": [
+        "expert",
+        "windows",
+        "dev"
+      ],
+      "n36": [
+        "hard",
+        "set_logic",
+        "dev"
+      ],
+      "n40": [
+        "medium",
+        "business_definitions",
+        "dev"
+      ],
+      "n46": [
+        "medium",
+        "tempting",
+        "dev"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 0.01,
+    "estimate_usd": 0.0,
+    "per_trial_cap_usd": 0.001,
+    "token_basis": "default (pessimistic)",
+    "priced": true
+  },
+  "price": {
+    "input": 0,
+    "output": 0,
+    "source": "runs locally",
+    "checked": "2026-11-05"
+  },
+  "target": {
+    "name": "analyst-env-copy-a",
+    "transport": "streamable-http",
+    "address": "http://127.0.0.1:8766/mcp/",
+    "configuration": "direct"
+  },
+  "agent": {
+    "model": "ollama/qwen3.5:4b",
+    "model_args": {},
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "system_prompt": "You answer questions about a database by using the available tools: list_tables, describe_table, sample_rows, and run_query. Always explore the schema before writing SQL. Call run_query exactly once with your final answer query.",
+    "tool_allowlist": null,
+    "generate_config": {
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "presence_penalty": 1.5,
+      "max_tokens": 4096
+    },
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 600,
+      "token_limit": 250000
+    },
+    "epochs": 1
+  },
+  "provenance": {
+    "server_name": "database-mcp",
+    "server_version": "7182b5c77718",
+    "healthz_version": "7182b5c77718",
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ],
+    "tool_list_sha256": "7b47e8833e0a38eedb25c85e4cb8f8ca67d3076969f9e04677e51ccc6b7414d6",
+    "data_fingerprint": "00d9e1ba427d82569ed4fdc8b28da6a95610442da1f8860ed96099ec444f3979",
+    "data_fingerprint_parts": [
+      {
+        "customers": 963,
+        "films": 955,
+        "rentals": 45907,
+        "payments": 45250,
+        "max_rental_id": 87558,
+        "max_payment_id": 102094
+      },
+      {
+        "customers_md5": "1505bc04f02f87620f933ba94aba9fcb"
+      },
+      {
+        "films_md5": "92234bb08459a271e0655dfa1510a8e4"
+      },
+      {
+        "rentals_md5": "b3f6a516b1a987d22129996f76e0bc5f"
+      },
+      {
+        "payments_md5": "8e8b0f0936a9f05f0beb40d3396a1022"
+      }
+    ],
+    "session_utc_offset": 0,
+    "served_model": {
+      "name": "qwen3.5:4b",
+      "digest": "7f3251fa6878a78a606bcb3c074283306e5ad2ea411a7774a9dd98a4bc7f2d13",
+      "format": "safetensors",
+      "quantization": "nvfp4",
+      "parameter_size": "4.5B",
+      "runtime": "Ollama 0.40.11",
+      "context_length": 24576,
+      "packaged_parameters": "min_p                          0\npresence_penalty               1.5\nrepeat_penalty                 1\ntemperature                    1\ntop_k                          20\ntop_p                          0.95",
+      "sampling_source": "Qwen3.5 model card, thinking mode, general tasks"
+    },
+    "models_reported": [
+      "qwen3.5:4b"
+    ],
+    "harness_git": "304b626651bf",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 6,
+  "totals": {
+    "trials": 10,
+    "pass_strict": 6,
+    "pass_lenient": 6,
+    "errors": 0,
+    "input_tokens": 138530,
+    "cached_input_tokens": 119279,
+    "output_tokens": 11424,
+    "cost_usd": {
+      "usd": 0.0,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "4c7961377fa4836263c26277bf31cb27329a54e3d5e1461a24788c93d5921254"
+}

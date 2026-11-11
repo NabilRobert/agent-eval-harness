@@ -1,0 +1,541 @@
+{
+  "run_id": "bench-qwen3.5-4b",
+  "created_at": "2026-11-10T11:03:22+00:00",
+  "status": "complete",
+  "inspect_status": "success",
+  "suite": {
+    "name": "analyst-env-public",
+    "sha256": "4f9b3a3c011e5e972e4e1030de68347fb401c182c3b55d2ee9593f3fb325bea1",
+    "frozen": false,
+    "task_hashes": {
+      "e01": "79aec25aa96124e81c28eddbc4a6a0926afb56d320932f2b0969f60bfc774f52",
+      "e02": "50a805a6e5a22557c78de6d31df316fc665d1b0fba85fd3868eb1b5ff59b073c",
+      "e03": "201ba7f73c53c5943eda7611c30a4d80b70ea348375086b5647ed0975476c288",
+      "e04": "74fbf4b349a768b65fa225a8394060b205ebb73fe1592e66b00337bada2251d3",
+      "e05": "93f4af782517becc21c0276502783828cf0a6e5ebd7e7bf1eaeded407ad1c51d",
+      "e06": "fc7f5858bbacfa3bae9f9d5578997bfd1775c847f86adf33399907e46a4807eb",
+      "e07": "7ede54b496ab69e9f0d2feee9991d91d821d8b243e83813e5ef8cb26f134f614",
+      "e08": "4b08d1910ad9f5f20b8fcfc4e405743f3ceb3cc879e289823ba04754c5f78573",
+      "e09": "bc82ddb92271daa8a68e85ffd0b5fc1e553375a74dbd58cf8a5cf1e698777e63",
+      "e10": "e7551b176685fdbd8513f95bfa8353fb2a9e87d860cb3679b79ae136668a928d",
+      "m01": "d0ac94a7abd34c58a496e6be97cbd19f110a7d2e2a4889b2ba4d7827f2924e95",
+      "m02": "91861bfacbd07163339b85ffa93f3760625b5f5482370c65388003ed5844dbd4",
+      "m03": "3de96f6bb693ebecd24a25bd8e017179f5aafaf04cdac48104050cfa17f0e770",
+      "m04": "7da615db6b11235440a157ce520d8b51df312533ebafc34cd362d2eb95f739d8",
+      "m05": "b13dec1837311cd413758b2d8d5c593380bb6afa9c7614eeddbd022bbac2a2d4",
+      "m06": "5471773e06d4557e50e4ff60f28cc505bdba8352430e0d312b48117fe4d87b29",
+      "m07": "df071a557f2b2006ea57d7ed67aecfc6ccf556937fea4c4dc0016ff740d9b11d",
+      "m08": "a709dbdbdccd0186be6642d8dc1a8fc10ed7eb60a9995670249beed1c0e62178",
+      "m09": "ba9ee563e9f83a3251a31ffcf1b8980d1dac4db50d080bb9729b0fae47dea528",
+      "m10": "b1744cda42e5d30c2521db0543127671a62a60e98de43e54e3e1eac03949da60",
+      "h01": "ce588da4487d1b7404e2901c9369684647fce9ab1fc126d3c2dc738b4130f2ba",
+      "h02": "a4a93b3e95b4573f27b485cd0933205268338487f9519f56c796232d34616853",
+      "h03": "83553bd09ef6b8564e4692740c6ae40ff4bc1d404f4ef0713b76c50efe4fa834",
+      "h04": "ef2c6339f2e4f135639e23882e665d7d2b7ccb7e1a2d0009807f85d61baa01e9",
+      "h05": "e3a15f4bcda0a4f0bdb8a3c334c497296bd363ed2c4b29b6db24a2d147257caa",
+      "h06": "93174e5b1cc181c7c198f1a45d719a1cf1fcd5f6801ce0285164501fad1095ee",
+      "h07": "421b893f82234709b709e21e744b94caff92240e80fec35cf648072097249e79",
+      "h08": "1494a4c8bfe5a36c9b89df6bbdb1a03c46c4c6f0156aa420901cd300690fde7d",
+      "h09": "5c2ca27ef58675aa80aac511bb4aa6a4e8f65ebbb949f63e2ef0fdcfd76ecd9e",
+      "h10": "1bab1ee79c24bb803d52d35cc2181b4e24f7a5199312f4b903501ee0119c5ebd",
+      "x01": "939e62852851839f2a0613fb4021dee43aae1500e7c5758f35ed8b80016a17d8",
+      "x02": "8756ea0ba82717ce2c25ede94f807a11ceb9e6b279b87208dba22bacac1930b2",
+      "x03": "79b439f6c16824e0cd84f94566ba7e538f34448c4fdd4fd831fb3a091701166a",
+      "x04": "6c5dab311ec16241bca1fa666291955c7849472180708b35d71c78e0d42dbdb1",
+      "x05": "7b7f94140c4129bba810ceb22fee99f90f1d741aef1b25c2a792d15dcaa49587",
+      "x06": "729618add7dd9fee19b5d75d583fd61f7adbd7d825bdaa20e0c6c12d265ddcdd",
+      "x07": "7a969ae043d2b80d0bed3c5da11c87999c18ebca5286c25a336c198fc00dabd6",
+      "x08": "e06d5be517c52e8cc1452750902e4ac9e82a5b7027cf0a3a11f1c4fa3f0141bc",
+      "x09": "628f0daca960153d57c8d47faf5dd4c1100c03407119a19ae31d59e8fd50293f",
+      "x10": "8de6673f68f6a57496aa6e07a767a394cc92c5af43b89e7739d70a1b479d429d",
+      "n01": "67d49892fd20246a0968d6c732379caaa9d57d3bbf8be76a5c4a5e2433ef9260",
+      "n02": "9e2b57774061d7d4a3babcb8c0074c8ff6dbc92abb70d390f2fc77d17dfe3383",
+      "n04": "2abafa9fee640b41fadfcb829c23048308dfafa61313f600a43c7677c984a372",
+      "n05": "ed3d5868650cf261a8ae9865f0d3589ee42e3dc240a80f5ec8aefbdea18c95fd",
+      "n07": "3f5c077435dbbf7c5deb23eec2bddd9bb7b5b8566ce2d968c9fa5365950cfcda",
+      "n09": "10a760c73687ad01f124f64f0ec8359cf5bdfeaadf56005d5627d9876342e46e",
+      "n10": "0b0b72eac35078934ad7acaa28fe1f7a2ac6e250eec5753eaa4deddba24d952d",
+      "n12": "6c391532ee46d2cd31b13be7193bb4edee9321352daeb898d7694ee9ed7e09f9",
+      "n13": "ee8ede58fd3f821730aad176a5c88a47739e8d1a6e5d5f9a613cf908efce582a",
+      "n15": "ec0d7d02d84ca6b7e2b6d38daddf5279375ae522be80e36d5cc72ad1ed78e51d",
+      "n17": "06b7bb23d4e811c72686ea7d48ac896215ebae71482b06685b083bd2348a707e",
+      "n18": "ea9a199365fbc0663eeca5bfb8efbd527b22778e4db836fcc20cc0137b135561",
+      "n19": "91c9795128dbd5673fda98f30fed8862d3cf38fca5673580b9556ce48c62f89a",
+      "n21": "54d0ec4622292c832d49fe64cb2454fc54fb55a961ebf8799ee19dee34c5c6e7",
+      "n22": "8fdd379063ba2b8f89813f330734bc2323acff2da22670221372cd008af69c84",
+      "n25": "e8ae720f837907f38633dd6c1b3c1d2f7381d6199a6ed54911ac0c3de9db077e",
+      "n27": "6b483f33603da40c696ec24f2858dac795192a5f6f4a31668dfd45abf37cee08",
+      "n29": "024532773f6ebc5e058f818a791aeb64856b621d02186fc574c1b4b9354b62d5",
+      "n30": "90c892e0753a6996f01374410f21cee66ed8c7e06755ad1360884ca1393ba327",
+      "n32": "9c4cd8c2a6769b0a46cc07faa978fb2a61912bcf7c411a817c6684f131ca72e8",
+      "n34": "be253c65b3699b7121c4957ad3443a4cf812e564f1c77bd8623caf2d3e91ceec",
+      "n36": "b20a55cbfb338918e1975395a8375109926837122501b5c240abd8af463a5c6f",
+      "n39": "204dca20e1bc43ef86e6955099baf3cc147222dc591e9cd5fa2f6d4ddfd871e1",
+      "n40": "e2c97700fd3fdb77a041c34389d7ba2309ae4669116c004a689d8b6272efee7f",
+      "n41": "3ddf4b16d42780682b8ee5c63ded5752d9411f06eba27d4f938c390936fe0373",
+      "n42": "e30c9b588cff0ffcd97f34fce7ef4f5eca0c6ef4ba4bbb7fd8ee2b0097b1577e",
+      "n43": "66477d8686a240a3f9350761edc9aeebd3d605ba83d47a6972cdd1bc93830309",
+      "n44": "606081a1ab9fd62b1db1cb42747fb629e759ec556e60972fe06925ab17347a16",
+      "n45": "5b633146fc24ee0a0a245fd46cdc8e6edf919193b3c63be5ff45451abd45246b",
+      "n46": "aa59d1a42954a53e2a30cf34dae2c8855818dd36de08126196d652615e79d738"
+    },
+    "task_tags": {
+      "e01": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e02": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e03": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e04": [
+        "easy",
+        "aggregates",
+        "train"
+      ],
+      "e05": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e06": [
+        "easy",
+        "aggregates",
+        "train"
+      ],
+      "e07": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e08": [
+        "easy",
+        "aggregates",
+        "train"
+      ],
+      "e09": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "e10": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "m01": [
+        "medium",
+        "grouping",
+        "train"
+      ],
+      "m02": [
+        "medium",
+        "grouping",
+        "train"
+      ],
+      "m03": [
+        "medium",
+        "joins",
+        "train"
+      ],
+      "m04": [
+        "medium",
+        "dates",
+        "train"
+      ],
+      "m05": [
+        "medium",
+        "grouping",
+        "train"
+      ],
+      "m06": [
+        "medium",
+        "counting",
+        "train"
+      ],
+      "m07": [
+        "medium",
+        "dates",
+        "train"
+      ],
+      "m08": [
+        "medium",
+        "joins",
+        "train"
+      ],
+      "m09": [
+        "medium",
+        "ranking",
+        "train"
+      ],
+      "m10": [
+        "medium",
+        "counting",
+        "train"
+      ],
+      "h01": [
+        "hard",
+        "ranking",
+        "train"
+      ],
+      "h02": [
+        "hard",
+        "ranking",
+        "train"
+      ],
+      "h03": [
+        "hard",
+        "joins",
+        "train"
+      ],
+      "h04": [
+        "hard",
+        "aggregates",
+        "train"
+      ],
+      "h05": [
+        "hard",
+        "set_logic",
+        "train"
+      ],
+      "h06": [
+        "hard",
+        "dates",
+        "train"
+      ],
+      "h07": [
+        "hard",
+        "grouping",
+        "train"
+      ],
+      "h08": [
+        "hard",
+        "aggregates",
+        "train"
+      ],
+      "h09": [
+        "hard",
+        "ranking",
+        "train"
+      ],
+      "h10": [
+        "hard",
+        "ranking",
+        "train"
+      ],
+      "x01": [
+        "expert",
+        "joins",
+        "train"
+      ],
+      "x02": [
+        "expert",
+        "windows",
+        "train"
+      ],
+      "x03": [
+        "expert",
+        "business_definitions",
+        "train"
+      ],
+      "x04": [
+        "expert",
+        "set_logic",
+        "train"
+      ],
+      "x05": [
+        "expert",
+        "joins",
+        "train"
+      ],
+      "x06": [
+        "expert",
+        "ranking",
+        "train"
+      ],
+      "x07": [
+        "expert",
+        "dates",
+        "train"
+      ],
+      "x08": [
+        "expert",
+        "windows",
+        "train"
+      ],
+      "x09": [
+        "expert",
+        "grouping",
+        "train"
+      ],
+      "x10": [
+        "expert",
+        "windows",
+        "train"
+      ],
+      "n01": [
+        "easy",
+        "counting",
+        "train"
+      ],
+      "n02": [
+        "easy",
+        "counting",
+        "dev"
+      ],
+      "n04": [
+        "medium",
+        "counting",
+        "train"
+      ],
+      "n05": [
+        "easy",
+        "aggregates",
+        "train"
+      ],
+      "n07": [
+        "medium",
+        "aggregates",
+        "dev"
+      ],
+      "n09": [
+        "easy",
+        "joins",
+        "train"
+      ],
+      "n10": [
+        "medium",
+        "joins",
+        "train"
+      ],
+      "n12": [
+        "hard",
+        "joins",
+        "dev"
+      ],
+      "n13": [
+        "expert",
+        "joins",
+        "train"
+      ],
+      "n15": [
+        "medium",
+        "grouping",
+        "train"
+      ],
+      "n17": [
+        "hard",
+        "grouping",
+        "train"
+      ],
+      "n18": [
+        "hard",
+        "grouping",
+        "train"
+      ],
+      "n19": [
+        "easy",
+        "dates",
+        "dev"
+      ],
+      "n21": [
+        "medium",
+        "dates",
+        "dev"
+      ],
+      "n22": [
+        "hard",
+        "dates",
+        "train"
+      ],
+      "n25": [
+        "medium",
+        "ranking",
+        "train"
+      ],
+      "n27": [
+        "hard",
+        "ranking",
+        "dev"
+      ],
+      "n29": [
+        "expert",
+        "ranking",
+        "train"
+      ],
+      "n30": [
+        "hard",
+        "windows",
+        "train"
+      ],
+      "n32": [
+        "expert",
+        "windows",
+        "dev"
+      ],
+      "n34": [
+        "medium",
+        "set_logic",
+        "train"
+      ],
+      "n36": [
+        "hard",
+        "set_logic",
+        "dev"
+      ],
+      "n39": [
+        "medium",
+        "business_definitions",
+        "train"
+      ],
+      "n40": [
+        "medium",
+        "business_definitions",
+        "dev"
+      ],
+      "n41": [
+        "hard",
+        "business_definitions",
+        "train"
+      ],
+      "n42": [
+        "hard",
+        "business_definitions",
+        "train"
+      ],
+      "n43": [
+        "expert",
+        "business_definitions",
+        "train"
+      ],
+      "n44": [
+        "easy",
+        "tempting",
+        "train"
+      ],
+      "n45": [
+        "medium",
+        "tempting",
+        "train"
+      ],
+      "n46": [
+        "medium",
+        "tempting",
+        "dev"
+      ]
+    }
+  },
+  "budget": {
+    "budget_usd": 0.01,
+    "estimate_usd": 0.0,
+    "per_trial_cap_usd": 2.857142857142857e-05,
+    "token_basis": "measured",
+    "priced": true
+  },
+  "price": {
+    "input": 0,
+    "output": 0,
+    "source": "runs locally",
+    "checked": "2026-11-05"
+  },
+  "target": {
+    "name": "analyst-env-copy-a",
+    "transport": "streamable-http",
+    "address": "http://127.0.0.1:8766/mcp/",
+    "configuration": "direct"
+  },
+  "agent": {
+    "model": "ollama/qwen3.5:4b",
+    "model_args": {},
+    "system_prompt_sha256": "d741178216d70eb854d5b26784316083634a0dd96f8c5d3356717bd6af32ac9c",
+    "system_prompt": "You answer questions about a database by using the available tools: list_tables, describe_table, sample_rows, and run_query. Always explore the schema before writing SQL. Call run_query exactly once with your final answer query.",
+    "tool_allowlist": null,
+    "generate_config": {
+      "temperature": 1.0,
+      "top_p": 0.95,
+      "presence_penalty": 1.5,
+      "max_tokens": 4096
+    },
+    "limits": {
+      "message_limit": 20,
+      "time_limit": 600,
+      "token_limit": 250000
+    },
+    "epochs": 5
+  },
+  "provenance": {
+    "server_name": "database-mcp",
+    "server_version": "7182b5c77718",
+    "healthz_version": "7182b5c77718",
+    "tool_names": [
+      "describe_table",
+      "list_tables",
+      "run_query",
+      "sample_rows"
+    ],
+    "tool_list_sha256": "7b47e8833e0a38eedb25c85e4cb8f8ca67d3076969f9e04677e51ccc6b7414d6",
+    "data_fingerprint": "00d9e1ba427d82569ed4fdc8b28da6a95610442da1f8860ed96099ec444f3979",
+    "data_fingerprint_parts": [
+      {
+        "customers": 963,
+        "films": 955,
+        "rentals": 45907,
+        "payments": 45250,
+        "max_rental_id": 87558,
+        "max_payment_id": 102094
+      },
+      {
+        "customers_md5": "1505bc04f02f87620f933ba94aba9fcb"
+      },
+      {
+        "films_md5": "92234bb08459a271e0655dfa1510a8e4"
+      },
+      {
+        "rentals_md5": "b3f6a516b1a987d22129996f76e0bc5f"
+      },
+      {
+        "payments_md5": "8e8b0f0936a9f05f0beb40d3396a1022"
+      }
+    ],
+    "session_utc_offset": 0,
+    "served_model": {
+      "name": "qwen3.5:4b",
+      "digest": "7f3251fa6878a78a606bcb3c074283306e5ad2ea411a7774a9dd98a4bc7f2d13",
+      "format": "safetensors",
+      "quantization": "nvfp4",
+      "parameter_size": "4.5B",
+      "runtime": "Ollama 0.40.11",
+      "context_length": 24576,
+      "packaged_parameters": "min_p                          0\npresence_penalty               1.5\nrepeat_penalty                 1\ntemperature                    1\ntop_k                          20\ntop_p                          0.95",
+      "sampling_source": "Qwen3.5 model card, thinking mode, general tasks"
+    },
+    "models_reported": [
+      "qwen3.5:4b"
+    ],
+    "harness_git": "373edc79f064",
+    "inspect_ai_version": "0.3.283"
+  },
+  "export_version": 6,
+  "totals": {
+    "trials": 350,
+    "pass_strict": 224,
+    "pass_lenient": 228,
+    "errors": 0,
+    "input_tokens": 4746463,
+    "cached_input_tokens": 3942606,
+    "output_tokens": 357792,
+    "cost_usd": {
+      "usd": 0.0,
+      "complete": true
+    }
+  },
+  "schema_version": 1,
+  "trials_sha256": "829868ac1fd2d764ee76a5481585e3f9e2949daf14891c85244e389ec5b882af"
+}
